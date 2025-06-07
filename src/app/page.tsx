@@ -91,38 +91,6 @@ export default async function Home() {
                 Sign In
               </Link>
             </div>
-
-            <div className="mt-16 grid md:grid-cols-3 gap-8">
-              <div className="text-center">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                  🔒
-                </div>
-                <h3 className="text-lg font-semibold mb-2">Secure Authentication</h3>
-                <p className="text-gray-600">
-                  Powered by Clerk for enterprise-grade security and user management.
-                </p>
-              </div>
-              
-              <div className="text-center">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                  ⚡
-                </div>
-                <h3 className="text-lg font-semibold mb-2">Fast & Modern</h3>
-                <p className="text-gray-600">
-                  Built with Next.js 14 and the latest web technologies for optimal performance.
-                </p>
-              </div>
-              
-              <div className="text-center">
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                  🎨
-                </div>
-                <h3 className="text-lg font-semibold mb-2">Beautiful UI</h3>
-                <p className="text-gray-600">
-                  Crafted with Tailwind CSS for a clean and responsive user experience.
-                </p>
-              </div>
-            </div>
           </div>
         </SignedOut>
       </main>
