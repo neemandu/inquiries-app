@@ -1,6 +1,61 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+import { ApiResponse } from "@/app/employees/types";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
+}
+
+export async function fetchEmployeeData(
+  email: string
+): Promise<ApiResponse | null> {
+  try {
+    const response = await fetch(
+      `https://hook.eu2.make.com/orcsdly3165xy9ig2ncqenggv18adl23?email=${encodeURIComponent(
+        email
+      )}`
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data: ApiResponse = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching employee data:", error);
+    return null;
+  }
+}
+
+export async function updateColumnSetting(
+  recordId: string,
+  updatedApiResponse: ApiResponse
+): Promise<boolean> {
+  try {
+    const response = await fetch(
+      `https://hook.eu2.make.com/duxu4qucp2j1oe8522b7ylfl9f6fnq39?recordId=${encodeURIComponent(
+        recordId
+      )}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          employees: updatedApiResponse.employees,
+          columnNames: updatedApiResponse.columnNames,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error updating column setting:", error);
+    return false;
+  }
 }

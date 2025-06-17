@@ -13,3 +13,23 @@ export type ViewType =
   | "employee-recognition"
   | "pay-slip"
   | "vacations";
+
+export interface Employee {
+  salary: number | null;
+  lastName: string;
+  recordId: string;
+  firstName: string;
+  traveling: boolean | null;
+  arrivalDate: string;
+}
+
+export interface ColumnConfig {
+  column: string;
+  isOn: boolean;
+}
+
+export interface ApiResponse {
+  recordId: string;
+  employees: Employee[];
+  columnNames: ColumnConfig[];
+}

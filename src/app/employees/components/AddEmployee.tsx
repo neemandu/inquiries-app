@@ -30,6 +30,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon } from "lucide-react";
 import React from "react";
+import { toast } from "sonner";
 
 const addEmployeeSchema = z.object({
   firstName: z.string().min(2, {
@@ -50,7 +51,39 @@ const addEmployeeSchema = z.object({
 
 type AddEmployeeFormValues = z.infer<typeof addEmployeeSchema>;
 
+// TODO: Uncomment this
+// Helper function to convert file to base64
+// const fileToBase64 = (file: File): Promise<string> => {
+//   return new Promise((resolve, reject) => {
+//     const reader = new FileReader();
+//     reader.readAsDataURL(file);
+//     reader.onload = () => {
+//       const result = reader.result as string;
+//       // Remove the data:mime/type;base64, prefix
+//       const base64 = result.split(',')[1];
+//       resolve(base64);
+//     };
+//     reader.onerror = error => reject(error);
+//   });
+// };
+
+// Helper function to format date to dd/mm/yyyy
+const formatDateToAPI = (dateString: string): string => {
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) {
+    return dateString; // Return as is if not a valid date
+  }
+  
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const year = date.getFullYear();
+  
+  return `${day}/${month}/${year}`;
+};
+
 export default function AddEmployee() {
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
   const form = useForm<AddEmployeeFormValues>({
     resolver: zodResolver(addEmployeeSchema),
     defaultValues: {
@@ -61,9 +94,73 @@ export default function AddEmployee() {
     },
   });
 
-  function onSubmit(data: AddEmployeeFormValues) {
-    console.log(data);
-    // Here you would typically send the data to your API
+  async function onSubmit(data: AddEmployeeFormValues) {
+    setIsSubmitting(true);
+    
+    try {
+
+      // TODO: Uncomment this
+      // Convert files to base64 if they exist
+      // let pensionBase64 = "";
+      // let workFileBase64 = "";
+      
+      // if (data.incomeFile instanceof File) {
+      //   pensionBase64 = await fileToBase64(data.incomeFile);
+      // }
+      
+      // if (data.exemptionFile instanceof File) {
+      //   workFileBase64 = await fileToBase64(data.exemptionFile);
+      // }
+      
+      // Transform data to match API format
+      const apiData = {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        startDate: formatDateToAPI(data.startDate),
+        is101Full: data.form101 === "כן",
+        // pension: pensionBase64,
+        // workFile: workFileBase64
+      };
+      
+      // TODO: remove this
+      toast.success(`apiData ${JSON.stringify(apiData)}`)
+     
+      // TODO: Uncomment this 
+      // // Send POST request to backend
+      // const response = await fetch('/api/employees', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify(apiData),
+      // });
+      
+      // if (!response.ok) {
+      //   throw new Error(`HTTP error! status: ${response.status}`);
+      // }
+      
+      // Show success toast
+      // toast.success("העובד נוסף בהצלחה!", {
+      //   description: `${data.firstName} ${data.lastName} נוסף למערכת`,
+      //   duration: 5000,
+      // });
+      
+      // Reset form on success
+      form.reset();
+      setDate(new Date("2025-06-01"));
+      setMonth(new Date("2025-06-01"));
+      
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      
+      // Show error toast
+      toast.error("שגיאה בהוספת העובד", {
+        description: "אנא נסה שוב או פנה למנהל המערכת",
+        duration: 5000,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   function isValidDate(date: Date | undefined) {
@@ -331,9 +428,10 @@ export default function AddEmployee() {
             <div className="flex justify-center pt-8">
               <Button
                 type="submit"
-                className="px-16 py-4 bg-purple-600 hover:bg-purple-700 text-white font-medium text-lg h-auto"
+                disabled={isSubmitting}
+                className="px-16 py-4 bg-purple-600 hover:bg-purple-700 text-white font-medium text-lg h-auto disabled:opacity-50"
               >
-                שלח
+                {isSubmitting ? "שולח..." : "שלח"}
               </Button>
             </div>
           </form>

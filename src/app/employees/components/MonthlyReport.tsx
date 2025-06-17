@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import ColumnSettings from './ColumnSettings';
-import { ColumnSettingsType } from '../types';
+import { ColumnSettingsType, Employee, ApiResponse } from '../types';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Settings } from "lucide-react";
@@ -10,6 +10,8 @@ import { Settings } from "lucide-react";
 interface MonthlyReportProps {
   columnSettings: ColumnSettingsType;
   onColumnToggle: (column: keyof ColumnSettingsType) => void;
+  employees: Employee[];
+  apiResponse: ApiResponse | null;
 }
 
 interface EmployeeData {
@@ -22,7 +24,20 @@ interface EmployeeData {
   accountantNotes: number;
 }
 
-// Generate sample data
+// Convert API employee data to display format
+const convertEmployeeData = (apiEmployees: Employee[]): EmployeeData[] => {
+  return apiEmployees.map((employee, index) => ({
+    id: index + 1,
+    name: `${employee.firstName} ${employee.lastName}`,
+    salary: employee.salary || 0,
+    travel: 0, // This would need to be calculated based on your business logic
+    competition: false, // This would need to be determined based on your business logic
+    fileUpload: false, // This would need to be determined based on your business logic
+    accountantNotes: 0, // This would need to be calculated based on your business logic
+  }));
+};
+
+// Generate sample data as fallback
 const generateSampleData = (): EmployeeData[] => {
   return Array.from({ length: 5 }, (_, index) => ({
     id: index + 1,
@@ -35,9 +50,11 @@ const generateSampleData = (): EmployeeData[] => {
   }));
 };
 
-export default function MonthlyReport({ columnSettings, onColumnToggle }: MonthlyReportProps) {
+export default function MonthlyReport({ columnSettings, onColumnToggle, employees, apiResponse }: MonthlyReportProps) {
   const [showSettingsPopup, setShowSettingsPopup] = useState(false);
-  const [employees] = useState<EmployeeData[]>(generateSampleData());
+  
+  // Use API data if available, otherwise fallback to sample data
+  const displayEmployees = employees.length > 0 ? convertEmployeeData(employees) : generateSampleData();
 
   const columns = [
     { key: 'id', label: 'מס', show: true },
@@ -54,22 +71,27 @@ export default function MonthlyReport({ columnSettings, onColumnToggle }: Monthl
   return (
     <>
       {/* Settings Button */}
-      <div className="flex justify-end mb-4 relative">
-        <Button 
-          variant="ghost"
-          size="icon"
-          onClick={() => setShowSettingsPopup(!showSettingsPopup)}
-          className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-        >
-          <Settings className="w-6 h-6" />
-        </Button>
+      <div className="flex justify-between items-center mb-4">
+        <div className="text-sm text-gray-600">
+          {apiResponse ? `נתונים מעודכנים - ${employees.length} עובדים` : 'נתוני דוגמה'}
+        </div>
+        <div className="relative">
+          <Button 
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowSettingsPopup(!showSettingsPopup)}
+            className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+          >
+            <Settings className="w-6 h-6" />
+          </Button>
 
-        <ColumnSettings 
-          isOpen={showSettingsPopup}
-          onClose={() => setShowSettingsPopup(false)}
-          columnSettings={columnSettings}
-          onColumnToggle={onColumnToggle}
-        />
+          <ColumnSettings 
+            isOpen={showSettingsPopup}
+            onClose={() => setShowSettingsPopup(false)}
+            columnSettings={columnSettings}
+            onColumnToggle={onColumnToggle}
+          />
+        </div>
       </div>
 
       {/* Table */}
@@ -92,7 +114,7 @@ export default function MonthlyReport({ columnSettings, onColumnToggle }: Monthl
                 </tr>
               </thead>
               <tbody>
-                {employees.map((employee, rowIndex) => (
+                {displayEmployees.map((employee, rowIndex) => (
                   <tr 
                     key={employee.id} 
                     className={`border-b border-gray-200 hover:bg-gray-50 transition-colors ${
