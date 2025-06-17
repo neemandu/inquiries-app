@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { AddEmployee, ApiResponse } from "@/app/employees/types";
+import { AddEmployee, ApiResponse, PDFResponse } from "@/app/employees/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -91,5 +91,25 @@ export async function addEmployee(
   } catch (error) {
     console.error("Error updating column setting:", error);
     return false;
+  }
+}
+
+export async function GetPDF(recordId: string): Promise<PDFResponse | null> {
+  try {
+    const response = await fetch(
+      `https://hook.eu2.make.com/1qr8sx2y62843ve29y5agc0c26tl8r1s?recordId=${encodeURIComponent(
+        recordId
+      )}`
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data: PDFResponse = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching employee data:", error);
+    return null;
   }
 }

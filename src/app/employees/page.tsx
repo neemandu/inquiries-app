@@ -187,7 +187,7 @@ export default function EmployeesPage() {
       case 'employee-recognition':
         return <EmployeeRecognition />;
       case 'pay-slip':
-        return <PaySlip />;
+        return <PaySlip recordId={apiResponse?.recordId} employees={employees} />;
       case 'vacations':
         return <Vacations />;
       default:

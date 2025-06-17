@@ -54,3 +54,12 @@ export interface AddEmployee {
   pension: Pension;
   workFile: WorkFile;
 }
+
+export interface PDF {
+  date: string;
+  pdfUrl: string;
+}
+
+export interface PDFResponse {
+  documents: PDF[];
+}
