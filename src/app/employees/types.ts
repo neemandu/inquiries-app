@@ -33,3 +33,24 @@ export interface ApiResponse {
   employees: Employee[];
   columnNames: ColumnConfig[];
 }
+export interface Pension {
+  contentType: string;
+  file_name: string;
+  file: string;
+}
+
+export interface WorkFile {
+  contentType: string;
+  file_name: string;
+  file: string;
+}
+
+export interface AddEmployee {
+  record_id: string;
+  firstName: string;
+  lastName: string;
+  startDate: string;
+  is101Full: boolean;
+  pension: Pension;
+  workFile: WorkFile;
+}

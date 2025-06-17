@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { ApiResponse } from "@/app/employees/types";
+import { AddEmployee, ApiResponse } from "@/app/employees/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -45,6 +45,40 @@ export async function updateColumnSetting(
         body: JSON.stringify({
           employees: updatedApiResponse.employees,
           columnNames: updatedApiResponse.columnNames,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error updating column setting:", error);
+    return false;
+  }
+}
+
+export async function addEmployee(
+  updatedApiResponse: AddEmployee
+): Promise<boolean> {
+  try {
+    const response = await fetch(
+      `https://hook.eu2.make.com/qv5d2vgs8b992av1tpd9a880abbh7yyu`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          record_id: updatedApiResponse.record_id,
+          firstName: updatedApiResponse.firstName,
+          lastName: updatedApiResponse.lastName,
+          startDate: updatedApiResponse.startDate,
+          is101Full: updatedApiResponse.is101Full,
+          pension: updatedApiResponse.pension,
+          workFile: updatedApiResponse.workFile,
         }),
       }
     );

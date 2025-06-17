@@ -183,7 +183,7 @@ export default function EmployeesPage() {
           />
         );
       case 'add-employee':
-        return <AddEmployee />;
+        return <AddEmployee recordId={apiResponse?.recordId || ''} />;
       case 'employee-recognition':
         return <EmployeeRecognition />;
       case 'pay-slip':

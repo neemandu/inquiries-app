@@ -31,6 +31,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon } from "lucide-react";
 import React from "react";
 import { toast } from "sonner";
+import { addEmployee } from "@/lib/utils";
 
 const addEmployeeSchema = z.object({
   firstName: z.string().min(2, {
@@ -53,19 +54,19 @@ type AddEmployeeFormValues = z.infer<typeof addEmployeeSchema>;
 
 // TODO: Uncomment this
 // Helper function to convert file to base64
-// const fileToBase64 = (file: File): Promise<string> => {
-//   return new Promise((resolve, reject) => {
-//     const reader = new FileReader();
-//     reader.readAsDataURL(file);
-//     reader.onload = () => {
-//       const result = reader.result as string;
-//       // Remove the data:mime/type;base64, prefix
-//       const base64 = result.split(',')[1];
-//       resolve(base64);
-//     };
-//     reader.onerror = error => reject(error);
-//   });
-// };
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Remove the data:mime/type;base64, prefix
+      const base64 = result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = error => reject(error);
+  });
+};
 
 // Helper function to format date to dd/mm/yyyy
 const formatDateToAPI = (dateString: string): string => {
@@ -81,7 +82,7 @@ const formatDateToAPI = (dateString: string): string => {
   return `${day}/${month}/${year}`;
 };
 
-export default function AddEmployee() {
+export default function AddEmployee( {recordId}: {recordId: string} ) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const form = useForm<AddEmployeeFormValues>({
@@ -99,51 +100,49 @@ export default function AddEmployee() {
     
     try {
 
-      // TODO: Uncomment this
       // Convert files to base64 if they exist
-      // let pensionBase64 = "";
-      // let workFileBase64 = "";
+      let pensionBase64 = "";
+      let workFileBase64 = "";
       
-      // if (data.incomeFile instanceof File) {
-      //   pensionBase64 = await fileToBase64(data.incomeFile);
-      // }
+      if (data.incomeFile instanceof File) {
+        pensionBase64 = await fileToBase64(data.incomeFile);
+      }
       
-      // if (data.exemptionFile instanceof File) {
-      //   workFileBase64 = await fileToBase64(data.exemptionFile);
-      // }
+      if (data.exemptionFile instanceof File) {
+        workFileBase64 = await fileToBase64(data.exemptionFile);
+      }
       
       // Transform data to match API format
       const apiData = {
+        record_id: recordId,
         firstName: data.firstName,
         lastName: data.lastName,
         startDate: formatDateToAPI(data.startDate),
         is101Full: data.form101 === "כן",
-        // pension: pensionBase64,
-        // workFile: workFileBase64
+        pension: {
+          contentType: "application/pdf",
+          file_name: data.incomeFile?.name || "",
+          file: pensionBase64
+        },
+        workFile: {
+          contentType: "application/pdf",
+          file_name: data.exemptionFile?.name || "",
+          file: workFileBase64
+        }
       };
       
-      // TODO: remove this
-      toast.success(`apiData ${JSON.stringify(apiData)}`)
-     
-      // TODO: Uncomment this 
-      // // Send POST request to backend
-      // const response = await fetch('/api/employees', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify(apiData),
-      // });
+      // Send POST request to backend
+      const response = await addEmployee(apiData);
       
-      // if (!response.ok) {
-      //   throw new Error(`HTTP error! status: ${response.status}`);
-      // }
+      if (!response) {
+        throw new Error(`HTTP error! status: ${response}`);
+      }
       
       // Show success toast
-      // toast.success("העובד נוסף בהצלחה!", {
-      //   description: `${data.firstName} ${data.lastName} נוסף למערכת`,
-      //   duration: 5000,
-      // });
+      toast.success("העובד נוסף בהצלחה!", {
+        description: `${data.firstName} ${data.lastName} נוסף למערכת`,
+        duration: 5000,
+      });
       
       // Reset form on success
       form.reset();
