@@ -57,6 +57,11 @@ export default function EmployeesPage() {
               
               // Map API column settings to our local settings
               data.columnNames.forEach(col => {
+                // Check if col.column exists and is a string before calling includes
+                if (!col.column || typeof col.column !== 'string') {
+                  return; // Skip this iteration if column is undefined/null/not a string
+                }
+                
                 if (col.column.includes('traveling') || col.column.includes('travel')) {
                   newColumnSettings.travel = col.isOn ?? true;
                 } else if (col.column.includes('competition')) {
@@ -108,6 +113,12 @@ export default function EmployeesPage() {
       const updatedColumnNames = apiResponse.columnNames.map(col => {
         // Map local column types to API column names
         let shouldUpdate = false;
+        
+        // Check if col.column exists and is a string before calling includes
+        if (!col.column || typeof col.column !== 'string') {
+          return col; // Return the column unchanged if column is undefined/null/not a string
+        }
+        
         if (column === 'travel' && (col.column.includes('traveling') || col.column.includes('travel'))) {
           shouldUpdate = true;
         } else if (column === 'competition' && col.column.includes('competition')) {
