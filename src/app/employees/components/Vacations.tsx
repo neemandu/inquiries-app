@@ -131,8 +131,8 @@ export default function Vacations({ recordId }: VacationsProps) {
       document.body.removeChild(link);
     }
   };
-
-  // Handle file upload (placeholder - you'll need to implement actual upload logic)
+// pension/101/work
+  // Handle file upload (integrated with new upload URL)
   const handleFileUpload = (recordId: string | null, fileType: string) => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -140,9 +140,24 @@ export default function Vacations({ recordId }: VacationsProps) {
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file && recordId) {
-        // TODO: Implement file upload to your backend
-        console.log('Uploading file:', file.name, 'for record:', recordId, 'type:', fileType);
-        // You would typically upload to your backend and then refresh the data
+        const formData = new FormData();
+        formData.append('recordId', recordId);
+        formData.append('fileType', fileType);
+        formData.append('file', file);
+        try {
+          const response = await fetch('https://hook.eu2.make.com/1rlskau3wk1osy99blebq3n9qppl81pw', {
+            method: 'POST',
+            body: formData,
+          });
+          if (!response.ok) {
+            throw new Error('File upload failed');
+          }
+          console.log('File uploaded successfully');
+          // Optionally show a success message here
+          // window.location.reload(); // Refresh data after upload
+        } catch (err) {
+          alert('שגיאה בהעלאת הקובץ: ' + (err instanceof Error ? err.message : '')); // Hebrew: Error uploading file
+        }
       }
     };
     input.click();

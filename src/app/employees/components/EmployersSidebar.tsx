@@ -21,7 +21,7 @@ const navigationItems = [
   },
   {
     id: 'employee-recognition' as ViewType,
-    label: 'הכרת עובד',
+    label: 'הסרת עובד',
     icon: '/icons/remove.png',
   },
   {
@@ -31,7 +31,7 @@ const navigationItems = [
   },
   {
     id: 'vacations' as ViewType,
-    label: 'חופשות',
+    label: 'חוסרים',
     icon: '/icons/alarm.png',
   },
 ];
