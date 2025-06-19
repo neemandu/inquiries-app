@@ -28,10 +28,15 @@ export interface ColumnConfig {
   isOn: boolean;
 }
 
+export interface LeavingReason {
+  Reason: string;
+}
+
 export interface ApiResponse {
   recordId: string;
   employees: Employee[];
   columnNames: ColumnConfig[];
+  leavingReasons: LeavingReason[];
 }
 export interface Pension {
   contentType: string;

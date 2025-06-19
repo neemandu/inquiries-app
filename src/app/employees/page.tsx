@@ -9,7 +9,7 @@ import EmployeeRecognition from './components/EmployeeRecognition';
 import PaySlip from './components/PaySlip';
 import Vacations from './components/Vacations';
 import EmployersSidebar from './components/EmployersSidebar';
-import { ColumnSettingsType, ViewType, Employee, ApiResponse } from './types';
+import { ColumnSettingsType, ViewType, Employee, ApiResponse, LeavingReason } from './types';
 import { fetchEmployeeData, updateColumnSetting } from '@/lib/utils';
 import Image from 'next/image';
 
@@ -27,6 +27,7 @@ export default function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
   const [apiResponse, setApiResponse] = useState<ApiResponse | null>(null);
+  const [leavingReasons, setLeavingReasons] = useState<LeavingReason[]>([]);
 
   // Fetch employee data when user is loaded
   useEffect(() => {
@@ -78,6 +79,10 @@ export default function EmployeesPage() {
               });
               
               setColumnSettings(newColumnSettings);
+            }
+
+            if (data.leavingReasons) {
+              setLeavingReasons(data.leavingReasons);
             }
           }
         } catch (error) {
@@ -185,11 +190,11 @@ export default function EmployeesPage() {
       case 'add-employee':
         return <AddEmployee recordId={apiResponse?.recordId || ''} />;
       case 'employee-recognition':
-        return <EmployeeRecognition />;
+        return <EmployeeRecognition employees={employees} leavingReasons={leavingReasons} />;
       case 'pay-slip':
         return <PaySlip recordId={apiResponse?.recordId} employees={employees} />;
       case 'vacations':
-        return <Vacations />;
+        return <Vacations recordId={apiResponse?.recordId} />;
       default:
         return (
           <MonthlyReport 

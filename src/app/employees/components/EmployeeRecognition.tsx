@@ -29,6 +29,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon } from "lucide-react";
 import React from "react";
+import { Employee, LeavingReason } from "../types";
 
 const employeeRecognitionSchema = z.object({
   employeeName: z.string().min(2, {
@@ -45,7 +46,9 @@ const employeeRecognitionSchema = z.object({
 
 type EmployeeRecognitionFormValues = z.infer<typeof employeeRecognitionSchema>;
 
-export default function EmployeeRecognition() {
+export default function EmployeeRecognition(
+  { employees, leavingReasons }: { employees: Employee[], leavingReasons: LeavingReason[] }
+) {
   const form = useForm<EmployeeRecognitionFormValues>({
     resolver: zodResolver(employeeRecognitionSchema),
     defaultValues: {
@@ -108,11 +111,9 @@ export default function EmployeeRecognition() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="אמיר כהן">אמיר כהן</SelectItem>
-                        <SelectItem value="שרה לוי">שרה לוי</SelectItem>
-                        <SelectItem value="דוד ישראלי">דוד ישראלי</SelectItem>
-                        <SelectItem value="רות אברהם">רות אברהם</SelectItem>
-                        <SelectItem value="יוסי מזרחי">יוסי מזרחי</SelectItem>
+                        { employees && employees.map((employee) => (
+                          <SelectItem key={employee.recordId} value={employee.recordId}>{employee.firstName} {employee.lastName}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     </div>
@@ -209,13 +210,9 @@ export default function EmployeeRecognition() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="התפטרות">התפטרות</SelectItem>
-                        <SelectItem value="פיטורים">פיטורים</SelectItem>
-                        <SelectItem value="פרישה">פרישה</SelectItem>
-                        <SelectItem value="סיום חוזה">סיום חוזה</SelectItem>
-                        <SelectItem value="מעבר למשרה אחרת">מעבר למשרה אחרת</SelectItem>
-                        <SelectItem value="סיבות רפואיות">סיבות רפואיות</SelectItem>
-                        <SelectItem value="אחר">אחר</SelectItem>
+                        {leavingReasons && leavingReasons.map((reason) => (
+                          <SelectItem key={reason.Reason} value={reason.Reason}>{reason.Reason}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     </div>

@@ -113,3 +113,15 @@ export async function GetPDF(recordId: string): Promise<PDFResponse | null> {
     return null;
   }
 }
+
+// export async function addEmployeeRecognition(
+//   updatedApiResponse: EmployeeRecognition
+// ): Promise<boolean> {
+//   try {
+//     const response = await fetch(
+//       `https://hook.eu2.make.com/6yvgowfqvfq0maax195lb7s0x2ayb53m`,
+//     );
+//   }
+// }
+
+// https://hook.eu2.make.com/m0rzm7d63afsoerxyvvpxnl6gkzo67yv
