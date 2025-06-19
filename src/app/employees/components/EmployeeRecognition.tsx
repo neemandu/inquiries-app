@@ -28,20 +28,21 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon } from "lucide-react";
+import { toast } from "sonner";
 import React from "react";
 import { Employee, LeavingReason } from "../types";
 
 const employeeRecognitionSchema = z.object({
-  employeeName: z.string().min(2, {
+  recordId: z.string().min(2, {
     message: "שם העובד חייב להכיל לפחות 2 תווים.",
   }),
-  departureDate: z.string().min(1, {
+  leavingDate: z.string().min(1, {
     message: "תאריך עזיבה הוא שדה חובה.",
   }),
-  departureReason: z.string().min(1, {
+  leavingReason: z.string().min(1, {
     message: "סיבת עזיבה היא שדה חובה.",
   }),
-  notes: z.string().optional(),
+  remarks: z.string().optional(),
 });
 
 type EmployeeRecognitionFormValues = z.infer<typeof employeeRecognitionSchema>;
@@ -49,19 +50,64 @@ type EmployeeRecognitionFormValues = z.infer<typeof employeeRecognitionSchema>;
 export default function EmployeeRecognition(
   { employees, leavingReasons }: { employees: Employee[], leavingReasons: LeavingReason[] }
 ) {
+
+//   {
+// recordId,
+// leavingReason,
+// leavingDate,
+// remarks
+// }
   const form = useForm<EmployeeRecognitionFormValues>({
     resolver: zodResolver(employeeRecognitionSchema),
     defaultValues: {
-      employeeName: "",
-      departureDate: "",
-      departureReason: "",
-      notes: "",
+      recordId: "",
+      leavingReason: "",
+      leavingDate: "",
+      remarks: "",
     },
   });
 
-  function onSubmit(data: EmployeeRecognitionFormValues) {
-    console.log(data);
-    // Here you would typically send the data to your API
+  // https://hook.eu2.make.com/6yvgowfqvfq0maax195lb7s0x2ayb53m
+
+  async function onSubmit(data: EmployeeRecognitionFormValues) {
+    try {
+      // Show loading toast
+      const loadingToast = toast.loading('מעבד את הבקשה...');
+      
+      const response = await fetch('https://hook.eu2.make.com/6yvgowfqvfq0maax195lb7s0x2ayb53m', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      // Dismiss loading toast
+      toast.dismiss(loadingToast);
+
+      if (response.ok) {
+        toast.success('העובד נוסף בהצלחה', {
+          description: 'הנתונים נשמרו במערכת',
+          duration: 4000,
+        });
+        
+        // Reset form after successful submission
+        form.reset();
+
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        toast.error('שגיאה בשמירת הנתונים', {
+          description: errorData.message || `קוד שגיאה: ${response.status}`,
+          duration: 5000,
+        });
+      }
+    } catch (error) {
+      toast.error('שגיאה בחיבור לשרת', {
+        description: 'אנא בדוק את החיבור לאינטרנט ונסה שוב',
+        duration: 5000,
+      });
+      console.error('Submission error:', error);
+    }
   }
 
   function isValidDate(date: Date | undefined) {
@@ -97,7 +143,7 @@ export default function EmployeeRecognition(
               {/* שם העובד */}
               <FormField
                 control={form.control}
-                name="employeeName"
+                name="recordId"
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex items-center justify-start gap-4">
@@ -125,7 +171,7 @@ export default function EmployeeRecognition(
               {/* תאריך עזיבה */}
               <FormField
                 control={form.control}
-                name="departureDate"
+                name="leavingDate"
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex items-center justify-start gap-4">
@@ -196,7 +242,7 @@ export default function EmployeeRecognition(
               {/* סיבת עזיבה */}
               <FormField
                 control={form.control}
-                name="departureReason"
+                name="leavingReason"
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex items-center justify-start gap-4">
@@ -224,7 +270,7 @@ export default function EmployeeRecognition(
               {/* הערות */}
               <FormField
                 control={form.control}
-                name="notes"
+                name="remarks"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="block text-lg font-medium text-gray-900 mb-3 text-right">
