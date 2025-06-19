@@ -200,7 +200,7 @@ export default function AddEmployee( {recordId}: {recordId: string} ) {
                 <FormItem>
                   <div className="flex items-center justify-start gap-4">
                   <FormLabel className="text-lg font-medium text-gray-900 text-right">
-                    :שם פרטי
+                    שם פרטי:
                   </FormLabel>
                   <FormControl>
                     <Input
@@ -223,7 +223,7 @@ export default function AddEmployee( {recordId}: {recordId: string} ) {
                 <FormItem>
                   <div className="flex items-center justify-start gap-4">
                   <FormLabel className="text-lg font-medium text-gray-900 text-right">
-                    :שם משפחה
+                    שם משפחה:
                   </FormLabel>
                   <FormControl>
                     <Input
@@ -317,7 +317,7 @@ export default function AddEmployee( {recordId}: {recordId: string} ) {
                 <FormItem>
                   <div className="flex items-center justify-start gap-4">
                     <FormLabel className="text-lg font-medium text-gray-900 text-right">
-                      הכנסה העתקה:
+                   הסכם העסקה:
                     </FormLabel>
                     <div className="flex items-center gap-3">
                       <span className="text-purple-600 text-sm">
@@ -342,6 +342,11 @@ export default function AddEmployee( {recordId}: {recordId: string} ) {
                       >
                         <Upload className="h-5 w-5" />
                       </Button>
+                      {field.value && (
+                        <span className="text-green-600 text-sm font-medium">
+                          {field.value.name}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <FormMessage className="text-right" />
@@ -357,7 +362,8 @@ export default function AddEmployee( {recordId}: {recordId: string} ) {
                 <FormItem >
                   <div className="flex items-center justify-start gap-4">
                   <FormLabel className="text-lg font-medium text-gray-900 text-right">
-                    האם מילוא 101:
+                   האם מילאו 101:
+
                   </FormLabel>
                   <FormControl>
                     <Select
@@ -387,8 +393,7 @@ export default function AddEmployee( {recordId}: {recordId: string} ) {
                 <FormItem>
                   <div className="flex items-center justify-start gap-4">
                     <FormLabel className="text-lg font-medium text-gray-900 text-right">
-                      פטירה פעילה:
-                    </FormLabel>
+                       פנסיה פעילה:                   </FormLabel>
                     <div className="flex items-center gap-3">
                       <span className="text-purple-600 text-sm">
                         העלאת קובץ
@@ -412,11 +417,15 @@ export default function AddEmployee( {recordId}: {recordId: string} ) {
                       >
                         <Upload className="h-5 w-5" />
                       </Button>
+                      {field.value && (
+                        <span className="text-green-600 text-sm font-medium">
+                          {field.value.name}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <FormDescription className="text-sm text-red-500 text-right mt-2">
-                    • במידה זו העלאת קובץ ביחידות ברירת המחדל כי הינו שינוי
-                    פטירה פעילה
+                 במידה ולא הועלה קובץ התייחסות ברירת המחדל הינה שאין פנסיה פעילה
                   </FormDescription>
                   <FormMessage className="text-right" />
                 </FormItem>
