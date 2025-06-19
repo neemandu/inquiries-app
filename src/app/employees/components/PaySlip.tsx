@@ -216,6 +216,20 @@ export default function PaySlip({ recordId, employees = [] }: PaySlipProps) {
                 {showPdf && pdfUrl ? (
                   <div className="h-full flex flex-col">
                     <div className="flex-1 border border-gray-300 rounded-lg overflow-hidden bg-white">
+                      <div className="flex justify-start mb-6">
+                        <div className="flex justify-start mb-6">
+                      <Button 
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={downloadPaySlip}
+                        disabled={!showPdf || !pdfUrl}
+                        className="flex items-center justify-center w-10 h-10 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors disabled:opacity-50"
+                      >
+                        <Download className="w-6 h-6" />
+                      </Button>
+                    </div>
+                     </div>
                       <Document
                         file={pdfUrl}
                         onLoadSuccess={onDocumentLoadSuccess}
@@ -270,14 +284,7 @@ export default function PaySlip({ recordId, employees = [] }: PaySlipProps) {
                   </div>
                 ) : (
                   <div className="flex items-center justify-center h-full border-2 border-dashed border-gray-300 rounded-lg bg-gray-100">
-                    <div className="text-center">
-                      <div className="text-6xl font-bold text-gray-400 mb-4">
-                        PDF View
-                      </div>
-                      <p className="text-gray-500 text-lg">
-                        {error ? error : "בחר עובד וחודש להצגת תלוש השכר"}
-                      </p>
-                    </div>
+                    
                   </div>
                 )}
               </CardContent>
@@ -291,19 +298,6 @@ export default function PaySlip({ recordId, employees = [] }: PaySlipProps) {
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 h-full" dir="rtl">
                     
-                    {/* Download Button */}
-                    <div className="flex justify-start mb-6">
-                      <Button 
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={downloadPaySlip}
-                        disabled={!showPdf || !pdfUrl}
-                        className="flex items-center justify-center w-10 h-10 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors disabled:opacity-50"
-                      >
-                        <Download className="w-6 h-6" />
-                      </Button>
-                    </div>
 
                     {/* שם העובד */}
                     <FormField
@@ -312,11 +306,11 @@ export default function PaySlip({ recordId, employees = [] }: PaySlipProps) {
                       render={({ field }) => (
                         <FormItem>
                           <div className="flex items-center justify-between mb-4">
-                            <input 
+                            {/* <input 
                               type="checkbox" 
                               className="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500" 
                               defaultChecked 
-                            />
+                            /> */}
                             <FormLabel className="text-lg font-medium text-gray-900 text-right">
                               :שם העובד
                             </FormLabel>
