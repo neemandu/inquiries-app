@@ -9,7 +9,7 @@ import EmployeeRecognition from './components/EmployeeRecognition';
 import PaySlip from './components/PaySlip';
 import Vacations from './components/Vacations';
 import EmployersSidebar from './components/EmployersSidebar';
-import { ColumnSettingsType, ViewType, Employee, ApiResponse, LeavingReason } from './types';
+import { ColumnSettingsType, ViewType, Employee, ApiResponse, LeavingReason, DynamicColumnSettings } from './types';
 import { fetchEmployeeData, updateColumnSetting } from '@/lib/utils';
 import Image from 'next/image';
 
@@ -24,6 +24,7 @@ export default function EmployeesPage() {
     salary: true,
     other: true
   });
+  const [dynamicColumnSettings, setDynamicColumnSettings] = useState<DynamicColumnSettings>({});
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
   const [apiResponse, setApiResponse] = useState<ApiResponse | null>(null);
@@ -45,40 +46,16 @@ export default function EmployeesPage() {
             setApiResponse(data);
             setEmployees(data.employees);
             
-            // Update column settings based on API response
+            // Initialize dynamic column settings based on API response
             if (data.columnNames) {
-              const newColumnSettings: ColumnSettingsType = {
-                travel: true,
-                competition: true,
-                ignoreFiles: false,
-                accounting: false,
-                salary: true,
-                other: true
-              };
+              const newDynamicSettings: DynamicColumnSettings = {};
               
-              // Map API column settings to our local settings
               data.columnNames.forEach(col => {
-                // Check if col.column exists and is a string before calling includes
-                if (!col.column || typeof col.column !== 'string') {
-                  return; // Skip this iteration if column is undefined/null/not a string
-                }
-                
-                if (col.column.includes('traveling') || col.column.includes('travel')) {
-                  newColumnSettings.travel = col.isOn ?? true;
-                } else if (col.column.includes('competition')) {
-                  newColumnSettings.competition = col.isOn ?? true;
-                } else if (col.column.includes('salary')) {
-                  newColumnSettings.salary = col.isOn ?? true;
-                } else if (col.column.includes('accounting')) {
-                  newColumnSettings.accounting = col.isOn ?? false;
-                } else if (col.column.includes('files') || col.column.includes('ignore')) {
-                  newColumnSettings.ignoreFiles = col.isOn ?? false;
-                } else {
-                  newColumnSettings.other = col.isOn ?? true;
-                }
+                // Use columnNameRecordId as the key and isOn as the value
+                newDynamicSettings[col.columnNameRecordId] = col.isOn ?? false;
               });
               
-              setColumnSettings(newColumnSettings);
+              setDynamicColumnSettings(newDynamicSettings);
             }
 
             if (data.leavingReasons) {
@@ -96,6 +73,58 @@ export default function EmployeesPage() {
     loadEmployeeData();
   }, [isLoaded, user]);
 
+  // Update dynamic column setting
+  const toggleDynamicColumn = async (columnNameRecordId: string) => {
+    if (!apiResponse) {
+      console.warn('No API response available for column update');
+      return;
+    }
+
+    const newValue = !dynamicColumnSettings[columnNameRecordId];
+    
+    // Update local state immediately for better UX
+    setDynamicColumnSettings(prev => ({
+      ...prev,
+      [columnNameRecordId]: newValue
+    }));
+    
+    // Make API call to update column setting in database
+    try {
+      console.log(`Updating column ${columnNameRecordId} to ${newValue}`);
+      
+      // Create updated API response with the new column setting
+      const updatedColumnNames = apiResponse.columnNames.map(col => {
+        if (col.columnNameRecordId === columnNameRecordId) {
+          return { ...col, isOn: newValue };
+        }
+        return col;
+      });
+
+      const updatedApiResponse: ApiResponse = {
+        ...apiResponse,
+        columnNames: updatedColumnNames
+      };
+
+      const success = await updateColumnSetting(apiResponse.recordId, updatedApiResponse);
+      if (!success) {
+        throw new Error('Failed to update column setting');
+      }
+      
+      // Update local API response state with the new data
+      setApiResponse(updatedApiResponse);
+      
+      console.log(`Column update successful: columnNameRecordId=${columnNameRecordId}, newValue=${newValue}`);
+    } catch (error) {
+      console.error('Failed to update column setting:', error);
+      // Revert local state on error
+      setDynamicColumnSettings(prev => ({
+        ...prev,
+        [columnNameRecordId]: !newValue
+      }));
+    }
+  };
+
+  // Legacy toggle function for backward compatibility (can be removed later)
   const toggleColumn = async (column: keyof ColumnSettingsType) => {
     if (!apiResponse) {
       console.warn('No API response available for column update');
@@ -183,6 +212,8 @@ export default function EmployeesPage() {
           <MonthlyReport 
             columnSettings={columnSettings} 
             onColumnToggle={toggleColumn}
+            dynamicColumnSettings={dynamicColumnSettings}
+            onDynamicColumnToggle={toggleDynamicColumn}
             employees={employees}
             apiResponse={apiResponse}
           />
@@ -200,6 +231,8 @@ export default function EmployeesPage() {
           <MonthlyReport 
             columnSettings={columnSettings} 
             onColumnToggle={toggleColumn}
+            dynamicColumnSettings={dynamicColumnSettings}
+            onDynamicColumnToggle={toggleDynamicColumn}
             employees={employees}
             apiResponse={apiResponse}
           />

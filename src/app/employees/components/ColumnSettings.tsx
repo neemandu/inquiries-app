@@ -1,77 +1,59 @@
 "use client";
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { ColumnSettingsType } from '../types';
+import { ColumnSettingsType, DynamicColumnSettings, ApiResponse } from '../types';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-} from "@/components/ui/form";
 
 interface ColumnSettingsProps {
   isOpen: boolean;
   onClose: () => void;
   columnSettings: ColumnSettingsType;
   onColumnToggle: (column: keyof ColumnSettingsType) => void;
+  dynamicColumnSettings: DynamicColumnSettings;
+  onDynamicColumnToggle: (columnNameRecordId: string) => void;
+  apiResponse: ApiResponse | null;
 }
-
-const columnSettingsSchema = z.object({
-  travel: z.boolean(),
-  competition: z.boolean(),
-  ignoreFiles: z.boolean(),
-  accounting: z.boolean(),
-  salary: z.boolean(),
-  other: z.boolean(),
-});
-
-type ColumnSettingsFormValues = z.infer<typeof columnSettingsSchema>;
 
 export default function ColumnSettings({ 
   isOpen, 
   onClose, 
   columnSettings, 
-  onColumnToggle 
+  onColumnToggle,
+  dynamicColumnSettings,
+  onDynamicColumnToggle,
+  apiResponse
 }: ColumnSettingsProps) {
-  const form = useForm<ColumnSettingsFormValues>({
-    resolver: zodResolver(columnSettingsSchema),
-    defaultValues: {
-      travel: columnSettings.travel,
-      competition: columnSettings.competition,
-      ignoreFiles: columnSettings.ignoreFiles,
-      accounting: columnSettings.accounting,
-      salary: columnSettings.salary,
-      other: columnSettings.other,
-    },
-  });
-
-  function onSubmit(data: ColumnSettingsFormValues) {
-    // Apply all changes
-    Object.keys(data).forEach((key) => {
-      const typedKey = key as keyof ColumnSettingsType;
-      if (data[typedKey] !== columnSettings[typedKey]) {
-        onColumnToggle(typedKey);
-      }
-    });
-    onClose();
-  }
-
   if (!isOpen) return null;
 
-  const settingsConfig = [
-    { key: 'travel' as keyof ColumnSettingsType, label: 'נסיעות' },
-    { key: 'competition' as keyof ColumnSettingsType, label: 'תחרות' },
-    { key: 'ignoreFiles' as keyof ColumnSettingsType, label: 'התעלמות קבצים' },
-    { key: 'accounting' as keyof ColumnSettingsType, label: 'רואה חשבון' },
-    { key: 'salary' as keyof ColumnSettingsType, label: 'שכר' },
-    { key: 'other' as keyof ColumnSettingsType, label: 'אחר' },
+  // Show all columns
+  const allColumns = apiResponse?.columnNames || [];
+
+  // Legacy settings (keeping for backward compatibility)
+  const legacySettingsConfig = [
+    { key: 'travel' as keyof ColumnSettingsType, label: 'נסיעות (ישן)' },
+    { key: 'competition' as keyof ColumnSettingsType, label: 'תחרות (ישן)' },
+    { key: 'ignoreFiles' as keyof ColumnSettingsType, label: 'התעלמות קבצים (ישן)' },
+    { key: 'accounting' as keyof ColumnSettingsType, label: 'רואה חשבון (ישן)' },
+    { key: 'salary' as keyof ColumnSettingsType, label: 'שכר (ישן)' },
+    { key: 'other' as keyof ColumnSettingsType, label: 'אחר (ישן)' },
   ];
+
+  const handleSelectAll = () => {
+    allColumns.forEach(col => {
+      if (!dynamicColumnSettings[col.columnNameRecordId]) {
+        onDynamicColumnToggle(col.columnNameRecordId);
+      }
+    });
+  };
+
+  const handleDeselectAll = () => {
+    allColumns.forEach(col => {
+      if (dynamicColumnSettings[col.columnNameRecordId]) {
+        onDynamicColumnToggle(col.columnNameRecordId);
+      }
+    });
+  };
 
   return (
     <>
@@ -80,50 +62,101 @@ export default function ColumnSettings({
         className="fixed inset-0 bg-black/40 bg-opacity-50 z-20"
         onClick={onClose}
       />
+      
       {/* Popup */}
-      <Card className="absolute top-12 right-0 z-30 w-72" dir="rtl">
-        <CardHeader>
+      <Card className="absolute top-12 right-0 z-30 w-96 max-h-[80vh] overflow-hidden" dir="rtl">
+        <CardHeader className="pb-4">
           <CardTitle className="text-lg font-medium text-gray-900 text-right">
-            ניהול עמודות
+            ניהול עמודות ({allColumns.length} עמודות)
           </CardTitle>
+
+          {/* Bulk Actions */}
+          <div className="flex gap-2 mt-3">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleSelectAll}
+              className="flex-1 text-xs"
+            >
+              בחר הכל
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleDeselectAll}
+              className="flex-1 text-xs"
+            >
+              בטל בחירה
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {settingsConfig.map((setting) => (
-                <FormField
-                  key={setting.key}
-                  control={form.control}
-                  name={setting.key}
-                  render={({ field }) => (
-                    <FormItem className="flex items-center justify-between">
-                      <FormLabel className="text-gray-700 text-base">
-                        {setting.label}
-                      </FormLabel>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                          className="data-[state=checked]:bg-purple-600"
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              ))}
-              
-              <div className="mt-6 flex justify-center">
-                <Button 
-                  type="submit"
-                  className="px-8 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors"
-                  variant="secondary"
-                >
-                  אישור
-                </Button>
+
+        <CardContent className="space-y-4 max-h-[50vh] overflow-y-auto">
+          {/* Dynamic Columns */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-medium text-gray-900 border-b pb-2">
+              כל העמודות ({allColumns.length})
+            </h4>
+            
+            {allColumns.length === 0 ? (
+              <div className="text-sm text-gray-500 text-center py-4">
+                אין עמודות זמינות
               </div>
-            </form>
-          </Form>
+            ) : (
+              allColumns.map((col) => (
+                <div key={col.columnNameRecordId} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-gray-900 truncate">
+                      {col.column || 'ללא שם'}
+                    </div>
+                    <div className="text-xs text-gray-500 truncate">
+                      ID: {col.columnNameRecordId}
+                    </div>
+                  </div>
+                  <Switch
+                    checked={dynamicColumnSettings[col.columnNameRecordId] || false}
+                    onCheckedChange={() => onDynamicColumnToggle(col.columnNameRecordId)}
+                    className="data-[state=checked]:bg-purple-600 mr-3"
+                  />
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Legacy Settings (for backward compatibility) */}
+          <div className="space-y-3 border-t pt-4">
+            <h4 className="text-sm font-medium text-gray-900">
+              הגדרות ישנות (תמיכה לאחור)
+            </h4>
+            {legacySettingsConfig.map((setting) => (
+              <div key={setting.key} className="flex items-center justify-between p-2 bg-yellow-50 rounded-lg">
+                <div className="text-sm text-gray-700">
+                  {setting.label}
+                </div>
+                <Switch
+                  checked={columnSettings[setting.key]}
+                  onCheckedChange={() => onColumnToggle(setting.key)}
+                  className="data-[state=checked]:bg-yellow-600"
+                />
+              </div>
+            ))}
+          </div>
         </CardContent>
+
+        <div className="p-4 border-t bg-gray-50">
+          <div className="flex justify-between items-center">
+            <div className="text-xs text-gray-500">
+              {Object.values(dynamicColumnSettings).filter(Boolean).length} מתוך {Object.keys(dynamicColumnSettings).length} פעילות
+            </div>
+            <Button 
+              onClick={onClose}
+              className="px-8 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors"
+              variant="secondary"
+            >
+              סגור
+            </Button>
+          </div>
+        </div>
       </Card>
     </>
   );

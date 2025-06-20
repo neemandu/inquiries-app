@@ -22,8 +22,8 @@ import 'react-pdf/dist/Page/TextLayer.css';
 import { GetPDF } from '@/lib/utils';
 import { PDFResponse, Employee } from '../types';
 
-// Set up PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+// Set up PDF.js worker - using legacy worker for better Node.js 20 compatibility
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.mjs`;
 
 const paySlipSchema = z.object({
   employeeName: z.string().min(1, {

@@ -7,6 +7,11 @@ export interface ColumnSettingsType {
   other: boolean;
 }
 
+// New dynamic column settings interface
+export interface DynamicColumnSettings {
+  [columnNameRecordId: string]: boolean;
+}
+
 export type ViewType =
   | "monthly-report"
   | "add-employee"
@@ -25,7 +30,9 @@ export interface Employee {
 
 export interface ColumnConfig {
   column: string;
+  columnNameRecordId: string;
   isOn: boolean;
+  recordId: string;
 }
 
 export interface LeavingReason {
