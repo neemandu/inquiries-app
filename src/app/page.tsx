@@ -254,10 +254,10 @@ export default function EmployeesPage() {
                 {user?.emailAddresses?.[0]?.emailAddress}
               </div>
               <Link 
-                href="/dashboard"
+                href="/inquiries"
                 className="px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
               >
-                Dashboard
+                פניות
               </Link>
             </SignedIn>
           </div>

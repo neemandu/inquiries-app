@@ -1,368 +1,247 @@
-'use client';
+'use client'
 
-import { useEffect } from 'react';
+import React, { useState, useRef } from 'react'
 
-interface FileData {
-  name: string;
-  data: string;
-}
+export default function UpdateInquiriesPage() {
+  const [selectedSupplier, setSelectedSupplier] = useState<string>('הכל')
+  const [showYearlyForm, setShowYearlyForm] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-interface SetData {
-  id: string;
-  supplierName?: string;
-  asm?: string;
-  asm2?: string;
-  date?: string;
-  details?: string;
-  debit?: string;
-  credit?: string;
-  balance?: string;
-  verbalAnswer?: string;
-  files: FileData[];
-  text?: string;
-}
+  // File handling state for each form section
+  const [supplierFiles, setSupplierFiles] = useState<{[key: string]: File[]}>({})
+  const [yearlyFiles, setYearlyFiles] = useState<{[key: string]: File[]}>({})
 
-interface FileUploadElement extends HTMLElement {
-  _files: File[];
-}
+  const suppliers = ['הכל', 'ספק 1', 'ספק 2']
+  
+  // Filter rows based on selected supplier
+  const filterTableRows = () => {
+    const rows = document.querySelectorAll('tr.set')
+    rows.forEach((row) => {
+      const supplierAttr = row.getAttribute('data-supplier')
+      if (selectedSupplier === 'הכל' || supplierAttr === selectedSupplier) {
+        ;(row as HTMLElement).style.display = ''
+      } else {
+        ;(row as HTMLElement).style.display = 'none'
+      }
+    })
+  }
 
-export default function InquiriesPage() {
-  useEffect(() => {
-    // Helper function to convert File to Base64
-    const toBase64 = (file: File): Promise<string> => {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve((reader.result as string).split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    };
+  // Effect to filter rows when supplier changes
+  React.useEffect(() => {
+    if (!showYearlyForm) {
+      filterTableRows()
+    }
+  }, [selectedSupplier, showYearlyForm])
 
-    // Initialize file-pickers for each row
-    document.querySelectorAll('tr.set').forEach((row) => {
-      const wrapper = row.querySelector('.file-upload') as FileUploadElement;
-      if (!wrapper) return;
+  const toBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve((reader.result as string).split(',')[1])
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+  }
+
+  const handleFileSelection = (sectionId: string, files: FileList, isYearly: boolean = false) => {
+    const fileArray = Array.from(files)
+    const currentFiles = isYearly ? yearlyFiles[sectionId] || [] : supplierFiles[sectionId] || []
+    
+    const newFiles = fileArray.filter(newFile => 
+      !currentFiles.some(existing => existing.name === newFile.name && existing.size === newFile.size)
+    )
+    
+    const updatedFiles = [...currentFiles, ...newFiles]
+    
+    if (isYearly) {
+      setYearlyFiles(prev => ({ ...prev, [sectionId]: updatedFiles }))
+    } else {
+      setSupplierFiles(prev => ({ ...prev, [sectionId]: updatedFiles }))
+    }
+  }
+
+  const removeFile = (sectionId: string, fileIndex: number, isYearly: boolean = false) => {
+    if (isYearly) {
+      setYearlyFiles(prev => ({
+        ...prev,
+        [sectionId]: (prev[sectionId] || []).filter((_, index) => index !== fileIndex)
+      }))
+    } else {
+      setSupplierFiles(prev => ({
+        ...prev,
+        [sectionId]: (prev[sectionId] || []).filter((_, index) => index !== fileIndex)
+      }))
+    }
+  }
+
+  const handleMainFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+
+    try {
+      const sets: Array<{
+        id: string;
+        supplierName: string;
+        asm: string;
+        asm2: string;
+        date: string;
+        details: string;
+        debit: string;
+        credit: string;
+        verbalAnswer: string;
+        files: Array<{ name: string; data: string }>;
+      }> = []
       
-      const pickerBtn = wrapper.querySelector('.custom-file-button') as HTMLButtonElement;
-      const listContainer = wrapper.querySelector('.selected-files') as HTMLElement;
-      const files: File[] = [];
-      wrapper._files = files;
-
-      if (pickerBtn) {
-        pickerBtn.addEventListener('click', () => {
-          const tmp = document.createElement('input');
-          tmp.type = 'file';
-          tmp.multiple = true;
-          tmp.style.display = 'none';
-          wrapper.appendChild(tmp);
-
-          tmp.addEventListener('change', () => {
-            Array.from(tmp.files || []).forEach((f) => {
-              if (!files.some((x) => x.name === f.name && x.size === f.size)) {
-                files.push(f);
-              }
-            });
-            render();
-            wrapper.removeChild(tmp);
-          });
-
-          tmp.click();
-        });
+      // Process each row of supplier data
+      const rows = document.querySelectorAll('tr.set')
+      
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i] as HTMLTableRowElement
+        const cells = row.cells
+        
+        // Get form data from row
+        const verbalAnswerTextarea = row.querySelector('textarea[name="verbalAnswer"]') as HTMLTextAreaElement
+        const rowId = cells[0].textContent?.trim() || ''
+        
+        // Get files for this row's section
+        const sectionId = `supplier${Math.floor(i/2) + 1}_row${(i % 2) + 1}`
+        const files = supplierFiles[sectionId] || []
+        
+        const encodedFiles = await Promise.all(
+          files.map(async (file) => ({
+            name: file.name,
+            data: await toBase64(file)
+          }))
+        )
+        
+        sets.push({
+          id: rowId,
+          supplierName: cells[1].textContent?.trim() || '',
+          asm: cells[2].textContent?.trim() || '',
+          asm2: cells[3].textContent?.trim() || '',
+          date: cells[4].textContent?.trim() || '',
+          details: cells[5].textContent?.trim() || '',
+          debit: cells[6].textContent?.trim() || '',
+          credit: cells[7].textContent?.trim() || '',
+          verbalAnswer: verbalAnswerTextarea?.value || '',
+          files: encodedFiles
+        })
       }
 
-      if (listContainer) {
-        listContainer.addEventListener('click', (e) => {
-          const target = e.target as HTMLElement;
-          if (!target.matches('button[data-index]')) return;
-          const idx = Number(target.dataset.index);
-          files.splice(idx, 1);
-          render();
-        });
+      const response = await fetch('https://hook.eu2.make.com/p1blghe3lplkmnn6215xpmkbiyry3d5w', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sets })
+      })
+
+      if (!response.ok) throw new Error(response.statusText)
+      
+      window.location.reload()
+    } catch (error) {
+      alert('❌ שגיאה: ' + (error as Error).message)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleYearlyFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+
+    try {
+      const sets = []
+      
+      // Process yearly form data - collect all yearly form sections
+      const yearlyFormSections = [
+        'reca5c7KurnDEngHp',
+        'recsnRcqf3wELCS1a', 
+        'recvJlzMDGUN7Yc2q',
+        'recRs550J3ouFEuVa',
+        'recYdHbwRWCYdOoR7',
+        'recy69IMvSdS9pNVN',
+        'rec1uglKSJd20H5af',
+        'reca5zGALppQceCOJ'
+      ]
+
+      for (const sectionId of yearlyFormSections) {
+        const textInput = document.querySelector(`input[name="text${sectionId}"]`) as HTMLInputElement
+        const files = yearlyFiles[sectionId] || []
+        
+        const encodedFiles = await Promise.all(
+          files.map(async (file) => ({
+            name: file.name,
+            data: await toBase64(file)
+          }))
+        )
+
+        sets.push({
+          id: sectionId,
+          text: textInput?.value || '',
+          files: encodedFiles
+        })
       }
 
-      function render() {
-        if (!listContainer) return;
-        listContainer.innerHTML = '';
-        files.forEach((f, i) => {
-          const span = document.createElement('span');
-          span.className = 'file-item';
-          span.textContent = f.name;
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.dataset.index = i.toString();
-          btn.textContent = '×';
-          span.appendChild(btn);
-          listContainer.appendChild(span);
-        });
-      }
-    });
+      const response = await fetch('https://hook.eu2.make.com/1area7zkgtos7f1m3n5twrd3qq50tqe5', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sets })
+      })
 
-    // Form submit handler
-    const form = document.getElementById('uploadForm') as HTMLFormElement;
-    const spinner = document.getElementById('spinner') as HTMLElement;
-    const submitBtn = form?.querySelector('button[type="submit"]') as HTMLButtonElement;
+      if (!response.ok) throw new Error(response.statusText)
+      
+      window.location.reload()
+    } catch (error) {
+      alert('❌ שגיאה בשליחה: ' + (error as Error).message)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
-    if (form && spinner && submitBtn) {
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        spinner.style.display = 'flex';
-        submitBtn.disabled = true;
+  const FileUploadComponent = ({ sectionId, isYearly = false }: { sectionId: string, isYearly?: boolean }) => {
+    const inputRef = useRef<HTMLInputElement>(null)
+    const files = isYearly ? yearlyFiles[sectionId] || [] : supplierFiles[sectionId] || []
 
-        const rows = document.querySelectorAll('tr.set');
-        const sets: SetData[] = [];
-
-        rows.forEach((row) => {
-          const get = (name: string) => {
-            const ctl = row.querySelector(`[name="${name}"]`) as HTMLInputElement;
-            if (ctl) return ctl.value;
-            const dv = row.querySelector(`.cell-value[data-field="${name}"]`) as HTMLElement;
-            return dv ? dv.textContent?.trim() : '';
-          };
-          sets.push({
-            id: get('id') || '',
-            supplierName: get('supplierName'),
-            asm: get('asm'),
-            asm2: get('asm2'),
-            date: get('date'),
-            details: get('details'),
-            debit: get('debit'),
-            credit: get('credit'),
-            balance: get('balance'),
-            verbalAnswer: get('verbalAnswer'),
-            files: [],
-          });
-        });
-
-        // Base64-encode files
-        for (let i = 0; i < rows.length; i++) {
-          const fileWrapper = rows[i].querySelector('.file-upload') as FileUploadElement;
-          const files = fileWrapper?._files || [];
-          sets[i].files = await Promise.all(
-            files.map(async (f: File) => ({
-              name: f.name,
-              data: await toBase64(f),
-            }))
-          );
-        }
-
-        try {
-          const res = await fetch(
-            'https://hook.eu2.make.com/p1blghe3lplkmnn6215xpmkbiyry3d5w',
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ sets }),
+    return (
+      <div className="file-upload">
+        <input
+          ref={inputRef}
+          type="file"
+          multiple
+          style={{ display: 'none' }}
+          onChange={(e) => {
+            if (e.target.files) {
+              handleFileSelection(sectionId, e.target.files, isYearly)
             }
-          );
-          if (!res.ok) throw new Error(res.statusText);
-          window.location.reload();
-        } catch (err) {
-          spinner.style.display = 'none';
-          submitBtn.disabled = false;
-          alert('❌ שגיאה: ' + (err as Error).message);
-        }
-      });
-    }
-
-    // Supplier sidebar logic
-    const rows = Array.from(document.querySelectorAll('tr.set'));
-    const supplierList = document.getElementById('supplierList') as HTMLElement;
-
-    if (supplierList && rows.length > 0) {
-      const suppliers = Array.from(
-        new Set(rows.map((row) => row.getAttribute('data-supplier')))
-      );
-      suppliers.unshift('הכל');
-
-      suppliers.forEach((supplier) => {
-        const li = document.createElement('li');
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.textContent = supplier || '';
-        btn.dataset.supplier = supplier || '';
-        if (supplier === 'הכל') btn.classList.add('active');
-        li.appendChild(btn);
-        supplierList.appendChild(li);
-      });
-
-      const defaultIndex = suppliers.length > 1 ? 1 : 0;
-      const buttons = supplierList.querySelectorAll('button');
-      buttons.forEach((b) => b.classList.remove('active'));
-      if (buttons[defaultIndex]) {
-        buttons[defaultIndex].classList.add('active');
-        filterRows(suppliers[defaultIndex] || '');
-      }
-
-      function filterRows(supplier: string) {
-        rows.forEach((row) => {
-          const rowSupplier = row.getAttribute('data-supplier');
-          if (supplier === 'הכל' || rowSupplier === supplier) {
-            (row as HTMLElement).style.display = '';
-          } else {
-            (row as HTMLElement).style.display = 'none';
-          }
-        });
-      }
-
-      supplierList.addEventListener('click', (e) => {
-        const target = e.target as HTMLElement;
-        if (target.tagName !== 'BUTTON') return;
-        supplierList.querySelectorAll('button').forEach((btn) => btn.classList.remove('active'));
-        target.classList.add('active');
-        filterRows(target.dataset.supplier || '');
-      });
-    }
-
-    // Yearly form logic
-    const yearlyBtn = document.getElementById('yearly') as HTMLButtonElement;
-    if (yearlyBtn) {
-      yearlyBtn.addEventListener('click', () => {
-        const mainForm = document.getElementById('uploadForm') as HTMLElement;
-        const yearlyForm = document.getElementById('uploadFormYearly') as HTMLElement;
-        const form1 = document.getElementById('uploadForm1') as HTMLElement;
-        
-        if (mainForm) mainForm.style.display = 'none';
-        if (yearlyForm) yearlyForm.style.display = 'block';
-        if (form1) form1.style.display = 'block';
-      });
-    }
-
-    // Handle supplier list clicks for showing main form
-    if (supplierList) {
-      supplierList.addEventListener('click', (e) => {
-        const target = e.target as HTMLElement;
-        if (target.tagName === 'BUTTON') {
-          const mainForm = document.getElementById('uploadForm') as HTMLElement;
-          const yearlyForm = document.getElementById('uploadFormYearly') as HTMLElement;
-          const form1 = document.getElementById('uploadForm1') as HTMLElement;
-          
-          if (mainForm) mainForm.style.display = 'block';
-          if (yearlyForm) yearlyForm.style.display = 'none';
-          if (form1) form1.style.display = 'none';
-        }
-      });
-    }
-
-    // Yearly form file uploads
-    document.querySelectorAll('#uploadFormYearly .file-upload').forEach((yearlyWrapper) => {
-      const yearlyPickerBtn = yearlyWrapper.querySelector('.custom-file-button') as HTMLButtonElement;
-      const yearlyListContainer = yearlyWrapper.querySelector('.selected-files') as HTMLElement;
-      const yearlyFiles: File[] = [];
-      (yearlyWrapper as FileUploadElement)._files = yearlyFiles;
-
-      if (yearlyPickerBtn) {
-        yearlyPickerBtn.addEventListener('click', () => {
-          const tmp = document.createElement('input');
-          tmp.type = 'file';
-          tmp.multiple = true;
-          tmp.style.display = 'none';
-          yearlyWrapper.appendChild(tmp);
-
-          tmp.addEventListener('change', () => {
-            Array.from(tmp.files || []).forEach((f) => {
-              if (!yearlyFiles.some((x) => x.name === f.name && x.size === f.size)) {
-                yearlyFiles.push(f);
-              }
-            });
-            renderYearlyFiles();
-            yearlyWrapper.removeChild(tmp);
-          });
-
-          tmp.click();
-        });
-      }
-
-      if (yearlyListContainer) {
-        yearlyListContainer.addEventListener('click', (e) => {
-          const target = e.target as HTMLElement;
-          if (!target.matches('button[data-index]')) return;
-          const idx = Number(target.dataset.index);
-          yearlyFiles.splice(idx, 1);
-          renderYearlyFiles();
-        });
-      }
-
-      function renderYearlyFiles() {
-        if (!yearlyListContainer) return;
-        yearlyListContainer.innerHTML = '';
-        if (yearlyFiles.length === 0) {
-          yearlyListContainer.textContent = 'No files chosen';
-          return;
-        }
-        yearlyFiles.forEach((f, i) => {
-          const span = document.createElement('span');
-          span.className = 'file-item';
-          span.textContent = f.name;
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.dataset.index = i.toString();
-          btn.textContent = '×';
-          span.appendChild(btn);
-          yearlyListContainer.appendChild(span);
-        });
-      }
-    });
-
-    // Yearly form submission
-    const form1 = document.getElementById('uploadForm1') as HTMLFormElement;
-    const yearlySubmitBtn = form1?.querySelector('button[type="submit"]') as HTMLButtonElement;
-    const yearlySpinner = document.getElementById('spinner') as HTMLElement;
-
-    if (form1 && yearlySubmitBtn && yearlySpinner) {
-      form1.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        yearlySpinner.style.display = 'flex';
-        yearlySubmitBtn.disabled = true;
-
-        const sets: SetData[] = [];
-        const yearlysets = document.querySelectorAll('#uploadFormYearly .yearlyset');
-        
-        for (const setDiv of yearlysets) {
-          const idInput = setDiv.querySelector('input[type="hidden"]') as HTMLInputElement;
-          const textInput = setDiv.querySelector('input[type="text"]') as HTMLInputElement;
-          const wrapper = setDiv.querySelector('.file-upload') as FileUploadElement;
-          const files = wrapper?._files || [];
-
-          const encoded = await Promise.all(
-            files.map(async (f: File) => ({
-              name: f.name,
-              data: await toBase64(f)
-            }))
-          );
-
-          sets.push({
-            id: idInput?.value || '',
-            text: textInput?.value || '',
-            files: encoded
-          });
-        }
-
-        try {
-          const res = await fetch('https://hook.eu2.make.com/1area7zkgtos7f1m3n5twrd3qq50tqe5', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sets })
-          });
-          if (!res.ok) throw new Error(res.statusText);
-          window.location.reload();
-        } catch (err) {
-          yearlySpinner.style.display = 'none';
-          yearlySubmitBtn.disabled = false;
-          alert('❌ שגיאה בשליחה: ' + (err as Error).message);
-        }
-      });
-    }
-  }, []);
+          }}
+        />
+        <button
+          type="button"
+          className="custom-file-button"
+          onClick={() => inputRef.current?.click()}
+        >
+          בחרו קבצים
+        </button>
+        <span className="file-name">
+          {files.length === 0 ? 'לא נבחרו קבצים' : `${files.length} קבצים נבחרו`}
+        </span>
+        <div className="selected-files">
+          {files.map((file, index) => (
+            <span key={index} className="file-item">
+              {file.name}
+              <button
+                type="button"
+                onClick={() => removeFile(sectionId, index, isYearly)}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div style={{
-      fontFamily: 'sans-serif',
-      backgroundColor: '#f0f4f8',
-      padding: '2rem',
-      direction: 'rtl',
-      textAlign: 'right',
-      minHeight: '100vh'
-    }}>
+    <>
       <style jsx>{`
         .logo-container {
           text-align: center;
@@ -406,6 +285,13 @@ export default function InquiriesPage() {
         table th:nth-child(1),
         table td:nth-child(1) {
           display: none;
+        }
+        body {
+          font-family: sans-serif;
+          background-color: #f0f4f8;
+          padding: 2rem;
+          direction: rtl;
+          text-align: right;
         }
         .container {
           max-width: 100%;
@@ -498,7 +384,7 @@ export default function InquiriesPage() {
           background: #0069d9;
         }
         .spinner-overlay {
-          display: none;
+          display: ${isSubmitting ? 'flex' : 'none'};
           position: fixed;
           top: 0;
           left: 0;
@@ -646,17 +532,35 @@ export default function InquiriesPage() {
           width: fit-content;
         }
       `}</style>
-      
-      <div className="main-flex">
-        <nav className="sidebar" id="supplierSidebar">
+
+      <div className="main-flex" style={{ direction: 'rtl' }}>
+        <nav className="sidebar">
           <h3>ספקים</h3>
-          <ul id="supplierList">
-            {/* Populated by JS */}
+          <ul>
+            {suppliers.map((supplier) => (
+              <li key={supplier}>
+                <button
+                  type="button"
+                  className={selectedSupplier === supplier ? 'active' : ''}
+                  onClick={() => {
+                    setSelectedSupplier(supplier)
+                    setShowYearlyForm(false)
+                  }}
+                >
+                  {supplier}
+                </button>
+              </li>
+            ))}
           </ul>
           <br />
-          <button id="yearly">בירורים כלליים&gt;&gt;</button>
+          <button 
+            type="button"
+            onClick={() => setShowYearlyForm(true)}
+          >
+            בירורים כלליים&gt;&gt;
+          </button>
         </nav>
-        
+
         <div className="container" style={{ minWidth: '40vw', minHeight: '40vh' }}>
           <div className="logo-container">
             <img src="https://i.imgur.com/J6mXT1Z.jpeg" alt="לוגו" />
@@ -664,357 +568,348 @@ export default function InquiriesPage() {
           <h2>עדכון בירורים עבור: זקי דיאב חברת עורכי דין</h2>
           <div style={{ color: 'red' }}>הערה: ניתן להגיש את הטופס גם אם חלק מהבירורים טרם הושלמו</div>
 
-          <form id="uploadForm" style={{ display: 'none' }}>
-            <table>
-              <thead>
-                <tr>
-                  <th>id</th>
-                  <th>שם ספק</th>
-                  <th>אסמ.</th>
-                  <th>אס. 2</th>
-                  <th>תאריך</th>
-                  <th>פרטים</th>
-                  <th>חובה</th>
-                  <th>זכות</th>
-                  <th>שאלות</th>
-                  <th>תשובה מילולית</th>
-                  <th>מסמכים</th>
-                </tr>
-              </thead>
-              <tbody id="supplierTableBody">
-              </tbody>
-            </table>
-            <button type="submit">שלח</button>
-          </form>
-          
-          <form id="uploadFormYearly" style={{ display: 'none' }}>
-            <div className="yearlyset">
-              <label htmlFor="yearlySubject" style={{ fontSize: '1.2em' }}>
-                1) timewatch : שם משתמש וסיסמה
-                אני לא מצליחה להכנס עם הפרטים שרשמת, אולי יש טעות? <span className="required">*</span>
-              </label>
-              <div className="form-group">
-                <input 
-                  type="text" 
-                  id="textreca5c7KurnDEngHp" 
-                  name="textreca5c7KurnDEngHp" 
-                  defaultValue="קוד חברה- 11235, שם משתמש: אלה,  סיסמא: ella2525" 
-                  placeholder="" 
-                />      
-              </div>
-              <div className="form-group">
-                <input type="hidden" id="reca5c7KurnDEngHp" defaultValue="reca5c7KurnDEngHp" />
+          {!showYearlyForm && (
+            <form onSubmit={handleMainFormSubmit}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>id</th>
+                    <th>שם ספק</th>
+                    <th>אסמ.</th>
+                    <th>אס. 2</th>
+                    <th>תאריך</th>
+                    <th>פרטים</th>
+                    <th>חובה</th>
+                    <th>זכות</th>
+                    <th>שאלות</th>
+                    <th>תשובה מילולית</th>
+                    <th>מסמכים</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="set" data-supplier="ספק 1">
+                    <td>1</td>
+                    <td>ספק 1</td>
+                    <td>123</td>
+                    <td>456</td>
+                    <td>2024-01-01</td>
+                    <td>פרטים נוספים</td>
+                    <td>1000</td>
+                    <td>0</td>
+                    <td>האם יש לכם חשבוניות נוספות?</td>
+                    <td>
+                      <textarea name="verbalAnswer" placeholder="תשובה מילולית"></textarea>
+                    </td>
+                    <td>
+                      <FileUploadComponent sectionId="supplier1_row1" />
+                    </td>
+                  </tr>
+                  <tr className="set" data-supplier="ספק 1">
+                    <td>2</td>
+                    <td>ספק 1</td>
+                    <td>124</td>
+                    <td>457</td>
+                    <td>2024-01-15</td>
+                    <td>תשלום נוסף</td>
+                    <td>2000</td>
+                    <td>0</td>
+                    <td>מתי בוצע התשלום?</td>
+                    <td>
+                      <textarea name="verbalAnswer" placeholder="תשובה מילולית"></textarea>
+                    </td>
+                    <td>
+                      <FileUploadComponent sectionId="supplier1_row2" />
+                    </td>
+                  </tr>
+                  <tr className="set" data-supplier="ספק 2">
+                    <td>3</td>
+                    <td>ספק 2</td>
+                    <td>125</td>
+                    <td>458</td>
+                    <td>2024-02-01</td>
+                    <td>שירותים מקצועיים</td>
+                    <td>3000</td>
+                    <td>0</td>
+                    <td>איזה שירותים נתנו?</td>
+                    <td>
+                      <textarea name="verbalAnswer" placeholder="תשובה מילולית"></textarea>
+                    </td>
+                    <td>
+                      <FileUploadComponent sectionId="supplier2_row1" />
+                    </td>
+                  </tr>
+                  <tr className="set" data-supplier="ספק 2">
+                    <td>4</td>
+                    <td>ספק 2</td>
+                    <td>126</td>
+                    <td>459</td>
+                    <td>2024-02-15</td>
+                    <td>ציוד משרדי</td>
+                    <td>1500</td>
+                    <td>0</td>
+                    <td>איזה ציוד נרכש?</td>
+                    <td>
+                      <textarea name="verbalAnswer" placeholder="תשובה מילולית"></textarea>
+                    </td>
+                    <td>
+                      <FileUploadComponent sectionId="supplier2_row2" />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <button type="submit" disabled={isSubmitting}>שלח</button>
+            </form>
+          )}
+
+          {showYearlyForm && (
+            <form id="uploadFormYearly" onSubmit={handleYearlyFormSubmit}>
+              <div className="yearlyset">
+                <label htmlFor="yearlySubject" style={{ fontSize: '1.2em' }}>
+                  1) timewatch : שם משתמש וסיסמה
+                  אני לא מצליחה להכנס עם הפרטים שרשמת, אולי יש טעות? <span className="required">*</span>
+                </label>
                 <div className="form-group">
-                  <label htmlFor="filereca5c7KurnDEngHp">העלאת מסמכים:</label>
-                  <div className="file-upload">
-                    <input type="file" id="filereca5c7KurnDEngHp" multiple style={{ display: 'none' }} />
-                    <button type="button" className="custom-file-button">בחרו קבצים</button>
-                    <span className="file-name" id="fileName">לא נבחרו קבצים</span>
-                    <div className="selected-files"></div>
-                  </div>
+                  <input 
+                    type="text" 
+                    name="textreca5c7KurnDEngHp" 
+                    defaultValue="קוד חברה- 11235, שם משתמש: אלה,  סיסמא: ella2525" 
+                    placeholder="" 
+                  />      
                 </div>
                 <div className="form-group">
-                  <label htmlFor="commentsreca5c7KurnDEngHp"><u>הערות:</u></label>
+                  <label>העלאת מסמכים:</label>
+                  <FileUploadComponent sectionId="reca5c7KurnDEngHp" isYearly={true} />
+                </div>
+                <div className="form-group">
+                  <label><u>הערות:</u></label>
                   <p style={{ color: 'blue' }}></p>
                 </div>
               </div>
-            </div>
-            
-            <br />
-            ________________________________________
-            <br /><br /><br />
-            
-            <div className="yearlyset">
-              <label htmlFor="yearlySubject" style={{ fontSize: '1.2em' }}>
-                2) גישה לאתר כרטיס אשראי: א. איזה כרטיס אשראי (הוצאות)
-                ב. פרטי גישה לאתר(שם משתמש וסיסמא קבועה) <span className="required">*</span>
-              </label>
-              <div className="form-group">
-                <input 
-                  type="text" 
-                  id="textrecsnRcqf3wELCS1a" 
-                  name="textrecsnRcqf3wELCS1a" 
-                  defaultValue="זקי דיאב ניהול - 8641
+
+              <br />
+              ________________________________________
+              <br /><br /><br />
+
+              <div className="yearlyset">
+                <label htmlFor="yearlySubject" style={{ fontSize: '1.2em' }}>
+                  2) גישה לאתר כרטיס אשראי: א. איזה כרטיס אשראי (הוצאות)
+                  ב. פרטי גישה לאתר(שם משתמש וסיסמא קבועה) <span className="required">*</span>
+                </label>
+                <div className="form-group">
+                  <input 
+                    type="text" 
+                    name="textrecsnRcqf3wELCS1a" 
+                    defaultValue="זקי דיאב ניהול - 8641
 פרטי - 1144
 פרטי - 6420
-6196 - חברה זקי דיאב עורכי דין 
-" 
-                  placeholder="" 
-                />      
-              </div>
-              <div className="form-group">
-                <input type="hidden" id="recsnRcqf3wELCS1a" defaultValue="recsnRcqf3wELCS1a" />
-                <div className="form-group">
-                  <label htmlFor="filerecsnRcqf3wELCS1a">העלאת מסמכים:</label>
-                  <div className="file-upload">
-                    <input type="file" id="filerecsnRcqf3wELCS1a" multiple style={{ display: 'none' }} />
-                    <button type="button" className="custom-file-button">בחרו קבצים</button>
-                    <span className="file-name" id="fileName">לא נבחרו קבצים</span>
-                    <div className="selected-files"></div>
-                  </div>
+6196 - חברה זקי דיאב עורכי דין" 
+                    placeholder="" 
+                  />      
                 </div>
                 <div className="form-group">
-                  <label htmlFor="commentsrecsnRcqf3wELCS1a"><u>הערות:</u></label>
+                  <label>העלאת מסמכים:</label>
+                  <FileUploadComponent sectionId="recsnRcqf3wELCS1a" isYearly={true} />
+                </div>
+                <div className="form-group">
+                  <label><u>הערות:</u></label>
                   <p style={{ color: 'blue' }}></p>
                 </div>
               </div>
-            </div>
-            
-            <br />
-            ________________________________________
-            <br /><br /><br />
-            
-            <div className="yearlyset">
-              <label htmlFor="yearlySubject" style={{ fontSize: '1.2em' }}>
-                3) גישה לבנקים: א. איזה בנק 
-                ב. האם הוקמת לנו הרשאת צפייה
-                ג. מבקשים לקבל שם משתמש וסיסמה
-                באיזה בנק מתנהל החשבון העסקי? עליך לפנות אליהם לבקש הרשאת צפייה לרו&quot;ח אייל רייטר ת&quot;ז 43022664 <span className="required">*</span>
-              </label>
-              <div className="form-group">
-                <input 
-                  type="text" 
-                  id="textrecvJlzMDGUN7Yc2q" 
-                  name="textrecvJlzMDGUN7Yc2q" 
-                  defaultValue="בנק לאומי. תכתבו איך עושים הרשאה לצפיה. צריך לדעתי ת.ז. של רואה חשבון" 
-                  placeholder="" 
-                />      
-              </div>
-              <div className="form-group">
-                <input type="hidden" id="recvJlzMDGUN7Yc2q" defaultValue="recvJlzMDGUN7Yc2q" />
-                <div className="form-group">
-                  <label htmlFor="filerecvJlzMDGUN7Yc2q">העלאת מסמכים:</label>
-                  <div className="file-upload">
-                    <input type="file" id="filerecvJlzMDGUN7Yc2q" multiple style={{ display: 'none' }} />
-                    <button type="button" className="custom-file-button">בחרו קבצים</button>
-                    <span className="file-name" id="fileName">לא נבחרו קבצים</span>
-                    <div className="selected-files"></div>
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label htmlFor="commentsrecvJlzMDGUN7Yc2q"><u>הערות:</u></label>
-                  <p style={{ color: 'blue' }}></p>
-                </div>
-              </div>
-            </div>
-            
-            <br />
-            ________________________________________
-            <br /><br /><br />
-            
-            <div className="yearlyset">
-              <label htmlFor="yearlySubject" style={{ fontSize: '1.2em' }}>
-                4) גישה לעודכנית: שם משתמש וסיסמה
-                אני צריכה גישה קבועה למחשב אצלכם או שתעברו לעודכנית על הענן <span className="required">*</span>
-              </label>
-              <div className="form-group">
-                <input 
-                  type="text" 
-                  id="textrecRs550J3ouFEuVa" 
-                  name="textrecRs550J3ouFEuVa" 
-                  defaultValue="עודכנית שלי - שם משתמש &quot;אלה&quot; סיסמא אין" 
-                  placeholder="" 
-                />      
-              </div>
-              <div className="form-group">
-                <input type="hidden" id="recRs550J3ouFEuVa" defaultValue="recRs550J3ouFEuVa" />
-                <div className="form-group">
-                  <label htmlFor="filerecRs550J3ouFEuVa">העלאת מסמכים:</label>
-                  <div className="file-upload">
-                    <input type="file" id="filerecRs550J3ouFEuVa" multiple style={{ display: 'none' }} />
-                    <button type="button" className="custom-file-button">בחרו קבצים</button>
-                    <span className="file-name" id="fileName">לא נבחרו קבצים</span>
-                    <div className="selected-files"></div>
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label htmlFor="commentsrecRs550J3ouFEuVa"><u>הערות:</u></label>
-                  <p style={{ color: 'blue' }}></p>
-                </div>
-              </div>
-            </div>
-            
-            <br />
-            ________________________________________
-            <br /><br /><br />
-            
-            <div className="yearlyset">
-              <label htmlFor="yearlySubject" style={{ fontSize: '1.2em' }}>
-                5) גמ&quot;ח לכל העובדים בחברה הישנה: יש לבדוק מול הרו&quot;ח מה הדרך הנכונה לגבי תשלום גמח לכל העובדים מהחברה הישנה <span className="required">*</span>
-              </label>
-              <div className="form-group">
-                <input 
-                  type="text" 
-                  id="textrecYdHbwRWCYdOoR7" 
-                  name="textrecYdHbwRWCYdOoR7" 
-                  defaultValue="" 
-                  placeholder="" 
-                />      
-              </div>
-              <div className="form-group">
-                <input type="hidden" id="recYdHbwRWCYdOoR7" defaultValue="recYdHbwRWCYdOoR7" />
-                <div className="form-group">
-                  <label htmlFor="filerecYdHbwRWCYdOoR7">העלאת מסמכים:</label>
-                  <div className="file-upload">
-                    <input type="file" id="filerecYdHbwRWCYdOoR7" multiple style={{ display: 'none' }} />
-                    <button type="button" className="custom-file-button">בחרו קבצים</button>
-                    <span className="file-name" id="fileName">לא נבחרו קבצים</span>
-                    <div className="selected-files"></div>
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label htmlFor="commentsrecYdHbwRWCYdOoR7"><u>הערות:</u></label>
-                  <p style={{ color: 'blue' }}></p>
-                </div>
-              </div>
-            </div>
-            
-            <br />
-            ________________________________________
-            <br /><br /><br />
-            
-            <div className="yearlyset">
-              <label htmlFor="yearlySubject" style={{ fontSize: '1.2em' }}>
-                6) הוצאות רכב
-                [ עצמאי]
-                : להעביר רשיונות רכב לפייפרלס של כל עצמאי ונמשיך משם בהקמה. הוצאות רכב יועלו במורשה בלבד.
-                *זקי – ליסינג, יעבירו הסכם ליסינג. וחשבוניות כל חודש במורשה. 
-              </label>
-              <div className="form-group">
-                <input 
-                  type="text" 
-                  id="textrecy69IMvSdS9pNVN" 
-                  name="textrecy69IMvSdS9pNVN" 
-                  defaultValue="ביקשתי מזקי וג&apos;אד. אעביר בהמשך. " 
-                  placeholder="" 
-                />      
-              </div>
-              <div className="form-group">
-                <input type="hidden" id="recy69IMvSdS9pNVN" defaultValue="recy69IMvSdS9pNVN" />
-                <div className="form-group">
-                  <label htmlFor="filerecy69IMvSdS9pNVN">העלאת מסמכים:<span className="required">*</span></label>
-                  <div className="file-upload">
-                    <input type="file" id="filerecy69IMvSdS9pNVN" multiple style={{ display: 'none' }} />
-                    <button type="button" className="custom-file-button">בחרו קבצים</button>
-                    <span className="file-name" id="fileName">לא נבחרו קבצים</span>
-                    <div className="selected-files"></div>
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label htmlFor="commentsrecy69IMvSdS9pNVN"><u>הערות:</u></label>
-                  <p style={{ color: 'blue' }}></p>
-                </div>
-              </div>
-            </div>
-            
-            <br />
-            ________________________________________
-            <br /><br /><br />
-            
-            <div className="yearlyset">
-              <label htmlFor="yearlySubject" style={{ fontSize: '1.2em' }}>
-                7) החזרי הוצאות עובדים: כל הוצאה שמשולמת ע&quot;י העובדים יש לרשום ע&quot;ג המסמך שמועלה לפיפרלס ע&quot;י מי שולם והאם שולם לו ה&quot;ה בתלוש <span className="required">*</span>
-              </label>
-              <div className="form-group">
-                <input 
-                  type="text" 
-                  id="textrec1uglKSJd20H5af" 
-                  name="textrec1uglKSJd20H5af" 
-                  defaultValue="" 
-                  placeholder="" 
-                />      
-              </div>
-              <div className="form-group">
-                <input type="hidden" id="rec1uglKSJd20H5af" defaultValue="rec1uglKSJd20H5af" />
-                <div className="form-group">
-                  <label htmlFor="filerec1uglKSJd20H5af">העלאת מסמכים:</label>
-                  <div className="file-upload">
-                    <input type="file" id="filerec1uglKSJd20H5af" multiple style={{ display: 'none' }} />
-                    <button type="button" className="custom-file-button">בחרו קבצים</button>
-                    <span className="file-name" id="fileName">לא נבחרו קבצים</span>
-                    <div className="selected-files"></div>
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label htmlFor="commentsrec1uglKSJd20H5af"><u>הערות:</u></label>
-                  <p style={{ color: 'blue' }}></p>
-                </div>
-              </div>
-            </div>
-            
-            <br />
-            ________________________________________
-            <br /><br /><br />
-            
-            <div className="yearlyset">
-              <label htmlFor="yearlySubject" style={{ fontSize: '1.2em' }}>
-                8) זקי עצמאי 
-                : 
-                נא להקים הרשאה לחיוב בבנק לביטוח לאומי (ואם הוא לא עשה אז גם למס הכנסה ולמעמ). 
 
-                הרשאות והוראת קבע:
-                קוד מוסד:- זה מעין &quot;תעודת הזהות&quot; של המוסד בבנקים מבחינת שיוך הכספים המועברים אליו. כל גוף שגובה כספים בהרשאות או בהוראת קבע, מקבל מהבנק בו מתנהל חשבונו קוד שעל פיו הבנק יודע לאיזה מוסד לשייך כל תשלום ותשלום, כי המשלם מצידו מקים בבנק שלו הרשאה או ה.ק. עם הקוד שקיבל מהמוסד/הגוף אליו הוא מעוניין לשלם באופן רציף מידי חודש בחודשו.
-                להלן קודי המוסד הרלוונטיים למייצגים:
+              <br />
+              ________________________________________
+              <br /><br /><br />
 
-                2760 - מקדמות מ.ה
-                2761 - מעמ
-                28900 - ב.ל. עצמאי
-
-                מהי אסמכתא? 
-                הבנקים נותנים לזה שמות  שונים, כגון: אסמכתא, מזהה, ובבנהפ מופיע כך: מספר לקוח/מנוי/משלם.
-
-                ע&quot;מ שהייצוג ייקלט באופן אוטומטי כבר בלילה של יום ההקמה, יש לרשום את מספר התיק בשדה אסמכתא: בעצמאי זו ת.ז.
-              </label>
-              <div className="form-group">
-                <input 
-                  type="text" 
-                  id="textreca5zGALppQceCOJ" 
-                  name="textreca5zGALppQceCOJ" 
-                  defaultValue="הכל הוקם. לא נותן לצרף אסמכתאות. לוחץ על הכפתור והוא לא מגיב. " 
-                  placeholder="" 
-                />      
-              </div>
-              <div className="form-group">
-                <input type="hidden" id="reca5zGALppQceCOJ" defaultValue="reca5zGALppQceCOJ" />
+              <div className="yearlyset">
+                <label htmlFor="yearlySubject" style={{ fontSize: '1.2em' }}>
+                  3) גישה לבנקים: א. איזה בנק 
+                  ב. האם הוקמת לנו הרשאת צפייה
+                  ג. מבקשים לקבל שם משתמש וסיסמה
+                  באיזה בנק מתנהל החשבון העסקי? עליך לפנות אליהם לבקש הרשאת צפייה לרו&quot;ח אייל רייטר ת&quot;ז 43022664 <span className="required">*</span>
+                </label>
                 <div className="form-group">
-                  <label htmlFor="filereca5zGALppQceCOJ">העלאת מסמכים:<span className="required">*</span></label>
-                  <div className="file-upload">
-                    <input type="file" id="filereca5zGALppQceCOJ" multiple style={{ display: 'none' }} />
-                    <button type="button" className="custom-file-button">בחרו קבצים</button>
-                    <span className="file-name" id="fileName">לא נבחרו קבצים</span>
-                    <div className="selected-files"></div>
-                  </div>
+                  <input 
+                    type="text" 
+                    name="textrecvJlzMDGUN7Yc2q" 
+                    defaultValue="בנק לאומי. תכתבו איך עושים הרשאה לצפיה. צריך לדעתי ת.ז. של רואה חשבון" 
+                    placeholder="" 
+                  />      
                 </div>
                 <div className="form-group">
-                  <label htmlFor="commentsreca5zGALppQceCOJ"><u>הערות:</u></label>
+                  <label>העלאת מסמכים:</label>
+                  <FileUploadComponent sectionId="recvJlzMDGUN7Yc2q" isYearly={true} />
+                </div>
+                <div className="form-group">
+                  <label><u>הערות:</u></label>
                   <p style={{ color: 'blue' }}></p>
                 </div>
               </div>
-            </div>
-            
-            <br />
-            ________________________________________
-            <br /><br /><br />
-          </form>
-          
-          <form 
-            id="uploadForm1" 
-            style={{ display: 'none' }}
-            action="https://hook.eu2.make.com/1area7zkgtos7f1m3n5twrd3qq50tqe5"
-            method="POST"
-            encType="multipart/form-data"
-          >
-            <input type="hidden" name="sets" id="setsField" />
-            <button type="submit">שלח בירורים שנתיים</button>
-          </form>
+
+              <br />
+              ________________________________________
+              <br /><br /><br />
+
+              <div className="yearlyset">
+                <label htmlFor="yearlySubject" style={{ fontSize: '1.2em' }}>
+                  4) גישה לעודכנית: שם משתמש וסיסמה
+                  אני צריכה גישה קבועה למחשב אצלכם או שתעברו לעודכנית על הענן <span className="required">*</span>
+                </label>
+                <div className="form-group">
+                  <input 
+                    type="text" 
+                    name="textrecRs550J3ouFEuVa" 
+                    defaultValue="עודכנית שלי - שם משתמש אלה סיסמא אין" 
+                    placeholder="" 
+                  />      
+                </div>
+                <div className="form-group">
+                  <label>העלאת מסמכים:</label>
+                  <FileUploadComponent sectionId="recRs550J3ouFEuVa" isYearly={true} />
+                </div>
+                <div className="form-group">
+                  <label><u>הערות:</u></label>
+                  <p style={{ color: 'blue' }}></p>
+                </div>
+              </div>
+
+              <br />
+              ________________________________________
+              <br /><br /><br />
+
+              <div className="yearlyset">
+                <label htmlFor="yearlySubject" style={{ fontSize: '1.2em' }}>
+                  5) גמ&quot;ח לכל העובדים בחברה הישנה: יש לבדוק מול הרו&quot;ח מה הדרך הנכונה לגבי תשלום גמח לכל העובדים מהחברה הישנה <span className="required">*</span>
+                </label>
+                <div className="form-group">
+                  <input 
+                    type="text" 
+                    name="textrecYdHbwRWCYdOoR7" 
+                    defaultValue="" 
+                    placeholder="" 
+                  />      
+                </div>
+                <div className="form-group">
+                  <label>העלאת מסמכים:</label>
+                  <FileUploadComponent sectionId="recYdHbwRWCYdOoR7" isYearly={true} />
+                </div>
+                <div className="form-group">
+                  <label><u>הערות:</u></label>
+                  <p style={{ color: 'blue' }}></p>
+                </div>
+              </div>
+
+              <br />
+              ________________________________________
+              <br /><br /><br />
+
+              <div className="yearlyset">
+                <label htmlFor="yearlySubject" style={{ fontSize: '1.2em' }}>
+                  6) הוצאות רכב
+                  [ עצמאי]
+                  : להעביר רשיונות רכב לפייפרלס של כל עצמאי ונמשיך משם בהקמה. הוצאות רכב יועלו במורשה בלבד.
+                  *זקי – ליסינג, יעבירו הסכם ליסינג. וחשבוניות כל חודש במורשה.
+                </label>
+                <div className="form-group">
+                  <input 
+                    type="text" 
+                    name="textrecy69IMvSdS9pNVN" 
+                    defaultValue="ביקשתי מזקי וג'אד. אעביר בהמשך." 
+                    placeholder="" 
+                  />      
+                </div>
+                <div className="form-group">
+                  <label>העלאת מסמכים:<span className="required">*</span></label>
+                  <FileUploadComponent sectionId="recy69IMvSdS9pNVN" isYearly={true} />
+                </div>
+                <div className="form-group">
+                  <label><u>הערות:</u></label>
+                  <p style={{ color: 'blue' }}></p>
+                </div>
+              </div>
+
+              <br />
+              ________________________________________
+              <br /><br /><br />
+
+              <div className="yearlyset">
+                <label htmlFor="yearlySubject" style={{ fontSize: '1.2em' }}>
+                  7) החזרי הוצאות עובדים: כל הוצאה שמשולמת ע&quot;י העובדים יש לרשום ע&quot;ג המסמך שמועלה לפיפרלס ע&quot;י מי שולם והאם שולם לו ה&quot;ה בתלוש <span className="required">*</span>
+                </label>
+                <div className="form-group">
+                  <input 
+                    type="text" 
+                    name="textrec1uglKSJd20H5af" 
+                    defaultValue="" 
+                    placeholder="" 
+                  />      
+                </div>
+                <div className="form-group">
+                  <label>העלאת מסמכים:</label>
+                  <FileUploadComponent sectionId="rec1uglKSJd20H5af" isYearly={true} />
+                </div>
+                <div className="form-group">
+                  <label><u>הערות:</u></label>
+                  <p style={{ color: 'blue' }}></p>
+                </div>
+              </div>
+
+              <br />
+              ________________________________________
+              <br /><br /><br />
+
+              <div className="yearlyset">
+                <label htmlFor="yearlySubject" style={{ fontSize: '1.2em' }}>
+                  8) זקי עצמאי 
+                  : 
+                  נא להקים הרשאה לחיוב בבנק לביטוח לאומי (ואם הוא לא עשה אז גם למס הכנסה ולמעמ). 
+
+                  הרשאות והוראת קבע:
+                  קוד מוסד:- זה מעין &quot;תעודת הזהות&quot; של המוסד בבנקים מבחינת שיוך הכספים המועברים אליו. כל גוף שגובה כספים בהרשאות או בהוראת קבע, מקבל מהבנק בו מתנהל חשבונו קוד שעל פיו הבנק יודע לאיזה מוסד לשייך כל תשלום ותשלום, כי המשלם מצידו מקים בבנק שלו הרשאה או ה.ק. עם הקוד שקיבל מהמוסד/הגוף אליו הוא מעוניין לשלם באופן רציף מידי חודש בחודשו.
+                  להלן קודי המוסד הרלוונטיים למייצגים:
+
+                  2760 - מקדמות מ.ה
+                  2761 - מעמ
+                  28900 - ב.ל. עצמאי
+
+                  מהי אסמכתא? 
+                  הבנקים נותנים לזה שמות  שונים, כגון: אסמכתא, מזהה, ובבנהפ מופיע כך: מספר לקוח/מנוי/משלם.
+
+                  ע&quot;מ שהייצוג ייקלט באופן אוטומטי כבר בלילה של יום ההקמה, יש לרשום את מספר התיק בשדה אסמכתא: בעצמאי זו ת.ז.
+                </label>
+                <div className="form-group">
+                  <input 
+                    type="text" 
+                    name="textreca5zGALppQceCOJ" 
+                    defaultValue="הכל הוקם. לא נותן לצרף אסמכתאות. לוחץ על הכפתור והוא לא מגיב." 
+                    placeholder="" 
+                  />      
+                </div>
+                <div className="form-group">
+                  <label>העלאת מסמכים:<span className="required">*</span></label>
+                  <FileUploadComponent sectionId="reca5zGALppQceCOJ" isYearly={true} />
+                </div>
+                <div className="form-group">
+                  <label><u>הערות:</u></label>
+                  <p style={{ color: 'blue' }}></p>
+                </div>
+              </div>
+
+              <br />
+              ________________________________________
+              <br /><br /><br />
+
+              <button type="submit" disabled={isSubmitting}>שלח בירורים שנתיים</button>
+            </form>
+          )}
         </div>
       </div>
-      
-      <div className="spinner-overlay" id="spinner">
+
+      {/* Spinner overlay */}
+      <div className="spinner-overlay">
         <div className="spinner"></div>
         <br /><br />
         <h2>נא לא לסגור את החלון. הפעולה יכולה לקחת מספר דקות.</h2>
       </div>
-    </div>
-  );
+    </>
+  )
 } 
