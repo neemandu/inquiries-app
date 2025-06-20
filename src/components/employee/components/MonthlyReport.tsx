@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import ColumnSettings from './ColumnSettings';
-import { ColumnSettingsType, Employee, ApiResponse, DynamicColumnSettings } from '../types';
+import { ColumnSettingsType, Employee, ApiResponse, DynamicColumnSettings } from '@/lib/types';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Settings } from "lucide-react";

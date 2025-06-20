@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { AddEmployee, ApiResponse, PDFResponse } from "@/app/employees/types";
+import { AddEmployee, ApiResponse, PDFResponse } from "@/lib/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

@@ -1,139 +1,297 @@
-import { SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
-import { currentUser } from '@clerk/nextjs/server';
-import Link from 'next/link';
+'use client';
 
-export default async function Home() {
-  const user = await currentUser();
+import { SignedIn, SignedOut, useUser } from '@clerk/nextjs';
+import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import AddEmployee from '@/components/employee/components/AddEmployee';
+import EmployeeRecognition from '@/components/employee/components/EmployeeRecognition';
+import PaySlip from '@/components/employee/components/PaySlip';
+import Vacations from '@/components/employee/components/Vacations';
+import EmployersSidebar from '@/components/employee/components/EmployersSidebar';
+import { ColumnSettingsType, ViewType, Employee, ApiResponse, LeavingReason, DynamicColumnSettings } from '@/lib/types';
+import { fetchEmployeeData, updateColumnSetting } from '@/lib/utils';
+import Image from 'next/image';
+import MonthlyReport from '@/components/employee/components/MonthlyReport';
+
+export default function EmployeesPage() {
+  const { user, isLoaded } = useUser();
+  const [activeView, setActiveView] = useState<ViewType>('monthly-report'); 
+  const [columnSettings, setColumnSettings] = useState<ColumnSettingsType>({
+    travel: true,
+    competition: true,
+    ignoreFiles: false,
+    accounting: false,
+    salary: true,
+    other: true
+  });
+  const [dynamicColumnSettings, setDynamicColumnSettings] = useState<DynamicColumnSettings>({});
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [apiResponse, setApiResponse] = useState<ApiResponse | null>(null);
+  const [leavingReasons, setLeavingReasons] = useState<LeavingReason[]>([]);
+
+  // Fetch employee data when user is loaded
+  useEffect(() => {
+    const loadEmployeeData = async () => {
+      if (isLoaded && user?.emailAddresses?.[0]?.emailAddress) {
+        setLoading(true);
+        // const email = user.emailAddresses[0].emailAddress;
+        
+        try {
+          // const data = await fetchEmployeeData(email);
+          const data = await fetchEmployeeData('neemandu@gmail.com');
+          console.log(data);
+
+          if (data) {
+            setApiResponse(data);
+            setEmployees(data.employees);
+            
+            // Initialize dynamic column settings based on API response
+            if (data.columnNames) {
+              const newDynamicSettings: DynamicColumnSettings = {};
+              
+              data.columnNames.forEach(col => {
+                // Use columnNameRecordId as the key and isOn as the value
+                newDynamicSettings[col.columnNameRecordId] = col.isOn ?? false;
+              });
+              
+              setDynamicColumnSettings(newDynamicSettings);
+            }
+
+            if (data.leavingReasons) {
+              setLeavingReasons(data.leavingReasons);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to load employee data:', error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadEmployeeData();
+  }, [isLoaded, user]);
+
+  // Update dynamic column setting
+  const toggleDynamicColumn = async (columnNameRecordId: string) => {
+    if (!apiResponse) {
+      console.warn('No API response available for column update');
+      return;
+    }
+
+    const newValue = !dynamicColumnSettings[columnNameRecordId];
+    
+    // Update local state immediately for better UX
+    setDynamicColumnSettings(prev => ({
+      ...prev,
+      [columnNameRecordId]: newValue
+    }));
+    
+    // Make API call to update column setting in database
+    try {
+      console.log(`Updating column ${columnNameRecordId} to ${newValue}`);
+      
+      // Create updated API response with the new column setting
+      const updatedColumnNames = apiResponse.columnNames.map(col => {
+        if (col.columnNameRecordId === columnNameRecordId) {
+          return { ...col, isOn: newValue };
+        }
+        return col;
+      });
+
+      const updatedApiResponse: ApiResponse = {
+        ...apiResponse,
+        columnNames: updatedColumnNames
+      };
+
+      const success = await updateColumnSetting(apiResponse.recordId, updatedApiResponse);
+      if (!success) {
+        throw new Error('Failed to update column setting');
+      }
+      
+      // Update local API response state with the new data
+      setApiResponse(updatedApiResponse);
+      
+      console.log(`Column update successful: columnNameRecordId=${columnNameRecordId}, newValue=${newValue}`);
+    } catch (error) {
+      console.error('Failed to update column setting:', error);
+      // Revert local state on error
+      setDynamicColumnSettings(prev => ({
+        ...prev,
+        [columnNameRecordId]: !newValue
+      }));
+    }
+  };
+
+  // Legacy toggle function for backward compatibility (can be removed later)
+  const toggleColumn = async (column: keyof ColumnSettingsType) => {
+    if (!apiResponse) {
+      console.warn('No API response available for column update');
+      return;
+    }
+
+    const newValue = !columnSettings[column];
+    
+    // Update local state immediately for better UX
+    setColumnSettings(prev => ({
+      ...prev,
+      [column]: newValue
+    }));
+    
+    // Make API call to update column setting in database
+    try {
+      console.log(`Updating column ${column} to ${newValue}`);
+      
+      // Create updated API response with the new column setting
+      const updatedColumnNames = apiResponse.columnNames.map(col => {
+        // Map local column types to API column names
+        let shouldUpdate = false;
+        
+        // Check if col.column exists and is a string before calling includes
+        if (!col.column || typeof col.column !== 'string') {
+          return col; // Return the column unchanged if column is undefined/null/not a string
+        }
+        
+        if (column === 'travel' && (col.column.includes('traveling') || col.column.includes('travel'))) {
+          shouldUpdate = true;
+        } else if (column === 'competition' && col.column.includes('competition')) {
+          shouldUpdate = true;
+        } else if (column === 'salary' && col.column.includes('salary')) {
+          shouldUpdate = true;
+        } else if (column === 'accounting' && col.column.includes('accounting')) {
+          shouldUpdate = true;
+        } else if (column === 'ignoreFiles' && (col.column.includes('files') || col.column.includes('ignore'))) {
+          shouldUpdate = true;
+        } else if (column === 'other' && !col.column.includes('traveling') && !col.column.includes('travel') && 
+                   !col.column.includes('competition') && !col.column.includes('salary') && 
+                   !col.column.includes('accounting') && !col.column.includes('files') && !col.column.includes('ignore')) {
+          shouldUpdate = true;
+        }
+        
+        return shouldUpdate ? { ...col, isOn: newValue } : col;
+      });
+
+      const updatedApiResponse: ApiResponse = {
+        ...apiResponse,
+        columnNames: updatedColumnNames
+      };
+
+      const success = await updateColumnSetting(apiResponse.recordId, updatedApiResponse);
+      if (!success) {
+        throw new Error('Failed to update column setting');
+      }
+      
+      // Update local API response state with the new data
+      setApiResponse(updatedApiResponse);
+      
+      console.log(`Column update successful: column=${column}, newValue=${newValue}`);
+    } catch (error) {
+      console.error('Failed to update column setting:', error);
+      // Revert local state on error
+      setColumnSettings(prev => ({
+        ...prev,
+        [column]: !newValue
+      }));
+    }
+  };
+
+  // Render different content based on active view
+  const renderMainContent = () => {
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg text-gray-600">טוען נתוני עובדים...</div>
+        </div>
+      );
+    }
+
+    switch (activeView) {
+      case 'monthly-report':
+        return (
+          <MonthlyReport 
+            columnSettings={columnSettings} 
+            onColumnToggle={toggleColumn}
+            dynamicColumnSettings={dynamicColumnSettings}
+            onDynamicColumnToggle={toggleDynamicColumn}
+            employees={employees}
+            apiResponse={apiResponse}
+          />
+        );
+      case 'add-employee':
+        return <AddEmployee recordId={apiResponse?.recordId || ''} />;
+      case 'employee-recognition':
+        return <EmployeeRecognition employees={employees} leavingReasons={leavingReasons} />;
+      case 'pay-slip':
+        return <PaySlip recordId={apiResponse?.recordId} employees={employees} />;
+      case 'vacations':
+        return <Vacations recordId={apiResponse?.recordId} />;
+      default:
+        return (
+          <MonthlyReport 
+            columnSettings={columnSettings} 
+            onColumnToggle={toggleColumn}
+            dynamicColumnSettings={dynamicColumnSettings}
+            onDynamicColumnToggle={toggleDynamicColumn}
+            employees={employees}
+            apiResponse={apiResponse}
+          />
+        );
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="w-full p-4 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Inquiries App</h1>
+          <Link href="/" className="text-2xl font-bold text-gray-900">
+            <Image src="/logo.jpg" alt="logo" width={50} height={50} />
+          </Link>
           <div className="flex items-center gap-4">
             <SignedIn>
-              <UserButton 
-                appearance={{
-                  elements: {
-                    avatarBox: 'w-10 h-10'
-                  }
-                }}
-              />
-            </SignedIn>
-            <SignedOut>
-              <div className="flex gap-2">
-                <Link 
-                  href="/sign-in"
-                  className="px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
-                >
-                  Sign In
-                </Link>
-                <Link 
-                  href="/sign-up"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Sign Up
-                </Link>
+              <div className="text-sm text-gray-600">
+                {user?.emailAddresses?.[0]?.emailAddress}
               </div>
-            </SignedOut>
+              <Link 
+                href="/dashboard"
+                className="px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+              >
+                Dashboard
+              </Link>
+            </SignedIn>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto p-8">
+      <main className="max-w-7xl mx-auto p-6">
         <SignedIn>
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Welcome back, {user?.firstName || 'User'}! 👋
-            </h2>
-            <p className="text-gray-600">
-              You&apos;re successfully signed in to your account.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-lg shadow-md border">
-              <h3 className="text-xl font-semibold mb-3 text-gray-900">Profile</h3>
-              <div className="space-y-2 text-sm text-gray-600">
-                <p><strong>Email:</strong> {user?.emailAddresses[0]?.emailAddress}</p>
-                <p><strong>Name:</strong> {user?.firstName} {user?.lastName}</p>
-                <p><strong>Joined:</strong> {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}</p>
-              </div>
+          <div className="flex gap-6 h-full">
+            {/* Main Content Section */}
+            <div className="flex-1 bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+              {renderMainContent()}
             </div>
 
-            <div className="bg-white p-6 rounded-lg shadow-md border">
-              <h3 className="text-xl font-semibold mb-3 text-gray-900">Quick Actions</h3>
-              <div className="space-y-3">
-                <Link 
-                  href="/employees"
-                  className="flex items-center gap-3 px-4 py-3 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  <span className="font-medium">Employee Management</span>
-                </Link>
-                <Link 
-                  href="/dashboard"
-                  className="flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                  <span className="font-medium">Dashboard</span>
-                </Link>
-                <Link 
-                  href="/inquiries"
-                  className="flex items-center gap-3 px-4 py-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                  </svg>
-                  <span className="font-medium">עדכון בירורים</span>
-                </Link>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-lg shadow-md border">
-              <h3 className="text-xl font-semibold mb-3 text-gray-900">Recent Activity</h3>
-              <div className="text-sm text-gray-600">
-                <p>No recent activity to display.</p>
-              </div>
-            </div>
-
-           
+            {/* Right Sidebar */}
+            <EmployersSidebar activeView={activeView} onViewChange={setActiveView} />
           </div>
         </SignedIn>
 
         <SignedOut>
           <div className="text-center py-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-6">
-              Welcome to Inquiries App
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              אנא התחבר כדי לצפות בדף זה
             </h2>
-            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-              A modern Next.js application with Clerk authentication. 
-              Sign up or sign in to get started and explore all the features.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link 
-                href="/sign-up"
-                className="px-8 py-3 bg-blue-600 text-white rounded-lg text-lg font-medium hover:bg-blue-700 transition-colors"
-              >
-                Get Started
-              </Link>
-              <Link 
-                href="/sign-in"
-                className="px-8 py-3 border border-gray-300 text-gray-700 rounded-lg text-lg font-medium hover:bg-gray-50 transition-colors"
-              >
-                Sign In
-              </Link>
-            </div>
+            <Link 
+              href="/sign-in"
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              התחבר
+            </Link>
           </div>
         </SignedOut>
       </main>
     </div>
   );
-}
+} 
