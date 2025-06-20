@@ -18,8 +18,6 @@ interface ColumnSettingsProps {
 export default function ColumnSettings({ 
   isOpen, 
   onClose, 
-  columnSettings, 
-  onColumnToggle,
   dynamicColumnSettings,
   onDynamicColumnToggle,
   apiResponse
@@ -29,15 +27,7 @@ export default function ColumnSettings({
   // Show all columns
   const allColumns = apiResponse?.columnNames || [];
 
-  // Legacy settings (keeping for backward compatibility)
-  const legacySettingsConfig = [
-    { key: 'travel' as keyof ColumnSettingsType, label: 'נסיעות (ישן)' },
-    { key: 'competition' as keyof ColumnSettingsType, label: 'תחרות (ישן)' },
-    { key: 'ignoreFiles' as keyof ColumnSettingsType, label: 'התעלמות קבצים (ישן)' },
-    { key: 'accounting' as keyof ColumnSettingsType, label: 'רואה חשבון (ישן)' },
-    { key: 'salary' as keyof ColumnSettingsType, label: 'שכר (ישן)' },
-    { key: 'other' as keyof ColumnSettingsType, label: 'אחר (ישן)' },
-  ];
+
 
   const handleSelectAll = () => {
     allColumns.forEach(col => {
@@ -116,30 +106,11 @@ export default function ColumnSettings({
                   <Switch
                     checked={dynamicColumnSettings[col.columnNameRecordId] || false}
                     onCheckedChange={() => onDynamicColumnToggle(col.columnNameRecordId)}
-                    className="data-[state=checked]:bg-purple-600 mr-3"
+                    className="data-[state=checked]:bg-purple-600 mr-3 "
                   />
                 </div>
               ))
             )}
-          </div>
-
-          {/* Legacy Settings (for backward compatibility) */}
-          <div className="space-y-3 border-t pt-4">
-            <h4 className="text-sm font-medium text-gray-900">
-              הגדרות ישנות (תמיכה לאחור)
-            </h4>
-            {legacySettingsConfig.map((setting) => (
-              <div key={setting.key} className="flex items-center justify-between p-2 bg-yellow-50 rounded-lg">
-                <div className="text-sm text-gray-700">
-                  {setting.label}
-                </div>
-                <Switch
-                  checked={columnSettings[setting.key]}
-                  onCheckedChange={() => onColumnToggle(setting.key)}
-                  className="data-[state=checked]:bg-yellow-600"
-                />
-              </div>
-            ))}
           </div>
         </CardContent>
 
