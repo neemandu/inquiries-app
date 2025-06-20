@@ -195,21 +195,7 @@ export default function MonthlyReport({ columnSettings, onColumnToggle, dynamicC
         </CardContent>
       </Card>
 
-      {/* Debug info for development */}
-      {apiResponse && (
-        <div className="mt-4 p-4 bg-gray-100 rounded-lg text-sm">
-          <h4 className="font-medium text-gray-900 mb-2">מידע על עמודות פעילות:</h4>
-          <div className="space-y-1 text-gray-600">
-            {apiResponse.columnNames
-              .filter(col => col.isOn === true)
-              .map((col, index) => (
-                <div key={index}>
-                  <strong>{col.column}</strong> (ID: {col.columnNameRecordId})
-                </div>
-              ))}
-          </div>
-        </div>
-      )}
+     
     </>
   );
 } 

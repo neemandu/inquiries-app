@@ -20,7 +20,7 @@ import { useState, useEffect } from 'react';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { GetPDF } from '@/lib/utils';
-import { PDFResponse, Employee } from '../types';
+import { PDFResponse, Employee } from "@/lib/types";
 
 // Set up PDF.js worker - using legacy worker for better Node.js 20 compatibility
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.mjs`;

@@ -30,7 +30,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 import React from "react";
-import { Employee, LeavingReason } from "../types";
+import { Employee, LeavingReason } from "@/lib/types";
 
 const employeeRecognitionSchema = z.object({
   recordId: z.string().min(2, {
