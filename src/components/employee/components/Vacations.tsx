@@ -178,7 +178,7 @@ export default function Vacations({ recordId }: VacationsProps) {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center p-8">
+      <div className="flex justify-end items-center p-8">
         <div className="text-lg">טוען נתונים...</div>
       </div>
     );
