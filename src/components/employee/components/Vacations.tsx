@@ -92,14 +92,14 @@ export default function Vacations({ recordId }: VacationsProps) {
         throw new Error('Failed to fetch data');
       }
 
-      const data: ApiResponse[] = await response.json();
+      const data: ApiResponse = await response.json();
       console.log('data', data);
       
       // Transform API data to match our form structure
       const transformedRows: EmployeeRow[] = [];
       
-      if (data && data.length > 0 && data[0].employees) {
-        data[0].employees.forEach((employee) => {
+      if (data && data.employees) {
+        data.employees.forEach((employee) => {
           transformedRows.push({
             recordId: employee.recordId,
             firstName: employee.firstName,
@@ -111,6 +111,8 @@ export default function Vacations({ recordId }: VacationsProps) {
           });
         });
       }
+
+      console.log('transformedRows', transformedRows);
 
       replace(transformedRows);
       setError(null);
