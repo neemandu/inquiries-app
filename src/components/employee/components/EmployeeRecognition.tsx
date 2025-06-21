@@ -150,15 +150,15 @@ export default function EmployeeRecognition(
                     <FormLabel className="block text-lg font-medium text-gray-900 mb-3 text-right">
                       שם העובד:
                     </FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
                       <FormControl>
                         <SelectTrigger className="w-sm px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-right text-lg">
                           <SelectValue placeholder="בחר עובד" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent className="text-right">
                         { employees && employees.map((employee) => (
-                          <SelectItem key={employee.recordId} value={employee.recordId}>{employee.firstName} {employee.lastName}</SelectItem>
+                          <SelectItem key={employee.recordId} value={employee.recordId} className="text-right">{employee.firstName} {employee.lastName}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -184,7 +184,7 @@ export default function EmployeeRecognition(
                         id="date"
                         value={field.value}
                         placeholder="June 01, 2025"
-                        className="bg-background pr-10 max-w-[150px]"
+                        className="bg-background pl-10 max-w-[150px] text-right"
                         onChange={(e) => {
                           const date = new Date(e.target.value);
                           field.onChange(e.target.value);
@@ -205,7 +205,7 @@ export default function EmployeeRecognition(
                           <Button
                             id="date-picker"
                             variant="ghost"
-                            className="absolute top-1/2 right-2 size-6 -translate-y-1/2"
+                            className="absolute top-1/2 left-2 size-6 -translate-y-1/2"
                           >
                             <CalendarIcon className="size-3.5" />
                             <span className="sr-only">Select date</span>
@@ -249,15 +249,15 @@ export default function EmployeeRecognition(
                     <FormLabel className="block text-lg font-medium text-gray-900 mb-3 text-right">
                       סיבת עזיבה:
                     </FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
                       <FormControl>
-                        <SelectTrigger className="w-sm px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-right text-lg">
+                        <SelectTrigger className="w-sm px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-right text-lg ">
                           <SelectValue placeholder="בחר סיבת עזיבה" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent className="text-right">
                         {leavingReasons && leavingReasons.map((reason) => (
-                          <SelectItem key={reason.Reason} value={reason.Reason}>{reason.Reason}</SelectItem>
+                          <SelectItem key={reason.Reason} value={reason.Reason} className="text-right">{reason.Reason}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

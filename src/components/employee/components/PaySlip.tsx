@@ -243,8 +243,8 @@ export default function PaySlip({ recordId, employees = [] }: PaySlipProps) {
                         file={pdfUrl}
                         onLoadSuccess={onDocumentLoadSuccess}
                         loading={
-                          <div className="flex items-center justify-center h-full">
-                            <div className="text-gray-500">טוען PDF...</div>
+                          <div className="flex items-center justify-center h-full text-right">
+                            <div className="text-gray-500">...טוען PDF</div>
                           </div>
                         }
                         error={
@@ -321,7 +321,7 @@ export default function PaySlip({ recordId, employees = [] }: PaySlipProps) {
                               defaultChecked 
                             /> */}
                             <FormLabel className="text-lg font-medium text-gray-900 text-right">
-                              :שם העובד
+                              שם העובד:
                             </FormLabel>
                           </div>
                           <div className="relative">

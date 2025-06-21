@@ -157,7 +157,7 @@ export default function MonthlyReport({ columnSettings, onColumnToggle, dynamicC
                     <th 
                       key={column.key}
                       className={`px-4 py-3 text-right text-sm font-medium text-gray-900 ${
-                        index < visibleColumns.length - 1 ? 'border-r border-gray-300' : ''
+                        index < visibleColumns.length - 0 ? 'border-r border-gray-300' : ''
                       }`}
                     >
                       {column.label}
@@ -177,7 +177,7 @@ export default function MonthlyReport({ columnSettings, onColumnToggle, dynamicC
                       <td 
                         key={column.key}
                         className={`px-4 py-4 text-right text-sm text-gray-900 ${
-                          colIndex < visibleColumns.length - 1 ? 'border-r border-gray-200' : ''
+                          colIndex < visibleColumns.length - 0 ? 'border-r border-gray-200' : ''
                         }`}
                       >
                         {renderCellContent(column, employee)}

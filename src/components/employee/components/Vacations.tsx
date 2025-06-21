@@ -52,6 +52,13 @@ const vacationsSchema = z.object({
 type VacationsFormValues = z.infer<typeof vacationsSchema>;
 type EmployeeRow = z.infer<typeof employeeRowSchema>;
 
+// Utility function to truncate file names
+const truncateFileName = (fileName: string | null, maxLength: number = 15): string => {
+  if (!fileName) return '-';
+  if (fileName.length <= maxLength) return fileName;
+  return fileName.substring(0, maxLength) + '...';
+};
+
 interface VacationsProps {
   recordId?: string;
 }
@@ -212,7 +219,7 @@ export default function Vacations({ recordId }: VacationsProps) {
                       <th className="px-4 py-4 text-center text-sm font-medium text-gray-900 border-l border-gray-300">
                         קובץ עבודה
                       </th>
-                      <th className="px-4 py-4 text-center text-sm font-medium text-gray-900 min-w-32">
+                      <th className="px-4 py-4 text-center text-sm font-medium text-gray-900 min-w-64">
                         הערות רואה חשבון
                       </th>
                     </tr>
@@ -240,7 +247,7 @@ export default function Vacations({ recordId }: VacationsProps) {
                           <div className="flex flex-col items-center space-y-2">
                             {field.file101?.name ? (
                               <>
-                                <span className="text-sm text-gray-700">{field.file101.name}</span>
+                                <span className="text-sm text-gray-700" title={field.file101.name}>{truncateFileName(field.file101.name)}</span>
                                 <div className="flex space-x-2">
                                   <Button
                                     type="button"
@@ -280,7 +287,7 @@ export default function Vacations({ recordId }: VacationsProps) {
                           <div className="flex flex-col items-center space-y-2">
                             {field.pensionFile?.name ? (
                               <>
-                                <span className="text-sm text-gray-700">{field.pensionFile.name}</span>
+                                <span className="text-sm text-gray-700" title={field.pensionFile.name}>{truncateFileName(field.pensionFile.name)}</span>
                                 <div className="flex space-x-2">
                                   <Button
                                     type="button"
@@ -320,7 +327,7 @@ export default function Vacations({ recordId }: VacationsProps) {
                           <div className="flex flex-col items-center space-y-2">
                             {field.workFile?.name ? (
                               <>
-                                <span className="text-sm text-gray-700">{field.workFile.name}</span>
+                                <span className="text-sm text-gray-700" title={field.workFile.name}>{truncateFileName(field.workFile.name)}</span>
                                 <div className="flex space-x-2">
                                   <Button
                                     type="button"
