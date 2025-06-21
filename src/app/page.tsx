@@ -252,9 +252,6 @@ export default function EmployeesPage() {
           </Link>
           <div className="flex items-center gap-4">
             <SignedIn>
-              <div className="text-sm text-gray-600">
-                {user?.emailAddresses?.[0]?.emailAddress}
-              </div>
               <UserButton />
               <Link 
                 href="/inquiries"
