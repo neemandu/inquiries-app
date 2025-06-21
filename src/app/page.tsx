@@ -1,6 +1,6 @@
 'use client';
 
-import { SignedIn, SignedOut, useUser } from '@clerk/nextjs';
+import { SignedIn, SignedOut, UserButton, useUser } from '@clerk/nextjs';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import AddEmployee from '@/components/employee/components/AddEmployee';
@@ -255,6 +255,7 @@ export default function EmployeesPage() {
               <div className="text-sm text-gray-600">
                 {user?.emailAddresses?.[0]?.emailAddress}
               </div>
+              <UserButton />
               <Link 
                 href="/inquiries"
                 className="px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
