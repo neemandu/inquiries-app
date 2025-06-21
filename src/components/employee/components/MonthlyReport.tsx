@@ -14,6 +14,7 @@ interface MonthlyReportProps {
   onDynamicColumnToggle: (columnNameRecordId: string) => void;
   employees: Employee[];
   apiResponse: ApiResponse | null;
+  clientRecordId: string;
 }
 
 interface EmployeeData {
@@ -53,7 +54,7 @@ const generateSampleData = (): EmployeeData[] => {
   }));
 };
 
-export default function MonthlyReport({ columnSettings, onColumnToggle, dynamicColumnSettings, onDynamicColumnToggle, employees, apiResponse }: MonthlyReportProps) {
+export default function MonthlyReport({ columnSettings, onColumnToggle, dynamicColumnSettings, onDynamicColumnToggle, employees, apiResponse, clientRecordId }: MonthlyReportProps) {
   const [showSettingsPopup, setShowSettingsPopup] = useState(false);
   
   // Use API data if available, otherwise fallback to sample data
@@ -65,12 +66,6 @@ export default function MonthlyReport({ columnSettings, onColumnToggle, dynamicC
       // Fallback to static columns if no API data
       return [
         { key: 'id', label: 'מס', show: true },
-        { key: 'name', label: 'שם העובד', show: true },
-        { key: 'salary', label: 'שכר', show: columnSettings.salary },
-        { key: 'travel', label: 'נסיעות', show: columnSettings.travel },
-        { key: 'competition', label: 'תחרות', show: columnSettings.competition },
-        { key: 'fileUpload', label: 'העלאת קבצים', show: columnSettings.ignoreFiles },
-        { key: 'accountantNotes', label: 'הערות רואה חשבון', show: columnSettings.accounting },
       ];
     }
 
@@ -85,9 +80,11 @@ export default function MonthlyReport({ columnSettings, onColumnToggle, dynamicC
       .filter(col => dynamicColumnSettings[col.columnNameRecordId] === true)
       .map(col => ({
         key: col.columnNameRecordId, // Use recordId as key
-        label: col.column, // Use column name as label
-        show: true
+        label: col.columnName, // Use column name as label
+        show: col.isOn,
+        recordId: col.recordId
       }));
+
 
     return [...baseColumns, ...dynamicColumns];
   };
@@ -124,10 +121,8 @@ export default function MonthlyReport({ columnSettings, onColumnToggle, dynamicC
   return (
     <>
       {/* Settings Button */}
-      <div className="flex justify-between items-center mb-4">
-        <div className="text-sm text-gray-600">
-          {apiResponse ? `נתונים מעודכנים - ${employees.length} עובדים - ${visibleColumns.length - 2} עמודות דינמיות` : 'נתוני דוגמה'}
-        </div>
+      <div className="flex justify-end items-center mb-4">
+        
         <div className="relative">
           <Button 
             variant="ghost"
@@ -146,6 +141,7 @@ export default function MonthlyReport({ columnSettings, onColumnToggle, dynamicC
             dynamicColumnSettings={dynamicColumnSettings}
             onDynamicColumnToggle={onDynamicColumnToggle}
             apiResponse={apiResponse}
+            clientRecordId={clientRecordId}
           />
         </div>
       </div>

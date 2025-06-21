@@ -27,10 +27,9 @@ export interface Employee {
   traveling: boolean | null;
   arrivalDate: string;
 }
-
 export interface ColumnConfig {
-  column: string;
   columnNameRecordId: string;
+  columnName: string;
   isOn: boolean;
   recordId: string;
 }

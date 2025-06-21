@@ -4,6 +4,7 @@ import { ColumnSettingsType, DynamicColumnSettings, ApiResponse } from '@/lib/ty
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from 'react';
 
 interface ColumnSettingsProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface ColumnSettingsProps {
   dynamicColumnSettings: DynamicColumnSettings;
   onDynamicColumnToggle: (columnNameRecordId: string) => void;
   apiResponse: ApiResponse | null;
+  clientRecordId: string;
 }
 
 export default function ColumnSettings({ 
@@ -20,14 +22,15 @@ export default function ColumnSettings({
   onClose, 
   dynamicColumnSettings,
   onDynamicColumnToggle,
-  apiResponse
+  apiResponse,
+  clientRecordId
 }: ColumnSettingsProps) {
+  const [isSaving, setIsSaving] = useState(false);
+
   if (!isOpen) return null;
 
   // Show all columns
   const allColumns = apiResponse?.columnNames || [];
-
-
 
   const handleSelectAll = () => {
     allColumns.forEach(col => {
@@ -43,6 +46,44 @@ export default function ColumnSettings({
         onDynamicColumnToggle(col.columnNameRecordId);
       }
     });
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    
+    try {
+      // Prepare the payload according to the API specification
+      const columns = allColumns.map(col => ({
+        recordId: col.recordId,
+        columnNameRecordId: col.columnNameRecordId,
+        isOn: dynamicColumnSettings[col.columnNameRecordId] || false
+      }));
+
+      const payload = {
+        clientRecordId,
+        columns
+      };
+
+      const response = await fetch('https://hook.eu2.make.com/6znp5rhy3zuquqnax180kq30cdlvp0b9', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Close the popup after successful save
+      onClose();
+    } catch (error) {
+      console.error('Failed to save column settings:', error);
+      // You might want to show an error message to the user here
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -97,10 +138,7 @@ export default function ColumnSettings({
                 <div key={col.columnNameRecordId} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-gray-900 truncate">
-                      {col.column || 'ללא שם'}
-                    </div>
-                    <div className="text-xs text-gray-500 truncate">
-                      ID: {col.columnNameRecordId}
+                      {col.columnName || 'ללא שם'}
                     </div>
                   </div>
                   <Switch
@@ -117,14 +155,15 @@ export default function ColumnSettings({
         <div className="p-4 border-t bg-gray-50">
           <div className="flex justify-between items-center">
             <div className="text-xs text-gray-500">
-              {Object.values(dynamicColumnSettings).filter(Boolean).length} מתוך {Object.keys(dynamicColumnSettings).length} פעילות
+              {Object.values(dynamicColumnSettings).filter(Boolean).length} מתוך {Object.keys(dynamicColumnSettings).length} עמודות
             </div>
             <Button 
-              onClick={onClose}
-              className="px-8 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors"
+              onClick={handleSave}
+              disabled={isSaving}
+              className="px-8 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors disabled:opacity-50"
               variant="secondary"
             >
-              סגור
+              {isSaving ? 'שומר...' : 'שמור'}
             </Button>
           </div>
         </div>

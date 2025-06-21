@@ -19,7 +19,7 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import { useState, useEffect } from 'react';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-import { GetPDF } from '@/lib/utils';
+
 import { PDFResponse, Employee } from "@/lib/types";
 
 // Set up PDF.js worker - using legacy worker for better Node.js 20 compatibility
@@ -76,40 +76,49 @@ export default function PaySlip({ recordId, employees = [] }: PaySlipProps) {
     return `${month} ${year}`;
   };
 
-  // Fetch PDFs when recordId changes
-  useEffect(() => {
-    const fetchPdfs = async () => {
-      if (!recordId) return;
+  // Function to fetch PDFs for a specific employee
+  const fetchPdfsForEmployee = async (employeeRecordId: string) => {
+    if (!employeeRecordId) return;
+    
+    setLoading(true);
+    setError("");
+    setShowPdf(false); // Clear current PDF display
+    setPdfUrl("");
+    
+    try {
+      const response = await fetch(`https://hook.eu2.make.com/1qr8sx2y62843ve29y5agc0c26tl8r1s?recordId=${employeeRecordId}`);
       
-      setLoading(true);
-      setError("");
-      
-      try {
-        const pdfData = await GetPDF(recordId);
-        // const pdfData = await GetPDF('rechKPRW47oYHToBB');
-        
-        console.log(pdfData);
-        if (pdfData && Array.isArray(pdfData) && pdfData.length > 0) {
-          // Extract the documents from the array response
-          const documentsData = pdfData[0];
-          setAvailablePdfs(documentsData);
-          // Set default month to the first available PDF date
-          if (documentsData.documents && documentsData.documents.length > 0) {
-            form.setValue("selectedMonth", documentsData.documents[0].date);
-          }
-        } else {
-          setError("לא נמצאו תלושי שכר");
-        }
-      } catch (error) {
-        console.error("Error fetching PDFs:", error);
-        setError("שגיאה בטעינת תלושי השכר");
-      } finally {
-        setLoading(false);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    };
+      
+      const pdfData = await response.json();
+      console.log("PDF data received:", pdfData);
+      
+      if (pdfData && pdfData.documents && Array.isArray(pdfData.documents) && pdfData.documents.length > 0) {
+        setAvailablePdfs(pdfData);
+        // Set default month to the first available PDF date
+        form.setValue("selectedMonth", pdfData.documents[0].date);
+      } else {
+        setError("לא נמצאו תלושי שכר עבור העובד הנבחר");
+        setAvailablePdfs(null);
+      }
+    } catch (error) {
+      console.error("Error fetching PDFs:", error);
+      setError("שגיאה בטעינת תלושי השכר");
+      setAvailablePdfs(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchPdfs();
-  }, [recordId]);
+  // Fetch PDFs when component loads with first employee
+  useEffect(() => {
+    if (employeeOptions.length > 0) {
+      const firstEmployeeId = employeeOptions[0].value;
+      fetchPdfsForEmployee(firstEmployeeId);
+    }
+  }, [employeeOptions.length]);
 
   // Auto-display PDF when PDFs are loaded and form values change
   useEffect(() => {
@@ -177,7 +186,7 @@ export default function PaySlip({ recordId, employees = [] }: PaySlipProps) {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
-        <div className="flex h-full items-center justify-center">
+        <div className="flex h-full items-center justify-end">
           <div className="text-lg text-gray-600">טוען תלושי שכר...</div>
         </div>
       </div>
@@ -321,11 +330,8 @@ export default function PaySlip({ recordId, employees = [] }: PaySlipProps) {
                                  {...field}
                                  onChange={(e) => {
                                    field.onChange(e);
-                                   // Auto-trigger PDF display when employee changes
-                                   setTimeout(() => {
-                                     const currentValues = form.getValues();
-                                     findAndDisplayPdf({...currentValues, employeeName: e.target.value});
-                                   }, 100);
+                                   // Fetch PDFs for the newly selected employee
+                                   fetchPdfsForEmployee(e.target.value);
                                  }}
                                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-right text-lg appearance-none bg-white"
                                >

@@ -149,23 +149,23 @@ export default function EmployeesPage() {
         let shouldUpdate = false;
         
         // Check if col.column exists and is a string before calling includes
-        if (!col.column || typeof col.column !== 'string') {
+        if (!col.columnName || typeof col.columnName !== 'string') {
           return col; // Return the column unchanged if column is undefined/null/not a string
         }
         
-        if (column === 'travel' && (col.column.includes('traveling') || col.column.includes('travel'))) {
+        if (column === 'travel' && (col.columnName.includes('traveling') || col.columnName.includes('travel'))) {
           shouldUpdate = true;
-        } else if (column === 'competition' && col.column.includes('competition')) {
+        } else if (column === 'competition' && col.columnName.includes('competition')) {
           shouldUpdate = true;
-        } else if (column === 'salary' && col.column.includes('salary')) {
+        } else if (column === 'salary' && col.columnName.includes('salary')) {
           shouldUpdate = true;
-        } else if (column === 'accounting' && col.column.includes('accounting')) {
+        } else if (column === 'accounting' && col.columnName.includes('accounting')) {
           shouldUpdate = true;
-        } else if (column === 'ignoreFiles' && (col.column.includes('files') || col.column.includes('ignore'))) {
+        } else if (column === 'ignoreFiles' && (col.columnName.includes('files') || col.columnName.includes('ignore'))) {
           shouldUpdate = true;
-        } else if (column === 'other' && !col.column.includes('traveling') && !col.column.includes('travel') && 
-                   !col.column.includes('competition') && !col.column.includes('salary') && 
-                   !col.column.includes('accounting') && !col.column.includes('files') && !col.column.includes('ignore')) {
+        } else if (column === 'other' && !col.columnName.includes('traveling') && !col.columnName.includes('travel') && 
+                   !col.columnName.includes('competition') && !col.columnName.includes('salary') && 
+                   !col.columnName.includes('accounting') && !col.columnName.includes('files') && !col.columnName.includes('ignore')) {
           shouldUpdate = true;
         }
         
@@ -200,8 +200,8 @@ export default function EmployeesPage() {
   const renderMainContent = () => {
     if (loading) {
       return (
-        <div className="flex items-center justify-center h-64">
-          <div className="text-lg text-gray-600">טוען נתוני עובדים...</div>
+        <div className="flex items-center justify-end h-64">
+          <div className="text-lg text-gray-600">...טוען נתוני עובדים</div>
         </div>
       );
     }
@@ -210,12 +210,13 @@ export default function EmployeesPage() {
       case 'monthly-report':
         return (
           <MonthlyReport 
-            columnSettings={columnSettings} 
+            columnSettings={columnSettings}
             onColumnToggle={toggleColumn}
             dynamicColumnSettings={dynamicColumnSettings}
             onDynamicColumnToggle={toggleDynamicColumn}
             employees={employees}
             apiResponse={apiResponse}
+            clientRecordId={apiResponse?.recordId || ''}
           />
         );
       case 'add-employee':
@@ -235,6 +236,7 @@ export default function EmployeesPage() {
             onDynamicColumnToggle={toggleDynamicColumn}
             employees={employees}
             apiResponse={apiResponse}
+              clientRecordId={apiResponse?.recordId || ''}
           />
         );
     }

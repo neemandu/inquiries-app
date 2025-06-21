@@ -72,50 +72,51 @@ export default function Vacations({ recordId }: VacationsProps) {
     name: "rows",
   });
 
+  // Extract fetchData function so it can be reused
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      const url = recordId 
+        ? `https://hook.eu2.make.com/m0rzm7d63afsoerxyvvpxnl6gkzo67yv?recordId=${encodeURIComponent(recordId)}`
+        : 'https://hook.eu2.make.com/m0rzm7d63afsoerxyvvpxnl6gkzo67yv';
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch data');
+      }
+
+      const data: ApiResponse[] = await response.json();
+      console.log('data', data);
+      
+      // Transform API data to match our form structure
+      const transformedRows: EmployeeRow[] = [];
+      
+      if (data && data.length > 0 && data[0].employees) {
+        data[0].employees.forEach((employee) => {
+          transformedRows.push({
+            recordId: employee.recordId,
+            firstName: employee.firstName,
+            lastName: employee.lastName,
+            file101: employee["101"],
+            pensionFile: employee.pension,
+            workFile: employee.workFile,
+            accountantRemark: employee.accountantRemark,
+          });
+        });
+      }
+
+      replace(transformedRows);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('Error fetching data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Fetch data from API
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        const url = recordId 
-          ? `https://hook.eu2.make.com/m0rzm7d63afsoerxyvvpxnl6gkzo67yv?recordId=${encodeURIComponent(recordId)}`
-          : 'https://hook.eu2.make.com/m0rzm7d63afsoerxyvvpxnl6gkzo67yv';
-        const response = await fetch(url);
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch data');
-        }
-
-        const data: ApiResponse[] = await response.json();
-        console.log('data', data);
-        
-        // Transform API data to match our form structure
-        const transformedRows: EmployeeRow[] = [];
-        
-        if (data && data.length > 0 && data[0].employees) {
-          data[0].employees.forEach((employee) => {
-            transformedRows.push({
-              recordId: employee.recordId,
-              firstName: employee.firstName,
-              lastName: employee.lastName,
-              file101: employee["101"],
-              pensionFile: employee.pension,
-              workFile: employee.workFile,
-              accountantRemark: employee.accountantRemark,
-            });
-          });
-        }
-
-        replace(transformedRows);
-        setError(null);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-        console.error('Error fetching data:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchData();
   }, [replace]);
 
@@ -131,7 +132,7 @@ export default function Vacations({ recordId }: VacationsProps) {
       document.body.removeChild(link);
     }
   };
-// pension/101/work
+
   // Handle file upload (integrated with new upload URL)
   const handleFileUpload = (recordId: string | null, fileType: string) => {
     const input = document.createElement('input');
@@ -153,8 +154,11 @@ export default function Vacations({ recordId }: VacationsProps) {
             throw new Error('File upload failed');
           }
           console.log('File uploaded successfully');
+          
+          // Refetch the data to update the UI with new file information
+          await fetchData();
+          
           // Optionally show a success message here
-          // window.location.reload(); // Refresh data after upload
         } catch (err) {
           alert('שגיאה בהעלאת הקובץ: ' + (err instanceof Error ? err.message : '')); // Hebrew: Error uploading file
         }
@@ -208,7 +212,7 @@ export default function Vacations({ recordId }: VacationsProps) {
                       <th className="px-4 py-4 text-center text-sm font-medium text-gray-900 border-l border-gray-300">
                         קובץ עבודה
                       </th>
-                      <th className="px-4 py-4 text-center text-sm font-medium text-gray-900">
+                      <th className="px-4 py-4 text-center text-sm font-medium text-gray-900 min-w-32">
                         הערות רואה חשבון
                       </th>
                     </tr>
@@ -361,17 +365,6 @@ export default function Vacations({ recordId }: VacationsProps) {
                     ))}
                   </tbody>
                 </table>
-              </div>
-
-              {/* Refresh Button */}
-              <div className="flex justify-center pt-8">
-                <Button 
-                  type="button"
-                  onClick={() => window.location.reload()}
-                  className="px-16 py-4 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors text-lg"
-                >
-                  רענן נתונים
-                </Button>
               </div>
             </div>
           </Form>

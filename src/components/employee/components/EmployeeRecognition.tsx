@@ -86,7 +86,7 @@ export default function EmployeeRecognition(
       toast.dismiss(loadingToast);
 
       if (response.ok) {
-        toast.success('העובד נוסף בהצלחה', {
+        toast.success('העובד הוסר בהצלחה', {
           description: 'הנתונים נשמרו במערכת',
           duration: 4000,
         });
