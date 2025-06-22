@@ -35,7 +35,42 @@ export interface ColumnConfig {
 }
 
 export interface LeavingReason {
-  Reason: string;
+  reason: string;
+}
+
+export interface MonthlyInquiry {
+  asm: string;
+  asm2: string | null;
+  date: string;
+  docs: null;
+  hova: string;
+  prev: null;
+  answer: string | null;
+  details: string;
+  remarks: string;
+  question: string;
+  supplier: string;
+  isDocsMandatory: boolean;
+  isTextManadatory: boolean; // Note: typo in original data 'Manadatory'
+}
+
+export interface GeneralInquiry {
+  sum: number | null;
+  chen: string;
+  docs: null;
+  answer: string | null;
+  remarks: string | null;
+  headline: string | null;
+  question: string;
+  supplier: string;
+  isDocMandatory: boolean;
+  isTextMandatory: boolean;
+}
+
+export interface InquiryData {
+  employer: string;
+  general: GeneralInquiry[];
+  monthly: MonthlyInquiry[];
 }
 
 export interface ApiResponse {

@@ -8,14 +8,16 @@ import EmployeeRecognition from '@/components/employee/components/EmployeeRecogn
 import PaySlip from '@/components/employee/components/PaySlip';
 import Vacations from '@/components/employee/components/Vacations';
 import EmployersSidebar from '@/components/employee/components/EmployersSidebar';
-import { ColumnSettingsType, ViewType, Employee, ApiResponse, LeavingReason, DynamicColumnSettings } from '@/lib/types';
+import { ColumnSettingsType, ViewType, Employee, ApiResponse, LeavingReason, DynamicColumnSettings, InquiryData } from '@/lib/types';
 import { fetchEmployeeData, updateColumnSetting } from '@/lib/utils';
 import Image from 'next/image';
 import MonthlyReport from '@/components/employee/components/MonthlyReport';
+import YearlyForm from '@/components/inquiries/components/YearlyForm';
+import SupplierTable from '@/components/inquiries/components/SupplierTable';
 
 export default function EmployeesPage() {
   const { user, isLoaded } = useUser();
-  const [activeView, setActiveView] = useState<ViewType>('monthly-report'); 
+  const [activeView, setActiveView] = useState<ViewType>('monthly-report');
   const [columnSettings, setColumnSettings] = useState<ColumnSettingsType>({
     travel: true,
     competition: true,
@@ -29,35 +31,27 @@ export default function EmployeesPage() {
   const [loading, setLoading] = useState(false);
   const [apiResponse, setApiResponse] = useState<ApiResponse | null>(null);
   const [leavingReasons, setLeavingReasons] = useState<LeavingReason[]>([]);
+  const [suppliers, setSuppliers] = useState<string[]>(['הכל']);
+  const [selectedSupplier, setSelectedSupplier] = useState<string | null>('הכל');
+  const [showYearlyForm, setShowYearlyForm] = useState<boolean>(false);
+  const [inquiryData, setInquiryData] = useState<InquiryData | null>(null);
 
-  // Fetch employee data when user is loaded
   useEffect(() => {
     const loadEmployeeData = async () => {
       if (isLoaded && user?.emailAddresses?.[0]?.emailAddress) {
         setLoading(true);
-        // const email = user.emailAddresses[0].emailAddress;
-        
         try {
-          // const data = await fetchEmployeeData(email);
           const data = await fetchEmployeeData('neemandu@gmail.com');
-          console.log(data);
-
           if (data) {
-            setApiResponse(data);
+            setApiResponse({ ...data, recordId: data.recordId });
             setEmployees(data.employees);
-            
-            // Initialize dynamic column settings based on API response
             if (data.columnNames) {
               const newDynamicSettings: DynamicColumnSettings = {};
-              
               data.columnNames.forEach(col => {
-                // Use columnNameRecordId as the key and isOn as the value
                 newDynamicSettings[col.columnNameRecordId] = col.isOn ?? false;
               });
-              
               setDynamicColumnSettings(newDynamicSettings);
             }
-
             if (data.leavingReasons) {
               setLeavingReasons(data.leavingReasons);
             }
@@ -69,62 +63,53 @@ export default function EmployeesPage() {
         }
       }
     };
-
     loadEmployeeData();
   }, [isLoaded, user]);
 
-  // Update dynamic column setting
-  const toggleDynamicColumn = async (columnNameRecordId: string) => {
-    if (!apiResponse) {
-      console.warn('No API response available for column update');
-      return;
-    }
-
-    const newValue = !dynamicColumnSettings[columnNameRecordId];
-    
-    // Update local state immediately for better UX
-    setDynamicColumnSettings(prev => ({
-      ...prev,
-      [columnNameRecordId]: newValue
-    }));
-    
-    // Make API call to update column setting in database
-    try {
-      console.log(`Updating column ${columnNameRecordId} to ${newValue}`);
-      
-      // Create updated API response with the new column setting
-      const updatedColumnNames = apiResponse.columnNames.map(col => {
-        if (col.columnNameRecordId === columnNameRecordId) {
-          return { ...col, isOn: newValue };
+  useEffect(() => {
+    const fetchInquiryData = async () => {
+      if (apiResponse?.recordId) {
+        setLoading(true);
+        try {
+          const res = await fetch(`/api/inquiries/data?recordId=${apiResponse.recordId}`);
+          if (res.ok) {
+            const data: InquiryData = await res.json();
+            setInquiryData(data);
+            if (data?.monthly) {
+              const uniqueSuppliers = ['הכל', ...new Set(data.monthly.map((item) => item.supplier))];
+              setSuppliers(uniqueSuppliers as string[]);
+            }
+          } else {
+            console.error('Failed to fetch inquiry data');
+          }
+        } catch (error) {
+          console.error('Error fetching inquiry data:', error);
+        } finally {
+          setLoading(false);
         }
-        return col;
-      });
-
-      const updatedApiResponse: ApiResponse = {
-        ...apiResponse,
-        columnNames: updatedColumnNames
-      };
-
-      const success = await updateColumnSetting(apiResponse.recordId, updatedApiResponse);
-      if (!success) {
-        throw new Error('Failed to update column setting');
       }
-      
-      // Update local API response state with the new data
+    };
+    fetchInquiryData();
+  }, [apiResponse]);
+
+  const toggleDynamicColumn = async (columnNameRecordId: string) => {
+    if (!apiResponse) return;
+    const newValue = !dynamicColumnSettings[columnNameRecordId];
+    setDynamicColumnSettings(prev => ({ ...prev, [columnNameRecordId]: newValue }));
+    try {
+      const updatedColumnNames = apiResponse.columnNames.map(col =>
+        col.columnNameRecordId === columnNameRecordId ? { ...col, isOn: newValue } : col
+      );
+      const updatedApiResponse = { ...apiResponse, columnNames: updatedColumnNames };
+      const success = await updateColumnSetting(apiResponse.recordId, updatedApiResponse);
+      if (!success) throw new Error('Failed to update column setting');
       setApiResponse(updatedApiResponse);
-      
-      console.log(`Column update successful: columnNameRecordId=${columnNameRecordId}, newValue=${newValue}`);
     } catch (error) {
       console.error('Failed to update column setting:', error);
-      // Revert local state on error
-      setDynamicColumnSettings(prev => ({
-        ...prev,
-        [columnNameRecordId]: !newValue
-      }));
+      setDynamicColumnSettings(prev => ({ ...prev, [columnNameRecordId]: !newValue }));
     }
   };
 
-  // Legacy toggle function for backward compatibility (can be removed later)
   const toggleColumn = async (column: keyof ColumnSettingsType) => {
     if (!apiResponse) {
       console.warn('No API response available for column update');
@@ -132,27 +117,21 @@ export default function EmployeesPage() {
     }
 
     const newValue = !columnSettings[column];
-    
-    // Update local state immediately for better UX
+
     setColumnSettings(prev => ({
       ...prev,
       [column]: newValue
     }));
-    
-    // Make API call to update column setting in database
+
     try {
       console.log(`Updating column ${column} to ${newValue}`);
-      
-      // Create updated API response with the new column setting
+
       const updatedColumnNames = apiResponse.columnNames.map(col => {
-        // Map local column types to API column names
-        let shouldUpdate = false;
-        
-        // Check if col.column exists and is a string before calling includes
         if (!col.columnName || typeof col.columnName !== 'string') {
-          return col; // Return the column unchanged if column is undefined/null/not a string
+          return col;
         }
-        
+
+        let shouldUpdate = false;
         if (column === 'travel' && (col.columnName.includes('traveling') || col.columnName.includes('travel'))) {
           shouldUpdate = true;
         } else if (column === 'competition' && col.columnName.includes('competition')) {
@@ -163,12 +142,12 @@ export default function EmployeesPage() {
           shouldUpdate = true;
         } else if (column === 'ignoreFiles' && (col.columnName.includes('files') || col.columnName.includes('ignore'))) {
           shouldUpdate = true;
-        } else if (column === 'other' && !col.columnName.includes('traveling') && !col.columnName.includes('travel') && 
-                   !col.columnName.includes('competition') && !col.columnName.includes('salary') && 
-                   !col.columnName.includes('accounting') && !col.columnName.includes('files') && !col.columnName.includes('ignore')) {
+        } else if (column === 'other' && !col.columnName.includes('traveling') && !col.columnName.includes('travel') &&
+          !col.columnName.includes('competition') && !col.columnName.includes('salary') &&
+          !col.columnName.includes('accounting') && !col.columnName.includes('files') && !col.columnName.includes('ignore')) {
           shouldUpdate = true;
         }
-        
+
         return shouldUpdate ? { ...col, isOn: newValue } : col;
       });
 
@@ -181,14 +160,12 @@ export default function EmployeesPage() {
       if (!success) {
         throw new Error('Failed to update column setting');
       }
-      
-      // Update local API response state with the new data
+
       setApiResponse(updatedApiResponse);
-      
+
       console.log(`Column update successful: column=${column}, newValue=${newValue}`);
     } catch (error) {
       console.error('Failed to update column setting:', error);
-      // Revert local state on error
       setColumnSettings(prev => ({
         ...prev,
         [column]: !newValue
@@ -196,29 +173,34 @@ export default function EmployeesPage() {
     }
   };
 
-  // Render different content based on active view
+  const handleSupplierSelect = (supplier: string) => {
+    setSelectedSupplier(supplier);
+    setShowYearlyForm(false);
+    setActiveView('' as ViewType);
+  };
+
+  const handleShowYearlyForm = () => {
+    setShowYearlyForm(true);
+    setSelectedSupplier(null);
+    setActiveView('' as ViewType);
+  };
+
   const renderMainContent = () => {
     if (loading) {
-      return (
-        <div className="flex items-center justify-end h-64">
-          <div className="text-lg text-gray-600">...טוען נתוני עובדים</div>
-        </div>
-      );
+      return <div className="flex items-center justify-end h-64"><div className="text-lg text-gray-600">...טוען נתוני עובדים</div></div>;
+    }
+
+    if (showYearlyForm) {
+      return <YearlyForm yearlyData={inquiryData?.general} employer={inquiryData?.employer} recordId={apiResponse?.recordId} />;
+    }
+
+    if (selectedSupplier) {
+      return <SupplierTable supplierId={selectedSupplier} employer={inquiryData?.employer} monthlyData={inquiryData?.monthly} recordId={apiResponse?.recordId} />;
     }
 
     switch (activeView) {
       case 'monthly-report':
-        return (
-          <MonthlyReport 
-            columnSettings={columnSettings}
-            onColumnToggle={toggleColumn}
-            dynamicColumnSettings={dynamicColumnSettings}
-            onDynamicColumnToggle={toggleDynamicColumn}
-            employees={employees}
-            apiResponse={apiResponse}
-            clientRecordId={apiResponse?.recordId || ''}
-          />
-        );
+        return <MonthlyReport {...{ columnSettings, onColumnToggle: toggleColumn, dynamicColumnSettings, onDynamicColumnToggle: toggleDynamicColumn, employees, apiResponse, clientRecordId: apiResponse?.recordId || '' }} />;
       case 'add-employee':
         return <AddEmployee recordId={apiResponse?.recordId || ''} />;
       case 'employee-recognition':
@@ -228,67 +210,48 @@ export default function EmployeesPage() {
       case 'vacations':
         return <Vacations recordId={apiResponse?.recordId} />;
       default:
-        return (
-          <MonthlyReport 
-            columnSettings={columnSettings} 
-            onColumnToggle={toggleColumn}
-            dynamicColumnSettings={dynamicColumnSettings}
-            onDynamicColumnToggle={toggleDynamicColumn}
-            employees={employees}
-            apiResponse={apiResponse}
-              clientRecordId={apiResponse?.recordId || ''}
-          />
-        );
+        return <MonthlyReport {...{ columnSettings, onColumnToggle: toggleColumn, dynamicColumnSettings, onDynamicColumnToggle: toggleDynamicColumn, employees, apiResponse, clientRecordId: apiResponse?.recordId || '' }} />;
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="w-full p-4 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-gray-900">
-            <Image src="/logo.jpg" alt="logo" width={50} height={50} />
-          </Link>
+          <Link href="/" className="text-2xl font-bold text-gray-900"><Image src="/logo.jpg" alt="logo" width={50} height={50} /></Link>
           <div className="flex items-center gap-4">
             <SignedIn>
               <UserButton />
-              <Link 
-                href="/inquiries"
-                className="px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
-              >
-                פניות
-              </Link>
+              <Link href="/inquiries" className="px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors">פניות</Link>
             </SignedIn>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto p-6">
         <SignedIn>
           <div className="flex gap-6 h-full">
-            {/* Main Content Section */}
             <div className="flex-1 bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
               {renderMainContent()}
             </div>
-
-            {/* Right Sidebar */}
-            <EmployersSidebar activeView={activeView} onViewChange={setActiveView} />
+            <EmployersSidebar
+              activeView={activeView}
+              onViewChange={(view) => {
+                setActiveView(view);
+                setSelectedSupplier(null);
+                setShowYearlyForm(false);
+              }}
+              suppliers={suppliers}
+              selectedSupplier={selectedSupplier}
+              onSupplierSelect={handleSupplierSelect}
+              onShowYearlyForm={handleShowYearlyForm}
+            />
           </div>
         </SignedIn>
-
         <SignedOut>
           <div className="text-center py-16">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              אנא התחבר כדי לצפות בדף זה
-            </h2>
-            <Link 
-              href="/sign-in"
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              התחבר
-            </Link>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">אנא התחבר כדי לצפות בדף זה</h2>
+            <Link href="/sign-in" className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">התחבר</Link>
           </div>
         </SignedOut>
       </main>

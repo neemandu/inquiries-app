@@ -6,6 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 interface EmployersSidebarProps {
   activeView: ViewType;
   onViewChange: (view: ViewType) => void;
+  suppliers: string[];
+  selectedSupplier: string | null;
+  onSupplierSelect: (supplier: string) => void;
+  onShowYearlyForm: () => void;
 }
 
 const navigationItems = [
@@ -36,7 +40,14 @@ const navigationItems = [
   },
 ];
 
-export default function EmployersSidebar({ activeView, onViewChange }: EmployersSidebarProps) {
+export default function EmployersSidebar({
+  activeView,
+  onViewChange,
+  suppliers,
+  selectedSupplier,
+  onSupplierSelect,
+  onShowYearlyForm,
+}: EmployersSidebarProps) {
   return (
     <div className="w-80 space-y-6">
       {/* בירורים Section */}
@@ -46,10 +57,30 @@ export default function EmployersSidebar({ activeView, onViewChange }: Employers
             בירורים
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="h-32 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center">
-            <span className="text-gray-400 text-sm" dir="rtl">אזור תוכן</span>
-          </div>
+        <CardContent className="space-y-3">
+          {suppliers.map((supplier) => (
+            <Button
+              key={supplier}
+              onClick={() => onSupplierSelect(supplier)}
+              variant={selectedSupplier === supplier ? "default" : "ghost"}
+              className={`w-full flex items-center justify-start gap-4 px-4 py-3 h-auto text-black ${
+                selectedSupplier === supplier
+                  ? 'bg-purple-100 border border-purple-300 hover:bg-purple-200' 
+                  : 'bg-white hover:bg-purple-50'
+              }`}
+              dir="rtl"
+            >
+              <span className="font-medium text-base">{supplier}</span>
+            </Button>
+          ))}
+          <Button
+            onClick={onShowYearlyForm}
+            variant="ghost"
+            className="w-full flex items-center justify-start gap-4 px-4 py-3 h-auto text-black bg-white hover:bg-purple-50"
+            dir="rtl"
+          >
+            <span className="font-medium text-base">בירורים כלליים&gt;&gt;</span>
+          </Button>
         </CardContent>
       </Card>
 

@@ -125,3 +125,12 @@ export async function GetPDF(recordId: string): Promise<PDFResponse | null> {
 // }
 
 // https://hook.eu2.make.com/m0rzm7d63afsoerxyvvpxnl6gkzo67yv
+
+export async function toBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}

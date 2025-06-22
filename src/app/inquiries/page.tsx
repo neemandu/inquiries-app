@@ -583,7 +583,7 @@ export default function UpdateInquiriesPage() {
 
         <div className="container" style={{ minWidth: '40vw', minHeight: '40vh' }}>
           <div className="logo-container">
-            <img src="https://i.imgur.com/J6mXT1Z.jpeg" alt="לוגו" />
+            <Image src="https://i.imgur.com/J6mXT1Z.jpeg" alt="לוגו" width={200} height={85} />
           </div>
           <h2>עדכון בירורים עבור: זקי דיאב חברת עורכי דין</h2>
           <div style={{ color: 'red' }}>הערה: ניתן להגיש את הטופס גם אם חלק מהבירורים טרם הושלמו</div>

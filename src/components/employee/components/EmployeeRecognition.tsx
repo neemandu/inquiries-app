@@ -257,7 +257,7 @@ export default function EmployeeRecognition(
                       </FormControl>
                       <SelectContent className="text-right">
                         {leavingReasons && leavingReasons.map((reason) => (
-                          <SelectItem key={reason.Reason} value={reason.Reason} className="text-right">{reason.Reason}</SelectItem>
+                          <SelectItem key={reason.reason} value={reason.reason} className="text-right">{reason.reason}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
