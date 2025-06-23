@@ -99,7 +99,8 @@ export const FileUploadComponent = ({ onFilesChange, isMandatory = false }: File
         <div className="selected-files">
           {files.map((file, index) => (
             <span key={index} className="file-item">
-              <span>{file.name}</span>
+              {/* if file name is too long, show only the first 10 characters and add ...  and show full name when hover*/}
+              <span title={file.name}>{file.name.length > 10 ? file.name.slice(0, 10) + '...' : file.name}</span>
               <button
                 type="button"
                 onClick={() => handleFileRemove(index)}

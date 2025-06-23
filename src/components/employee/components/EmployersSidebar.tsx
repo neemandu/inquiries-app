@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface EmployersSidebarProps {
-  activeView: ViewType;
+  activeView?: ViewType | null;
   onViewChange: (view: ViewType) => void;
   suppliers: string[];
   selectedSupplier: string | null;
@@ -49,7 +49,7 @@ export default function EmployersSidebar({
   onShowYearlyForm,
 }: EmployersSidebarProps) {
   return (
-    <div className="w-80 space-y-6">
+    <div className="w-60 space-y-6">
       {/* בירורים Section */}
       <Card className="shadow-sm">
         <CardHeader>
@@ -63,11 +63,10 @@ export default function EmployersSidebar({
               key={supplier}
               onClick={() => onSupplierSelect(supplier)}
               variant={selectedSupplier === supplier ? "default" : "ghost"}
-              className={`w-full flex items-center justify-start gap-4 px-4 py-3 h-auto text-black ${
-                selectedSupplier === supplier
-                  ? 'bg-purple-100 border border-purple-300 hover:bg-purple-200' 
+              className={`w-full flex items-center justify-start gap-4 px-4 py-3 h-auto text-black ${selectedSupplier === supplier
+                  ? 'bg-purple-100 border border-purple-300 hover:bg-purple-200'
                   : 'bg-white hover:bg-purple-50'
-              }`}
+                }`}
               dir="rtl"
             >
               <span className="font-medium text-base">{supplier}</span>
@@ -97,17 +96,16 @@ export default function EmployersSidebar({
               key={item.id}
               onClick={() => onViewChange(item.id)}
               variant={activeView === item.id ? "default" : "ghost"}
-              className={`w-full flex items-center justify-start gap-4 px-4 py-3 h-auto text-black ${
-                activeView === item.id 
-                  ? 'bg-purple-100 border border-purple-300 hover:bg-purple-200' 
+              className={`w-full flex items-center justify-start gap-4 px-4 py-3 h-auto text-black ${activeView === item.id
+                  ? 'bg-purple-100 border border-purple-300 hover:bg-purple-200'
                   : 'bg-white hover:bg-purple-50'
-              }`}
+                }`}
               dir="rtl"
             >
-              <Image 
-                src={item.icon} 
-                alt={item.id} 
-                width={20} 
+              <Image
+                src={item.icon}
+                alt={item.id}
+                width={20}
                 height={20}
                 className="flex-shrink-0"
               />

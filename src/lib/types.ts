@@ -38,11 +38,35 @@ export interface LeavingReason {
   reason: string;
 }
 
+export interface Docs {
+  id?: string;
+  width?: number;
+  height?: number;
+  filename?: string;
+  url?: string;
+  type?: string;
+  size?: number;
+  thumbnails?: {
+    small?: {
+      url?: string;
+    };
+    medium?: {
+      url?: string;
+    };
+    large?: {
+      url?: string;
+    };
+    full?: {
+      url?: string;
+    };
+  };
+}
+
 export interface MonthlyInquiry {
   asm: string;
   asm2: string | null;
   date: string;
-  docs: null;
+  docs: Docs[];
   hova: string;
   prev: null;
   answer: string | null;
@@ -57,7 +81,7 @@ export interface MonthlyInquiry {
 export interface GeneralInquiry {
   sum: number | null;
   chen: string;
-  docs: null;
+  docs: Docs[];
   answer: string | null;
   remarks: string | null;
   headline: string | null;
