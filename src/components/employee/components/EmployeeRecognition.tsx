@@ -51,12 +51,12 @@ export default function EmployeeRecognition(
   { employees, leavingReasons }: { employees: Employee[], leavingReasons: LeavingReason[] }
 ) {
 
-//   {
-// recordId,
-// leavingReason,
-// leavingDate,
-// remarks
-// }
+  //   {
+  // recordId,
+  // leavingReason,
+  // leavingDate,
+  // remarks
+  // }
   const form = useForm<EmployeeRecognitionFormValues>({
     resolver: zodResolver(employeeRecognitionSchema),
     defaultValues: {
@@ -73,7 +73,7 @@ export default function EmployeeRecognition(
     try {
       // Show loading toast
       const loadingToast = toast.loading('מעבד את הבקשה...');
-      
+
       const response = await fetch('https://hook.eu2.make.com/6yvgowfqvfq0maax195lb7s0x2ayb53m', {
         method: 'POST',
         headers: {
@@ -86,11 +86,11 @@ export default function EmployeeRecognition(
       toast.dismiss(loadingToast);
 
       if (response.ok) {
-        toast.success('העובד הוסר בהצלחה', {
+        toast.success('העובד הוסר בהצלחה', {
           description: 'הנתונים נשמרו במערכת',
           duration: 4000,
         });
-        
+
         // Reset form after successful submission
         form.reset();
 
@@ -147,21 +147,21 @@ export default function EmployeeRecognition(
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex items-center justify-start gap-4">
-                    <FormLabel className="block text-lg font-medium text-gray-900 mb-3 text-right">
-                      שם העובד:
-                    </FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
-                      <FormControl>
-                        <SelectTrigger className="w-sm px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-right text-lg">
-                          <SelectValue placeholder="בחר עובד" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="text-right">
-                        { employees && employees.map((employee) => (
-                          <SelectItem key={employee.recordId} value={employee.recordId} className="text-right">{employee.firstName} {employee.lastName}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <FormLabel className="block text-lg font-medium text-gray-900 mb-3 text-right">
+                        שם העובד:
+                      </FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                        <FormControl>
+                          <SelectTrigger className="w-sm px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-right text-base">
+                            <SelectValue placeholder="בחר עובד" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="text-right">
+                          {employees && employees.map((employee) => (
+                            <SelectItem key={employee.recordId} value={employee.recordId} className="text-right">{employee.firstName} {employee.lastName}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <FormMessage className="text-right" />
                   </FormItem>
@@ -175,66 +175,66 @@ export default function EmployeeRecognition(
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex items-center justify-start gap-4">
-                    <FormLabel className="block text-lg font-medium text-gray-900 mb-3 text-right">
-                      תאריך עזיבה:
-                    </FormLabel>
-                    <FormControl>
-                       <div className="relative flex gap-2">
-                      <Input
-                        id="date"
-                        value={field.value}
-                        placeholder="June 01, 2025"
-                        className="bg-background pl-10 max-w-[150px] text-right"
-                        onChange={(e) => {
-                          const date = new Date(e.target.value);
-                          field.onChange(e.target.value);
-                          if (isValidDate(date)) {
-                            setDate(date);
-                            setMonth(date);
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "ArrowDown") {
-                            e.preventDefault();
-                            setOpen(true);
-                          }
-                        }}
-                      />
-                      <Popover open={open} onOpenChange={setOpen}>
-                        <PopoverTrigger asChild>
-                          <Button
-                            id="date-picker"
-                            variant="ghost"
-                            className="absolute top-1/2 left-2 size-6 -translate-y-1/2"
-                          >
-                            <CalendarIcon className="size-3.5" />
-                            <span className="sr-only">Select date</span>
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent
-                          className="w-auto overflow-hidden p-0"
-                          align="end"
-                          alignOffset={-8}
-                          sideOffset={10}
-                        >
-                          <Calendar
-                            mode="single"
-                            selected={date}
-                            captionLayout="dropdown"
-                            month={month}
-                            onMonthChange={setMonth}
-                            onSelect={(date) => {
-                              setDate(date);
-                              field.onChange(formatDate(date));
-                              setOpen(false);
+                      <FormLabel className="block text-lg font-medium text-gray-900 mb-3 text-right">
+                        תאריך עזיבה:
+                      </FormLabel>
+                      <FormControl>
+                        <div className="relative flex gap-2">
+                          <Input
+                            id="date"
+                            value={field.value}
+                            placeholder="01/06/2025"
+                            className="w-sm bg-background pl-10 text-right text-base"
+                            onChange={(e) => {
+                              const date = new Date(e.target.value);
+                              field.onChange(e.target.value);
+                              if (isValidDate(date)) {
+                                setDate(date);
+                                setMonth(date);
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "ArrowDown") {
+                                e.preventDefault();
+                                setOpen(true);
+                              }
                             }}
                           />
-                        </PopoverContent>
-                      </Popover>
+                          <Popover open={open} onOpenChange={setOpen}>
+                            <PopoverTrigger asChild>
+                              <Button
+                                id="date-picker"
+                                variant="ghost"
+                                className="absolute top-1/2 left-2 size-6 -translate-y-1/2"
+                              >
+                                <CalendarIcon className="size-3.5" />
+                                <span className="sr-only">Select date</span>
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              className="w-auto overflow-hidden p-0"
+                              align="end"
+                              alignOffset={-8}
+                              sideOffset={10}
+                            >
+                              <Calendar
+                                mode="single"
+                                selected={date}
+                                captionLayout="dropdown"
+                                month={month}
+                                onMonthChange={setMonth}
+                                onSelect={(date) => {
+                                  setDate(date);
+                                  field.onChange(formatDate(date));
+                                  setOpen(false);
+                                }}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                      </FormControl>
+                      <FormMessage className="text-right" />
                     </div>
-                    </FormControl>
-                    <FormMessage className="text-right" />
-                  </div>
                   </FormItem>
                 )}
               />
@@ -246,21 +246,21 @@ export default function EmployeeRecognition(
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex items-center justify-start gap-4">
-                    <FormLabel className="block text-lg font-medium text-gray-900 mb-3 text-right">
-                      סיבת עזיבה:
-                    </FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
-                      <FormControl>
-                        <SelectTrigger className="w-sm px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-right text-lg ">
-                          <SelectValue placeholder="בחר סיבת עזיבה" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="text-right">
-                        {leavingReasons && leavingReasons.map((reason) => (
-                          <SelectItem key={reason.reason} value={reason.reason} className="text-right">{reason.reason}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <FormLabel className="block text-lg font-medium text-gray-900 mb-3 text-right">
+                        סיבת עזיבה:
+                      </FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                        <FormControl>
+                          <SelectTrigger className="w-sm px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-right text-base ">
+                            <SelectValue placeholder="בחר סיבת עזיבה" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="text-right">
+                          {leavingReasons && leavingReasons.map((reason) => (
+                            <SelectItem key={reason.reason} value={reason.reason} className="text-right">{reason.reason}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <FormMessage className="text-right" />
                   </FormItem>
@@ -274,13 +274,13 @@ export default function EmployeeRecognition(
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="block text-lg font-medium text-gray-900 mb-3 text-right">
-                      הערות: 
+                      הערות:
                     </FormLabel>
                     <FormControl>
-                      <textarea 
+                      <textarea
                         {...field}
-                        rows={4} 
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-right text-lg resize-none"
+                        rows={1}
+                        className="w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-right text-base resize-none min-h-[60px]"
                         placeholder=""
                       />
                     </FormControl>
@@ -291,8 +291,8 @@ export default function EmployeeRecognition(
 
               {/* Submit Button */}
               <div className="flex justify-center pt-8">
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="px-16 py-4 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors text-lg"
                 >
                   שלח

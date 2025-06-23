@@ -74,8 +74,8 @@ export interface MonthlyInquiry {
   remarks: string;
   question: string;
   supplier: string;
-  isDocsMandatory: boolean;
-  isTextManadatory: boolean; // Note: typo in original data 'Manadatory'
+  isDocMandatory: boolean;
+  isTextMandatory: boolean; // Note: typo in original data 'Manadatory'
 }
 
 export interface GeneralInquiry {

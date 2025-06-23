@@ -219,7 +219,7 @@ export default function Vacations({ recordId }: VacationsProps) {
                         קובץ פנסיה
                       </th>
                       <th className="px-4 py-4 text-center text-sm font-medium text-gray-900 border-l border-gray-300">
-                        קובץ עבודה
+                        הסכם העסקה
                       </th>
                       <th className="px-4 py-4 text-center text-sm font-medium text-gray-900 min-w-64">
                         הערות רואה חשבון
@@ -244,46 +244,7 @@ export default function Vacations({ recordId }: VacationsProps) {
                             {field.lastName || '-'}
                           </div>
                         </td>
-                        {/* 101 File */}
-                        <td className="px-4 py-4 border-l border-gray-200 text-center">
-                          <div className="flex flex-col items-center space-y-2">
-                            {field.file101?.name ? (
-                              <>
-                                <span className="text-sm text-gray-700" title={field.file101.name}>{truncateFileName(field.file101.name)}</span>
-                                <div className="flex space-x-2">
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleFileDownload(field.file101, 'file-101')}
-                                    className="text-xs"
-                                  >
-                                    הורד
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleFileUpload(field.recordId, '101')}
-                                    className="text-xs"
-                                  >
-                                    עדכן
-                                  </Button>
-                                </div>
-                              </>
-                            ) : (
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleFileUpload(field.recordId, '101')}
-                                className="text-xs"
-                              >
-                                העלה קובץ
-                              </Button>
-                            )}
-                          </div>
-                        </td>
+                        
                         {/* Pension File */}
                         <td className="px-4 py-4 border-l border-gray-200 text-center">
                           <div className="flex flex-col items-center space-y-2">

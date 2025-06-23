@@ -56,7 +56,7 @@ const generateSampleData = (): EmployeeData[] => {
 
 export default function MonthlyReport({ columnSettings, onColumnToggle, dynamicColumnSettings, onDynamicColumnToggle, employees, apiResponse, clientRecordId }: MonthlyReportProps) {
   const [showSettingsPopup, setShowSettingsPopup] = useState(false);
-  
+
   // Use API data if available, otherwise fallback to sample data
   const displayEmployees = employees.length > 0 ? convertEmployeeData(employees) : generateSampleData();
 
@@ -122,9 +122,9 @@ export default function MonthlyReport({ columnSettings, onColumnToggle, dynamicC
     <>
       {/* Settings Button */}
       <div className="flex justify-end items-center mb-4">
-        
+
         <div className="relative">
-          <Button 
+          <Button
             variant="ghost"
             size="icon"
             onClick={() => setShowSettingsPopup(!showSettingsPopup)}
@@ -133,7 +133,7 @@ export default function MonthlyReport({ columnSettings, onColumnToggle, dynamicC
             <Settings className="w-6 h-6" />
           </Button>
 
-          <ColumnSettings 
+          <ColumnSettings
             isOpen={showSettingsPopup}
             onClose={() => setShowSettingsPopup(false)}
             columnSettings={columnSettings}
@@ -149,16 +149,15 @@ export default function MonthlyReport({ columnSettings, onColumnToggle, dynamicC
       {/* Table */}
       <Card>
         <CardContent className="p-0">
-          <div className="overflow-x-auto w-[1000px]">
+          <div className="overflow-x-auto ">
             <table className="w-full overflow-x-auto" dir="rtl">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-300">
                   {visibleColumns.map((column, index) => (
-                    <th 
+                    <th
                       key={column.key}
-                      className={`px-4 py-3 text-right text-sm font-medium text-gray-900 ${
-                        index < visibleColumns.length - 0 ? 'border-r border-gray-300' : ''
-                      }`}
+                      className={`px-4 py-3 text-right text-sm font-medium text-gray-900 ${index < visibleColumns.length - 0 ? 'border-r border-gray-300' : ''
+                        }`}
                     >
                       {column.label}
                     </th>
@@ -167,18 +166,16 @@ export default function MonthlyReport({ columnSettings, onColumnToggle, dynamicC
               </thead>
               <tbody>
                 {displayEmployees.map((employee, rowIndex) => (
-                  <tr 
-                    key={employee.id} 
-                    className={`border-b border-gray-200 hover:bg-gray-50 transition-colors ${
-                      rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-25'
-                    }`}
+                  <tr
+                    key={employee.id}
+                    className={`border-b border-gray-200 hover:bg-gray-50 transition-colors ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-25'
+                      }`}
                   >
                     {visibleColumns.map((column, colIndex) => (
-                      <td 
+                      <td
                         key={column.key}
-                        className={`px-4 py-4 text-right text-sm text-gray-900 ${
-                          colIndex < visibleColumns.length - 0 ? 'border-r border-gray-200' : ''
-                        }`}
+                        className={`px-4 py-4 text-right text-sm text-gray-900 ${colIndex < visibleColumns.length - 0 ? 'border-r border-gray-200' : ''
+                          }`}
                       >
                         {renderCellContent(column, employee)}
                       </td>
@@ -191,7 +188,7 @@ export default function MonthlyReport({ columnSettings, onColumnToggle, dynamicC
         </CardContent>
       </Card>
 
-     
+
     </>
   );
 } 

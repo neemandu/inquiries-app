@@ -4,7 +4,7 @@ import React, { useState, useRef } from 'react';
 
 interface FileUploadProps {
   onFilesChange: (files: File[]) => void;
-  isMandatory?: boolean;
+  isMandatory: boolean;
 }
 
 export const FileUploadComponent = ({ onFilesChange, isMandatory = false }: FileUploadProps) => {
@@ -14,13 +14,13 @@ export const FileUploadComponent = ({ onFilesChange, isMandatory = false }: File
   const handleFileAdd = (newFiles: FileList) => {
     const newFilesArray = Array.from(newFiles);
     const updatedFiles = [...files];
-    
+
     newFilesArray.forEach(newFile => {
       if (!updatedFiles.some(existing => existing.name === newFile.name && existing.size === newFile.size)) {
         updatedFiles.push(newFile);
       }
     });
-    
+
     setFiles(updatedFiles);
     onFilesChange(updatedFiles);
   };
@@ -94,7 +94,7 @@ export const FileUploadComponent = ({ onFilesChange, isMandatory = false }: File
           className="custom-file-button"
           onClick={() => inputRef.current?.click()}
         >
-          בחרו קבצים {isMandatory && <span style={{color: 'red'}}>*</span>}
+          בחרו קבצים {isMandatory && <span style={{ color: 'red' }}>*</span>}
         </button>
         <div className="selected-files">
           {files.map((file, index) => (
