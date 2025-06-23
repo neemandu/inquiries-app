@@ -30,12 +30,12 @@ const navigationItems = [
   },
   {
     id: 'pay-slip' as ViewType,
-    label: 'תלושי שכר',
+    label: 'דוחות חודשיים',
     icon: '/icons/order.png',
   },
   {
     id: 'vacations' as ViewType,
-    label: 'חוסרים',
+    label: 'מסמכים חסרים',
     icon: '/icons/alarm.png',
   },
 ];
