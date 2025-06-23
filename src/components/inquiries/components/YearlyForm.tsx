@@ -94,9 +94,6 @@ export default function YearlyForm({ yearlyData, recordId, employer }: YearlyFor
 
     return (
         <div dir="rtl">
-            <div className="logo-container">
-                <img src="https://i.imgur.com/J6mXT1Z.jpeg" alt="לוגו" />
-            </div>
             <h2>עדכון בירורים עבור: {employer}</h2>
             <div style={{ color: 'red', marginBottom: '1rem' }}>
                 הערה: ניתן להגיש את הטופס גם אם חלק מהבירורים טרם הושלמו
@@ -145,7 +142,7 @@ export default function YearlyForm({ yearlyData, recordId, employer }: YearlyFor
                         <hr />
                     </div>
                 ))}
-                {yearlyData.length > 0 ? <button type="submit" disabled={isSubmitting}>שלח בירורים שנתיים</button> : <div dir="rtl" className="text-center">אין עוד עירורים</div>}
+                {yearlyData.length > 0 ? <button type="submit" disabled={isSubmitting}>שלח בירורים שנתיים</button> : <div dir="" className="text-center">אין עוד בירורים</div>}
             </form>
             <style jsx>{`
         .yearly-set {
