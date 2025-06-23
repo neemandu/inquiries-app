@@ -4,6 +4,7 @@ import { useState } from 'react';
 import FileUploadComponent from './FileUploadComponent';
 import { GeneralInquiry } from '@/lib/types';
 import { toBase64 } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface YearlyFormProps {
     yearlyData?: GeneralInquiry[];
@@ -28,7 +29,20 @@ export default function YearlyForm({ yearlyData, recordId, employer }: YearlyFor
         event.preventDefault();
         if (!recordId || !yearlyData) return;
 
+        // Client-side validation for mandatory fields
+        for (const item of yearlyData) {
+            if (item.isTextMandatory && !answers[item.question]?.trim()) {
+                toast.error(`שדה חובה: יש למלא תשובה עבור "${item.question}"`, { duration: 5000 });
+                return;
+            }
+            if (item.isDocMandatory && (!files[item.question] || files[item.question].length === 0)) {
+                toast.error(`שדה חובה: יש להעלות מסמך עבור "${item.question}"`, { duration: 5000 });
+                return;
+            }
+        }
+
         setIsSubmitting(true);
+        const loadingToastId = toast.loading('שולח נתונים...');
 
         const sets = await Promise.all(
             yearlyData.map(async item => {
@@ -55,22 +69,27 @@ export default function YearlyForm({ yearlyData, recordId, employer }: YearlyFor
                 body: JSON.stringify({ sets, recordId }),
             });
             if (!res.ok) throw new Error(await res.text());
-            alert('הנתונים נשלחו בהצלחה!');
+            toast.success('הנתונים נשלחו בהצלחה!', { id: loadingToastId, duration: 5000 });
             window.location.reload();
         } catch (error) {
             console.error('Failed to submit yearly data:', error);
-            alert(`שגיאה בשליחת הנתונים: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            toast.error(`שגיאה בשליחת הנתונים: ${error instanceof Error ? error.message : 'Unknown error'}`, { id: loadingToastId, duration: 5000 });
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    if (isSubmitting) {
-        return <div>שולח נתונים...</div>;
+    if (!yearlyData) {
+        return <div dir="rtl" className="text-center">טוען נתונים...</div>;
     }
 
-    if (!yearlyData) {
-        return <div>טוען נתונים...</div>;
+    if (isSubmitting) {
+        return (
+            <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white/80">
+                <div className="w-12 h-12 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+                <h2 className="mt-8 text-xl font-semibold text-gray-800 text-center">נא לא לסגור את החלון. הפעולה יכולה לקחת מספר דקות.</h2>
+            </div>
+        );
     }
 
     return (
@@ -98,17 +117,35 @@ export default function YearlyForm({ yearlyData, recordId, employer }: YearlyFor
                                 required={item.isTextMandatory}
                             />
                         </div>
-                        <div className="form-group">
+                        <div className="form-group flex items-start gap-4">
+                            <div>הערות:</div>
                             <FileUploadComponent
                                 onFilesChange={(newFiles) => handleFilesChange(item.question, newFiles)}
                                 isMandatory={item.isDocMandatory}
                             />
+                            {item.docs.length > 0 && (
+                                <ul className="flex flex-col gap-1 list-disc pr-4">
+                                    {item.docs.map((doc) => (
+                                        <li key={doc.id}>
+                                            <a
+                                                href={doc.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                style={{ textDecoration: 'underline' }}
+                                                title={doc.filename}
+                                            >
+                                                {doc.filename?.length && doc.filename?.length > 10 ? doc.filename?.slice(0, 10) + '...' : doc.filename}
+                                            </a>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                         </div>
                         {item.remarks && <p style={{ color: 'blue' }}>הערות: {item.remarks}</p>}
                         <hr />
                     </div>
                 ))}
-                <button type="submit" disabled={isSubmitting}>שלח בירורים שנתיים</button>
+                {yearlyData.length > 0 ? <button type="submit" disabled={isSubmitting}>שלח בירורים שנתיים</button> : <div dir="rtl" className="text-center">אין עוד עירורים</div>}
             </form>
             <style jsx>{`
         .yearly-set {

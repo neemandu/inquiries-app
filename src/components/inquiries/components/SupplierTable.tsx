@@ -4,152 +4,178 @@ import React, { useState } from 'react';
 import FileUploadComponent from './FileUploadComponent';
 import { MonthlyInquiry } from '@/lib/types';
 import { toBase64 } from '@/lib/utils';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 interface SupplierTableProps {
-    supplierId: string;
-    monthlyData?: MonthlyInquiry[];
-    recordId?: string;
-    employer?: string;
+  supplierId: string;
+  monthlyData?: MonthlyInquiry[];
+  recordId?: string;
+  employer?: string;
 }
 
 export default function SupplierTable({ supplierId, monthlyData, recordId, employer }: SupplierTableProps) {
-    console.log(monthlyData);
-    const [answers, setAnswers] = useState<{ [key: string]: string }>({});
-    const [files, setFiles] = useState<{ [key: string]: File[] }>({});
-    const [isSubmitting, setIsSubmitting] = useState(false);
+  const [answers, setAnswers] = useState<{ [key: string]: string }>({});
+  const [files, setFiles] = useState<{ [key: string]: File[] }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
 
-    const handleAnswerChange = (asm: string, value: string) => {
-        setAnswers(prev => ({ ...prev, [asm]: value }));
-    };
+  const handleAnswerChange = (key: string, value: string) => {
+    setAnswers(prev => ({ ...prev, [key]: value }));
+  };
 
-    const handleFilesChange = (asm: string, newFiles: File[]) => {
-        setFiles(prev => ({ ...prev, [asm]: newFiles }));
-    };
+  const handleFilesChange = (key: string, newFiles: File[]) => {
+    setFiles(prev => ({ ...prev, [key]: newFiles }));
+  };
 
-    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        if (!recordId || !filteredData) return;
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!recordId || !filteredData) return;
 
-        setIsSubmitting(true);
+    // Client-side validation for mandatory fields
+    for (const item of filteredData) {
+      const key = `${item.supplier}-${item.asm}`;
+      if (item.isTextManadatory && !answers[key]?.trim()) {
+        toast.error(`שדה חובה: יש למלא תשובה עבור "${item.question}"`, { duration: 5000 });
+        return;
+      }
+      if (item.isDocsMandatory && (!files[key] || files[key].length === 0)) {
+        toast.error(`שדה חובה: יש להעלות מסמך עבור "${item.question}"`, { duration: 5000 });
+        return;
+      }
+    }
 
-        const sets = await Promise.all(
-            filteredData.map(async item => {
-                const itemFiles = files[item.asm] || [];
-                const encodedFiles = await Promise.all(
-                    itemFiles.map(async f => ({
-                        name: f.name,
-                        data: await toBase64(f),
-                    }))
-                );
+    setIsSubmitting(true);
 
-                return {
-                    ...item,
-                    verbalAnswer: answers[item.asm] || '',
-                    files: encodedFiles,
-                };
-            })
+    const sets = await Promise.all(
+      filteredData.map(async item => {
+        const key = `${item.supplier}-${item.asm}`;
+        const itemFiles = files[key] || [];
+        const encodedFiles = await Promise.all(
+          itemFiles.map(async f => ({
+            name: f.name,
+            data: await toBase64(f),
+          }))
         );
 
-        try {
-            const res = await fetch('/api/suppliers', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sets, recordId }),
-            });
-            if (!res.ok) throw new Error(await res.text());
-            alert('הנתונים נשלחו בהצלחה!');
-            window.location.reload();
-        } catch (error) {
-            console.error('Failed to submit supplier data:', error);
-            alert(`שגיאה בשליחת הנתונים: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
+        return {
+          ...item,
+          verbalAnswer: answers[key] || '',
+          files: encodedFiles,
+        };
+      })
+    );
 
-    const filteredData = supplierId === 'הכל'
-        ? monthlyData
-        : monthlyData?.filter(item => item.supplier === supplierId);
-
-    if (!monthlyData) {
-        return <div>טוען נתונים...</div>;
+    try {
+      const res = await fetch('/api/suppliers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sets, recordId }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      toast.success('הנתונים נשלחו בהצלחה!', { duration: 5000 });
+      setTimeout(() => {
+        router.refresh();
+      }, 1200);
+    } catch (error) {
+      console.error('Failed to submit supplier data:', error);
+      toast.error(`שגיאה בשליחת הנתונים: ${error instanceof Error ? error.message : 'Unknown error'}`, { duration: 5000 });
+    } finally {
+      setIsSubmitting(false);
     }
+  };
 
-    if (isSubmitting) {
-        return <div>שולח נתונים...</div>;
-    }
+  const filteredData = supplierId === 'הכל'
+    ? monthlyData
+    : monthlyData?.filter(item => item.supplier === supplierId);
 
+  if (!monthlyData) {
+    return <div dir="rtl" className="text-center">טוען נתונים...</div>;
+  }
+
+  if (isSubmitting) {
     return (
-        <div dir="rtl">
-            <div className="logo-container">
-                <img src="https://i.imgur.com/J6mXT1Z.jpeg" alt="לוגו" />
-            </div>
-            <h2>עדכון בירורים עבור: {employer}</h2>
-            <div style={{ color: 'red', marginBottom: '1rem' }}>
-                הערה: ניתן להגיש את הטופס גם אם חלק מהבירורים טרם הושלמו
-            </div>
+      <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white/80">
+        <div className="w-12 h-12 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+        <h2 className="mt-8 text-xl font-semibold text-gray-800 text-center">נא לא לסגור את החלון. הפעולה יכולה לקחת מספר דקות.</h2>
+      </div>
+    );
+  }
 
-            <form onSubmit={handleSubmit}>
-                <table className="supplier-table">
-                    <colgroup>
-                        <col style={{ width: '8%' }} /> {/* שם ספק */}
-                        <col style={{ width: '6%' }} /> {/* אסמ. */}
-                        <col style={{ width: '6%' }} /> {/* אסמ. 2 */}
-                        <col style={{ width: '7%' }} /> {/* תאריך */}
-                        <col style={{ width: '18%' }} /> {/* פרטים */}
-                        <col style={{ width: '7%' }} /> {/* חובה */}
-                        <col style={{ width: '7%' }} /> {/* זכות */}
-                        <col style={{ width: '8%' }} /> {/* שאלות */}
-                        <col style={{ width: '20%' }} /> {/* תשובה מילולית */}
-                        <col style={{ width: '13%' }} /> {/* מסמכים */}
-                    </colgroup>
-                    <thead>
-                        <tr>
-                            <th>שם ספק</th>
-                            <th>אסמ.</th>
-                            <th>אסמ. 2</th>
-                            <th>תאריך</th>
-                            <th>פרטים</th>
-                            <th>חובה</th>
-                            <th>זכות</th>
-                            <th>שאלות</th>
-                            <th>תשובה מילולית</th>
-                            <th>מסמכים</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredData?.map((item, index) => (
-                            <tr key={item.asm || index}>
-                                <td>{item.supplier}</td>
-                                <td>{item.asm}</td>
-                                <td>{item.asm2}</td>
-                                <td>{new Date(item.date).toLocaleDateString('he-IL')}</td>
-                                <td>{item.details}</td>
-                                <td>{item.hova}</td>
-                                <td>{item.prev}</td>
-                                <td>{item.question}</td>
-                                <td>
-                                    <textarea
-                                        value={answers[item.asm] || ''}
-                                        onChange={(e) => handleAnswerChange(item.asm, e.target.value)}
-                                        placeholder="תשובה..."
-                                        required={item.isTextManadatory}
-                                    />
-                                </td>
-                                <td>
-                                    <FileUploadComponent
-                                        onFilesChange={(newFiles) => handleFilesChange(item.asm, newFiles)}
-                                        isMandatory={item.isDocsMandatory}
-                                    />
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-                <button type="submit" disabled={isSubmitting}>שלח</button>
-            </form>
+  return (
+    <div dir="rtl">
+      <div className="logo-container">
+        <img src="https://i.imgur.com/J6mXT1Z.jpeg" alt="לוגו" />
+      </div>
+      <h2>עדכון בירורים עבור: {employer}</h2>
+      <div style={{ color: 'red', marginBottom: '1rem' }}>
+        הערה: ניתן להגיש את הטופס גם אם חלק מהבירורים טרם הושלמו
+      </div>
 
-            <style jsx>{`
+      <form onSubmit={handleSubmit}>
+        <table className="supplier-table">
+          <colgroup>
+            <col style={{ width: '12%' }} /> {/* שם ספק */}
+            <col style={{ width: '10%' }} /> {/* אסמ. */}
+            <col style={{ width: '8%' }} /> {/* אסמ. 2 */}
+            <col style={{ width: '10%' }} /> {/* תאריך */}
+            <col style={{ width: '10%' }} /> {/* פרטים */}
+            <col style={{ width: '8%' }} /> {/* חובה */}
+            <col style={{ width: '7%' }} /> {/* זכות */}
+            <col style={{ width: '30%' }} /> {/* שאלות */}
+            <col style={{ width: '30%' }} /> {/* תשובה מילולית */}
+            <col style={{ width: '20%' }} /> {/* מסמכים */}
+          </colgroup>
+          <thead>
+            <tr>
+              <th>שם ספק</th>
+              <th>אסמ.</th>
+              <th>אסמ. 2</th>
+              <th>תאריך</th>
+              <th>פרטים</th>
+              <th>חובה</th>
+              <th>זכות</th>
+              <th>שאלות</th>
+              <th>תשובה מילולית</th>
+              <th>מסמכים</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredData?.map((item, index) => {
+              const key = `${item.supplier}-${item.asm}`;
+              return (
+                <tr key={key + '-' + index}>
+                  <td>{item.supplier}</td>
+                  <td>{item.asm}</td>
+                  <td>{item.asm2}</td>
+                  <td>{new Date(item.date).toLocaleDateString('he-IL')}</td>
+                  <td>{item.details}</td>
+                  <td>{item.hova}</td>
+                  <td>{item.prev}</td>
+                  <td>{item.question}</td>
+                  <td>
+                    <textarea
+                      value={answers[key] || ''}
+                      onChange={(e) => handleAnswerChange(key, e.target.value)}
+                      placeholder="תשובה..."
+                      required={item.isTextManadatory}
+                    />
+                  </td>
+                  <td>
+                    <FileUploadComponent
+                      onFilesChange={(newFiles) => handleFilesChange(key, newFiles)}
+                      isMandatory={item.isDocsMandatory}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        <button type="submit" disabled={isSubmitting}>שלח</button>
+      </form>
+
+      <style jsx>{`
         table {
           table-layout: fixed;
           width: 100%;
@@ -237,6 +263,6 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
           max-width: 200px;
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 } 

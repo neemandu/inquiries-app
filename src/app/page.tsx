@@ -17,7 +17,7 @@ import SupplierTable from '@/components/inquiries/components/SupplierTable';
 
 export default function EmployeesPage() {
   const { user, isLoaded } = useUser();
-  const [activeView, setActiveView] = useState<ViewType>('monthly-report');
+  const [activeView, setActiveView] = useState<ViewType | null>(null);
   const [columnSettings, setColumnSettings] = useState<ColumnSettingsType>({
     travel: true,
     competition: true,
@@ -42,8 +42,10 @@ export default function EmployeesPage() {
         setLoading(true);
         try {
           const data = await fetchEmployeeData('neemandu@gmail.com');
+          console.log('data', data);
           if (data) {
             setApiResponse({ ...data, recordId: data.recordId });
+            // setApiResponse({ ...data, recordId: 'recObnrdp6wLl26Pm' });
             setEmployees(data.employees);
             if (data.columnNames) {
               const newDynamicSettings: DynamicColumnSettings = {};
@@ -176,18 +178,18 @@ export default function EmployeesPage() {
   const handleSupplierSelect = (supplier: string) => {
     setSelectedSupplier(supplier);
     setShowYearlyForm(false);
-    setActiveView('' as ViewType);
+    setActiveView(null);
   };
 
   const handleShowYearlyForm = () => {
     setShowYearlyForm(true);
     setSelectedSupplier(null);
-    setActiveView('' as ViewType);
+    setActiveView(null);
   };
 
   const renderMainContent = () => {
     if (loading) {
-      return <div className="flex items-center justify-end h-64"><div className="text-lg text-gray-600">...טוען נתוני עובדים</div></div>;
+      return <div dir="rtl" className="flex items-center justify-center h-64"><div className="text-lg text-gray-600">...טוען נתוני עובדים</div></div>;
     }
 
     if (showYearlyForm) {
@@ -218,34 +220,35 @@ export default function EmployeesPage() {
     <div className="min-h-screen bg-gray-50">
       <header className="w-full p-4 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-gray-900"><Image src="/logo.jpg" alt="logo" width={50} height={50} /></Link>
+          <Link href="/" className="text-2xl font-bold text-gray-900"><Image src="/logo.jpg" alt="logo" width={100} height={100} /></Link>
           <div className="flex items-center gap-4">
             <SignedIn>
               <UserButton />
-              <Link href="/inquiries" className="px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors">פניות</Link>
             </SignedIn>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto p-6">
+      <main className="mx-auto p-6 w-full">
         <SignedIn>
-          <div className="flex gap-6 h-full">
+          <div className="flex h-full">
             <div className="flex-1 bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
               {renderMainContent()}
             </div>
-            <EmployersSidebar
-              activeView={activeView}
-              onViewChange={(view) => {
-                setActiveView(view);
-                setSelectedSupplier(null);
-                setShowYearlyForm(false);
-              }}
-              suppliers={suppliers}
-              selectedSupplier={selectedSupplier}
-              onSupplierSelect={handleSupplierSelect}
-              onShowYearlyForm={handleShowYearlyForm}
-            />
+            <div className="w-[220px] mx-6">
+              <EmployersSidebar
+                activeView={loading ? undefined : activeView}
+                onViewChange={(view) => {
+                  setActiveView(view);
+                  setSelectedSupplier(null);
+                  setShowYearlyForm(false);
+                }}
+                suppliers={suppliers}
+                selectedSupplier={loading ? null : selectedSupplier}
+                onSupplierSelect={handleSupplierSelect}
+                onShowYearlyForm={handleShowYearlyForm}
+              />
+            </div>
           </div>
         </SignedIn>
         <SignedOut>
