@@ -96,7 +96,12 @@ cp .env.example .env.local
 
 4. Configure Clerk authentication keys in `.env.local`
 
-5. Run the development server:
+```
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+CLERK_SECRET_KEY=
+```
+
+1. Run the development server:
 
 ```bash
 npm run dev
