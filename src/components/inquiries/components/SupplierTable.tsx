@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import FileUploadComponent from './FileUploadComponent';
 import { MonthlyInquiry } from '@/lib/types';
 import { toBase64 } from '@/lib/utils';
@@ -20,6 +20,22 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
+  const filteredData = supplierId === 'הכל'
+    ? monthlyData
+    : monthlyData?.filter(item => item.supplier === supplierId);
+
+  // Populate initial answers from data
+  useEffect(() => {
+    if (filteredData) {
+      const initialAnswers: { [key: string]: string } = {};
+      filteredData.forEach(item => {
+        const key = `${item.supplier}-${item.asm}`;
+        initialAnswers[key] = item.answer || '';
+      });
+      setAnswers(initialAnswers);
+    }
+  }, [filteredData]);
+
   const handleAnswerChange = (key: string, value: string) => {
     setAnswers(prev => ({ ...prev, [key]: value }));
   };
@@ -35,11 +51,11 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
     // Client-side validation for mandatory fields
     for (const item of filteredData) {
       const key = `${item.supplier}-${item.asm}`;
-      if (item.isTextManadatory && !answers[key]?.trim()) {
+      if (item.isTextMandatory && !answers[key]?.trim()) {
         toast.error(`שדה חובה: יש למלא תשובה עבור "${item.question}"`, { duration: 5000 });
         return;
       }
-      if (item.isDocsMandatory && (!files[key] || files[key].length === 0)) {
+      if (item.isDocMandatory && (!files[key] || files[key].length === 0)) {
         toast.error(`שדה חובה: יש להעלות מסמך עבור "${item.question}"`, { duration: 5000 });
         return;
       }
@@ -85,12 +101,8 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
     }
   };
 
-  const filteredData = supplierId === 'הכל'
-    ? monthlyData
-    : monthlyData?.filter(item => item.supplier === supplierId);
-
   if (!monthlyData) {
-    return <div dir="rtl" className="text-center">טוען נתונים...</div>;
+    return <div dir="" className="text-center">טוען נתונים...</div>;
   }
 
   if (isSubmitting) {
@@ -101,12 +113,10 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
       </div>
     );
   }
+  console.log('filteredData', filteredData);
 
   return (
     <div dir="rtl">
-      <div className="logo-container">
-        <img src="https://i.imgur.com/J6mXT1Z.jpeg" alt="לוגו" />
-      </div>
       <h2>עדכון בירורים עבור: {employer}</h2>
       <div style={{ color: 'red', marginBottom: '1rem' }}>
         הערה: ניתן להגיש את הטופס גם אם חלק מהבירורים טרם הושלמו
@@ -155,17 +165,35 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
                   <td>{item.question}</td>
                   <td>
                     <textarea
+                      style={{ border: item.isTextMandatory ? '1px solid red' : '1px solid #ccc' }}
                       value={answers[key] || ''}
                       onChange={(e) => handleAnswerChange(key, e.target.value)}
                       placeholder="תשובה..."
-                      required={item.isTextManadatory}
+                      required={item.isTextMandatory}
                     />
                   </td>
                   <td>
                     <FileUploadComponent
                       onFilesChange={(newFiles) => handleFilesChange(key, newFiles)}
-                      isMandatory={item.isDocsMandatory}
+                      isMandatory={item.isDocMandatory}
                     />
+                    {item.docs.length > 0 && (
+                      <ul className="flex flex-col gap-1 list-disc pr-4 w-full">
+                        {item.docs.map((doc) => (
+                          <li key={doc.id}>
+                            <a
+                              href={doc.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ textDecoration: 'underline' }}
+                              title={doc.filename}
+                            >
+                              {doc.filename?.length && doc.filename?.length > 10 ? doc.filename?.slice(0, 10) + '...' : doc.filename}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </td>
                 </tr>
               );

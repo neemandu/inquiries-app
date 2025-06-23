@@ -189,7 +189,7 @@ export default function EmployeesPage() {
 
   const renderMainContent = () => {
     if (loading) {
-      return <div dir="rtl" className="flex items-center justify-center h-64"><div className="text-lg text-gray-600">...טוען נתוני עובדים</div></div>;
+      return <div dir="" className="flex items-center justify-center h-64"><div className="text-lg text-gray-600">...טוען נתוני עובדים</div></div>;
     }
 
     if (showYearlyForm) {
@@ -220,7 +220,9 @@ export default function EmployeesPage() {
     <div className="min-h-screen bg-gray-50">
       <header className="w-full p-4 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-gray-900"><Image src="/logo.jpg" alt="logo" width={100} height={100} /></Link>
+          <div className="logo-container">
+            <Image src="https://i.imgur.com/J6mXT1Z.jpeg" alt="לוגו" width={200} height={200} />
+          </div>
           <div className="flex items-center gap-4">
             <SignedIn>
               <UserButton />

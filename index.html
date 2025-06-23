@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>עדכון בירורים</title>
+    <style>
+        .logo-container {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .required {
+            color: red;
+            /* במרחב RTL, margin-inline-end מוסיף רווח בין הכוכבית לטקסט */
+            margin-inline-end: 0.25rem;
+            font-weight: bold;
+        }
+
+        .logo-container img {
+            max-width: 200px;
+            height: auto;
+            display: inline-block;
+        }
+
+        table {
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        /* 3. Column widths */
+        /* Column 2 (“שם ספק”): wide enough for names */
+        th:nth-child(2),
+        td:nth-child(2) {
+            width: 150px;
+        }
+
+        /* Column 17 (“תשובה מילולית”): allow plenty of room */
+        th:nth-child(10),
+        td:nth-child(10) {
+            width: 300px;
+        }
+
+        th:nth-child(11),
+        td:nth-child(11) {
+            width: 300px;
+        }
+
+        .cell-value {
+            white-space: normal;
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+
+        /* make both headers and cell text smaller */
+        table th,
+        table td {
+            font-size: 0.85em;
+            /* adjust this value as needed */
+        }
+
+        /* hide the first column (id) completely */
+        table th:nth-child(1),
+        table td:nth-child(1) {
+            display: none;
+        }
+
+        /* --- גלובלי --- */
+        body {
+            font-family: sans-serif;
+            background-color: #f0f4f8;
+            padding: 2rem;
+            direction: rtl;
+            text-align: right;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: #fff;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1rem;
+        }
+
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 0.5rem;
+            overflow: hidden;
+        }
+
+        th {
+            background: #eee;
+        }
+
+        input[readonly],
+        textarea[readonly] {
+            background: #f9f9f9;
+            color: #555;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        input[readonly] {
+            /* existing "plain text" rules: */
+            border: none;
+            background: transparent;
+            padding: 0;
+            margin: 0;
+            border-radius: 0;
+            line-height: 1.5;
+
+            /* new truncation rules: */
+            max-width: 120px;
+            /* adjust to your column width */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: inline-block;
+            /* needed for ellipsis to work */
+        }
+
+        textarea {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 0.5rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+
+        textarea {
+            resize: vertical;
+        }
+
+        /* --- העלאת קבצים --- */
+        .file-upload {
+            position: relative;
+            display: inline-block;
+        }
+
+        .custom-file-button {
+            position: relative;
+            display: inline-block;
+            padding: 0.5em 1em;
+            background: #007bff;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .file-upload input[type="file"] {
+            display: none !important;
+        }
+
+        input[readonly] {
+            border: none;
+            background: transparent;
+            padding: 0;
+            margin: 0;
+            /* remove any rounded corners */
+            border-radius: 0;
+            /* optional: make sure they line up like text */
+            line-height: 1.5;
+        }
+
+        .file-name {
+            display: inline-block;
+            margin-inline-start: 0.5rem;
+            vertical-align: middle;
+            color: #555;
+        }
+
+        button[type="submit"] {
+            display: block;
+            margin: 1rem auto 0;
+            padding: 0.75rem 1.5rem;
+            background: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 1em;
+            cursor: pointer;
+        }
+
+        button[type="submit"]:hover {
+            background: #0069d9;
+        }
+
+        .spinner-overlay {
+            display: none;
+            /* hidden by default */
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 6px solid #ddd;
+            border-top-color: #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .selected-files {
+            position: relative;
+            z-index: 2;
+        }
+
+        .file-item {
+            display: inline-block;
+            background: #f0f0f0;
+            padding: 0.2em 0.5em;
+            margin: 0.2em;
+            border-radius: 3px;
+        }
+
+        .file-item button {
+            margin-left: 0.5em;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .main-flex {
+            display: flex;
+            gap: 1.5rem;
+            align-items: flex-start;
+        }
+
+        .sidebar {
+            min-width: 180px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem 0.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            height: 100%;
+            position: sticky;
+            top: 2rem;
+        }
+
+        .sidebar h3 {
+            font-size: 1.1em;
+            margin-bottom: 1em;
+            text-align: center;
+        }
+
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar li {
+            margin-bottom: 0.5em;
+        }
+
+        .sidebar button {
+            width: 100%;
+            background: none;
+            border: none;
+            text-align: right;
+            padding: 0.5em 1em;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.2s;
+        }
+
+        .sidebar button.active,
+        .sidebar button:hover {
+            background: #007bff;
+            color: #fff;
+        }
+
+        @media (max-width: 800px) {
+            .main-flex {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                min-width: unset;
+                margin-bottom: 1rem;
+                position: static;
+            }
+        }
+
+        /* --- Yearly Form Card Styling --- */
+
+        #uploadFormYearly .logo-container {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        #uploadFormYearly h2 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.3em;
+        }
+
+        #uploadFormYearly .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        #uploadFormYearly input[type="text"] {
+            width: 100%;
+            max-width: 500px;
+            padding: 0.5rem;
+            font-size: 1em;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            background: #fff;
+            margin-top: 0.3rem;
+        }
+
+        #uploadFormYearly label {
+            font-weight: normal;
+            margin-bottom: 0.2rem;
+            display: inline-block;
+        }
+
+        #uploadFormYearly .file-upload {
+            margin-top: 0.3rem;
+        }
+
+        #uploadFormYearly button[type="submit"] {
+            display: block;
+            margin: 2rem auto 0;
+            padding: 0.75rem 1.5rem;
+            background: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 1em;
+            cursor: pointer;
+        }
+
+        #uploadFormYearly button[type="submit"]:hover {
+            background: #0069d9;
+        }
+
+        #uploadFormYearly .file-item {
+            display: block;
+            margin: 0.5em 0;
+            width: fit-content;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div class="main-flex">
+        <nav class="sidebar" id="supplierSidebar">
+            <h3>ספקים</h3>
+            <ul id="supplierList">
+                <!-- Populated by JS -->
+            </ul>
+            <br />
+            <button id="yearly">בירורים כלליים>></button>
+        </nav>
+        <div class="container" style="min-width: 40vw; min-height: 40vh;">
+            <div class="logo-container">
+                <img src="https://i.imgur.com/J6mXT1Z.jpeg" alt="לוגו" />
+            </div>
+            <h2>עדכון בירורים עבור: זקי דיאב חברת עורכי דין</h2>
+            <div style="color:red;">הערה: ניתן להגיש את הטופס גם אם חלק מהבירורים טרם הושלמו</div>
+
+            <form id="uploadForm" style="display: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>id</th>
+                            <th>שם ספק</th>
+                            <th>אסמ.</th>
+                            <th>אס. 2</th>
+                            <th>תאריך</th>
+                            <th>פרטים</th>
+                            <th>חובה</th>
+                            <th>זכות</th>
+                            <th>שאלות</th>
+                            <th>תשובה מילולית</th>
+                            <th>מסמכים</th>
+                        </tr>
+                    </thead>
+                    <tbody id="supplierTableBody">
+                    </tbody>
+                </table>
+                <button type="submit">שלח</button>
+            </form>
+
+            <form id="uploadFormYearly" style="display: none;">
+                <div class="yearlyset">
+                    <label for="yearlySubject" style="font-size: 1.2em;">1)
+                        timewatch : שם משתמש וסיסמה
+                        אני לא מצליחה להכנס עם הפרטים שרשמת, אולי יש טעות? <span class="required">*</span></label>
+                    <div class="form-group">
+                        <input type="text" id="textreca5c7KurnDEngHp" name="textreca5c7KurnDEngHp"
+                            value="קוד חברה- 11235, שם משתמש: אלה,  סיסמא: ella2525" placeholder="" />
+                    </div>
+                    <div class="form-group">
+                        <input type="hidden" id="reca5c7KurnDEngHp" value="reca5c7KurnDEngHp" />
+                        <div class="form-group">
+                            <label for="filereca5c7KurnDEngHp">העלאת מסמכים:</label>
+                            <div class="file-upload">
+                                <input type="file" id="filereca5c7KurnDEngHp" multiple style="display:none">
+                                <button type="button" class="custom-file-button">בחרו קבצים</button>
+                                <span class="file-name" id="fileName">לא נבחרו קבצים</span>
+                                <div class="selected-files"></div>
+                            </div>
+                        </div>
+
+                        <!-- New comments field -->
+                        <div class="form-group">
+                            <label for="commentsreca5c7KurnDEngHp"><u>הערות:</u></label>
+                            <p style="color:blue"></p>
+                        </div>
+                    </div>
+                    <br />
+                    ________________________________________
+                    <br /><br /><br />
+                    <div class="yearlyset">
+                        <label for="yearlySubject" style="font-size: 1.2em;">2)
+                            גישה לאתר כרטיס אשראי: א. איזה כרטיס אשראי (הוצאות)
+                            ב. פרטי גישה לאתר(שם משתמש וסיסמא קבועה) <span class="required">*</span></label>
+                        <div class="form-group">
+                            <input type="text" id="textrecsnRcqf3wELCS1a" name="textrecsnRcqf3wELCS1a" value="זקי דיאב ניהול - 8641
+פרטי - 1144
+פרטי - 6420
+6196 - חברה זקי דיאב עורכי דין 
+" placeholder="" />
+                        </div>
+                        <div class="form-group">
+                            <input type="hidden" id="recsnRcqf3wELCS1a" value="recsnRcqf3wELCS1a" />
+                            <div class="form-group">
+                                <label for="filerecsnRcqf3wELCS1a">העלאת מסמכים:</label>
+                                <div class="file-upload">
+                                    <input type="file" id="filerecsnRcqf3wELCS1a" multiple style="display:none">
+                                    <button type="button" class="custom-file-button">בחרו קבצים</button>
+                                    <span class="file-name" id="fileName">לא נבחרו קבצים</span>
+                                    <div class="selected-files"></div>
+                                </div>
+                            </div>
+
+                            <!-- New comments field -->
+                            <div class="form-group">
+                                <label for="commentsrecsnRcqf3wELCS1a"><u>הערות:</u></label>
+                                <p style="color:blue"></p>
+                            </div>
+                        </div>
+                        <br />
+                        ________________________________________
+                        <br /><br /><br />
+                        <div class="yearlyset">
+                            <label for="yearlySubject" style="font-size: 1.2em;">3)
+                                גישה לבנקים: א. איזה בנק
+                                ב. האם הוקמת לנו הרשאת צפייה
+                                ג. מבקשים לקבל שם משתמש וסיסמה
+                                באיזה בנק מתנהל החשבון העסקי? עליך לפנות אליהם לבקש הרשאת צפייה לרו"ח אייל רייטר ת"ז
+                                43022664 <span class="required">*</span></label>
+                            <div class="form-group">
+                                <input type="text" id="textrecvJlzMDGUN7Yc2q" name="textrecvJlzMDGUN7Yc2q" value="בנק לאומי. תכתבו איך עושים הרשאה לצפיה. צריך לדעתי ת.ז. של רואה חשבון
+" placeholder="" />
+                            </div>
+                            <div class="form-group">
+                                <input type="hidden" id="recvJlzMDGUN7Yc2q" value="recvJlzMDGUN7Yc2q" />
+                                <div class="form-group">
+                                    <label for="filerecvJlzMDGUN7Yc2q">העלאת מסמכים:</label>
+                                    <div class="file-upload">
+                                        <input type="file" id="filerecvJlzMDGUN7Yc2q" multiple style="display:none">
+                                        <button type="button" class="custom-file-button">בחרו קבצים</button>
+                                        <span class="file-name" id="fileName">לא נבחרו קבצים</span>
+                                        <div class="selected-files"></div>
+                                    </div>
+                                </div>
+
+                                <!-- New comments field -->
+                                <div class="form-group">
+                                    <label for="commentsrecvJlzMDGUN7Yc2q"><u>הערות:</u></label>
+                                    <p style="color:blue"></p>
+                                </div>
+                            </div>
+                            <br />
+                            ________________________________________
+                            <br /><br /><br />
+                            <div class="yearlyset">
+                                <label for="yearlySubject" style="font-size: 1.2em;">4)
+                                    גישה לעודכנית: שם משתמש וסיסמה
+                                    אני צריכה גישה קבועה למחשב אצלכם או שתעברו לעודכנית על הענן <span
+                                        class="required">*</span></label>
+                                <div class="form-group">
+                                    <input type="text" id="textrecRs550J3ouFEuVa" name="textrecRs550J3ouFEuVa"
+                                        value="עודכנית שלי - שם משתמש " אלה" סיסמא אין" placeholder="" />
+                                </div>
+                                <div class="form-group">
+                                    <input type="hidden" id="recRs550J3ouFEuVa" value="recRs550J3ouFEuVa" />
+                                    <div class="form-group">
+                                        <label for="filerecRs550J3ouFEuVa">העלאת מסמכים:</label>
+                                        <div class="file-upload">
+                                            <input type="file" id="filerecRs550J3ouFEuVa" multiple style="display:none">
+                                            <button type="button" class="custom-file-button">בחרו קבצים</button>
+                                            <span class="file-name" id="fileName">לא נבחרו קבצים</span>
+                                            <div class="selected-files"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- New comments field -->
+                                    <div class="form-group">
+                                        <label for="commentsrecRs550J3ouFEuVa"><u>הערות:</u></label>
+                                        <p style="color:blue"></p>
+                                    </div>
+                                </div>
+                                <br />
+                                ________________________________________
+                                <br /><br /><br />
+                                <div class="yearlyset">
+                                    <label for="yearlySubject" style="font-size: 1.2em;">5) גמ"ח לכל העובדים בחברה
+                                        הישנה: יש לבדוק מול הרו"ח מה הדרך הנכונה לגבי תשלום גמח לכל העובדים מהחברה הישנה
+                                        <span class="required">*</span></label>
+                                    <div class="form-group">
+                                        <input type="text" id="textrecYdHbwRWCYdOoR7" name="textrecYdHbwRWCYdOoR7"
+                                            value="" placeholder="" />
+                                    </div>
+                                    <div class="form-group">
+                                        <input type="hidden" id="recYdHbwRWCYdOoR7" value="recYdHbwRWCYdOoR7" />
+                                        <div class="form-group">
+                                            <label for="filerecYdHbwRWCYdOoR7">העלאת מסמכים:</label>
+                                            <div class="file-upload">
+                                                <input type="file" id="filerecYdHbwRWCYdOoR7" multiple
+                                                    style="display:none">
+                                                <button type="button" class="custom-file-button">בחרו קבצים</button>
+                                                <span class="file-name" id="fileName">לא נבחרו קבצים</span>
+                                                <div class="selected-files"></div>
+                                            </div>
+                                        </div>
+
+                                        <!-- New comments field -->
+                                        <div class="form-group">
+                                            <label for="commentsrecYdHbwRWCYdOoR7"><u>הערות:</u></label>
+                                            <p style="color:blue"></p>
+                                        </div>
+                                    </div>
+                                    <br />
+                                    ________________________________________
+                                    <br /><br /><br />
+                                    <div class="yearlyset">
+                                        <label for="yearlySubject" style="font-size: 1.2em;">6) הוצאות רכב
+                                            [ עצמאי]
+                                            : להעביר רשיונות רכב לפייפרלס של כל עצמאי ונמשיך משם בהקמה. הוצאות רכב יועלו
+                                            במורשה בלבד.
+                                            *זקי – ליסינג, יעבירו הסכם ליסינג. וחשבוניות כל חודש במורשה.
+                                        </label>
+                                        <div class="form-group">
+                                            <input type="text" id="textrecy69IMvSdS9pNVN" name="textrecy69IMvSdS9pNVN"
+                                                value="ביקשתי מזקי וג'אד. אעביר בהמשך. " placeholder="" />
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="hidden" id="recy69IMvSdS9pNVN" value="recy69IMvSdS9pNVN" />
+                                            <div class="form-group">
+                                                <label for="filerecy69IMvSdS9pNVN">העלאת מסמכים:<span
+                                                        class="required">*</span></label>
+                                                <div class="file-upload">
+                                                    <input type="file" id="filerecy69IMvSdS9pNVN" multiple
+                                                        style="display:none">
+                                                    <button type="button" class="custom-file-button">בחרו קבצים</button>
+                                                    <span class="file-name" id="fileName">לא נבחרו קבצים</span>
+                                                    <div class="selected-files"></div>
+                                                </div>
+                                            </div>
+
+                                            <!-- New comments field -->
+                                            <div class="form-group">
+                                                <label for="commentsrecy69IMvSdS9pNVN"><u>הערות:</u></label>
+                                                <p style="color:blue"></p>
+                                            </div>
+                                        </div>
+                                        <br />
+                                        ________________________________________
+                                        <br /><br /><br />
+                                        <div class="yearlyset">
+                                            <label for="yearlySubject" style="font-size: 1.2em;">7) החזרי הוצאות עובדים:
+                                                כל הוצאה שמשולמת ע"י העובדים יש לרשום ע"ג המסמך שמועלה לפיפרלס ע"י מי
+                                                שולם והאם שולם לו ה"ה בתלוש <span class="required">*</span></label>
+                                            <div class="form-group">
+                                                <input type="text" id="textrec1uglKSJd20H5af"
+                                                    name="textrec1uglKSJd20H5af" value="" placeholder="" />
+                                            </div>
+                                            <div class="form-group">
+                                                <input type="hidden" id="rec1uglKSJd20H5af" value="rec1uglKSJd20H5af" />
+                                                <div class="form-group">
+                                                    <label for="filerec1uglKSJd20H5af">העלאת מסמכים:</label>
+                                                    <div class="file-upload">
+                                                        <input type="file" id="filerec1uglKSJd20H5af" multiple
+                                                            style="display:none">
+                                                        <button type="button" class="custom-file-button">בחרו
+                                                            קבצים</button>
+                                                        <span class="file-name" id="fileName">לא נבחרו קבצים</span>
+                                                        <div class="selected-files"></div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- New comments field -->
+                                                <div class="form-group">
+                                                    <label for="commentsrec1uglKSJd20H5af"><u>הערות:</u></label>
+                                                    <p style="color:blue"></p>
+                                                </div>
+                                            </div>
+                                            <br />
+                                            ________________________________________
+                                            <br /><br /><br />
+                                            <div class="yearlyset">
+                                                <label for="yearlySubject" style="font-size: 1.2em;">8) זקי עצמאי
+                                                    :
+                                                    נא להקים הרשאה לחיוב בבנק לביטוח לאומי (ואם הוא לא עשה אז גם למס
+                                                    הכנסה ולמעמ).
+
+                                                    הרשאות והוראת קבע:
+                                                    קוד מוסד:- זה מעין "תעודת הזהות" של המוסד בבנקים מבחינת שיוך הכספים
+                                                    המועברים אליו. כל גוף שגובה כספים בהרשאות או בהוראת קבע, מקבל מהבנק
+                                                    בו מתנהל חשבונו קוד שעל פיו הבנק יודע לאיזה מוסד לשייך כל תשלום
+                                                    ותשלום, כי המשלם מצידו מקים בבנק שלו הרשאה או ה.ק. עם הקוד שקיבל
+                                                    מהמוסד/הגוף אליו הוא מעוניין לשלם באופן רציף מידי חודש בחודשו.
+                                                    להלן קודי המוסד הרלוונטיים למייצגים:
+
+                                                    2760 - מקדמות מ.ה
+                                                    2761 - מעמ
+                                                    28900 - ב.ל. עצמאי
+
+                                                    מהי אסמכתא?
+                                                    הבנקים נותנים לזה שמות שונים, כגון: אסמכתא, מזהה, ובבנהפ מופיע כך:
+                                                    מספר לקוח/מנוי/משלם.
+
+                                                    ע"מ שהייצוג ייקלט באופן אוטומטי כבר בלילה של יום ההקמה, יש לרשום את
+                                                    מספר התיק בשדה אסמכתא: בעצמאי זו ת.ז.
+                                                </label>
+                                                <div class="form-group">
+                                                    <input type="text" id="textreca5zGALppQceCOJ"
+                                                        name="textreca5zGALppQceCOJ"
+                                                        value="הכל הוקם. לא נותן לצרף אסמכתאות. לוחץ על הכפתור והוא לא מגיב. "
+                                                        placeholder="" />
+                                                </div>
+                                                <div class="form-group">
+                                                    <input type="hidden" id="reca5zGALppQceCOJ"
+                                                        value="reca5zGALppQceCOJ" />
+                                                    <div class="form-group">
+                                                        <label for="filereca5zGALppQceCOJ">העלאת מסמכים:<span
+                                                                class="required">*</span></label>
+                                                        <div class="file-upload">
+                                                            <input type="file" id="filereca5zGALppQceCOJ" multiple
+                                                                style="display:none">
+                                                            <button type="button" class="custom-file-button">בחרו
+                                                                קבצים</button>
+                                                            <span class="file-name" id="fileName">לא נבחרו קבצים</span>
+                                                            <div class="selected-files"></div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- New comments field -->
+                                                    <div class="form-group">
+                                                        <label for="commentsreca5zGALppQceCOJ"><u>הערות:</u></label>
+                                                        <p style="color:blue"></p>
+                                                    </div>
+                                                </div>
+                                                <br />
+                                                ________________________________________
+                                                <br /><br /><br />
+            </form>
+
+            <form id="uploadForm1" style="display: none;"
+                action="https://hook.eu2.make.com/1area7zkgtos7f1m3n5twrd3qq50tqe5" method="POST"
+                enctype="multipart/form-data">
+                <input type="hidden" name="sets" id="setsField" />
+                <button type="submit">שלח בירורים שנתיים</button>
+            </form>
+        </div>
+    </div>
+    <!-- 2) Spinner markup -->
+    <div class="spinner-overlay" id="spinner">
+        <div class="spinner"></div>
+        <br /><br />
+        <h2>נא לא לסגור את החלון. הפעולה יכולה לקחת מספר דקות.</h2>
+    </div>
+    <script>
+        function toBase64(file) {
+            return new Promise((res, rej) => {
+                const reader = new FileReader();
+                reader.onload = () => res(reader.result.split(",")[1]);
+                reader.onerror = rej;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            // helper: turn a File into Base64 data
+
+
+            // 1) Initialize file-pickers for each row
+            document.querySelectorAll("tr.set").forEach((row) => {
+                const wrapper = row.querySelector(".file-upload");
+                const pickerBtn = wrapper.querySelector(".custom-file-button");
+                const listContainer = wrapper.querySelector(".selected-files");
+                const files = [];
+                wrapper._files = files; // expose to submit-handler
+
+                // on click, inject a one-off <input>, scope it to this row, open it, then remove it
+                pickerBtn.addEventListener("click", () => {
+                    const tmp = document.createElement("input");
+                    tmp.type = "file";
+                    tmp.multiple = true;
+                    tmp.style.display = "none";
+                    wrapper.appendChild(tmp);
+
+                    tmp.addEventListener("change", () => {
+                        Array.from(tmp.files).forEach((f) => {
+                            if (
+                                !files.some((x) => x.name === f.name && x.size === f.size)
+                            ) {
+                                files.push(f);
+                            }
+                        });
+                        render();
+                        wrapper.removeChild(tmp);
+                    });
+
+                    tmp.click();
+                });
+
+                // click on the "×" removes that file from the array & re-renders
+                listContainer.addEventListener("click", (e) => {
+                    if (!e.target.matches("button[data-index]")) return;
+                    const idx = Number(e.target.dataset.index);
+                    files.splice(idx, 1);
+                    render();
+                });
+
+                // draw pills for each file
+                function render() {
+                    listContainer.innerHTML = "";
+                    files.forEach((f, i) => {
+                        const span = document.createElement("span");
+                        span.className = "file-item";
+                        span.textContent = f.name;
+                        const btn = document.createElement("button");
+                        btn.type = "button";
+                        btn.dataset.index = i;
+                        btn.textContent = "×";
+                        span.appendChild(btn);
+                        listContainer.appendChild(span);
+                    });
+                }
+            });
+
+            // 2) Form submit: collect fields + Base64 files → send to Make.com
+            const form = document.getElementById("uploadForm");
+            const spinner = document.getElementById("spinner");
+            const submitBtn = form.querySelector('button[type="submit"]');
+
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                spinner.style.display = "flex";
+                submitBtn.disabled = true;
+
+                const rows = document.querySelectorAll("tr.set");
+                const sets = [];
+
+                // collect non-file fields
+                rows.forEach((row) => {
+                    const get = (name) => {
+                        const ctl = row.querySelector(`[name="${name}"]`);
+                        if (ctl) return ctl.value;
+                        const dv = row.querySelector(`.cell-value[data-field="${name}"]`);
+                        return dv ? dv.textContent.trim() : "";
+                    };
+                    sets.push({
+                        id: get("id"),
+                        supplierName: get("supplierName"),
+                        asm: get("asm"),
+                        asm2: get("asm2"),
+                        date: get("date"),
+                        details: get("details"),
+                        debit: get("debit"),
+                        credit: get("credit"),
+                        balance: get("balance"),
+                        verbalAnswer: get("verbalAnswer"),
+                        files: [], // to fill next
+                    });
+                });
+
+                // Base64-encode each row's files array
+                for (let i = 0; i < rows.length; i++) {
+                    const files = rows[i].querySelector(".file-upload")._files || [];
+                    sets[i].files = await Promise.all(
+                        files.map(async (f) => ({
+                            name: f.name,
+                            data: await toBase64(f),
+                        }))
+                    );
+                }
+
+                // send to your Make.com webhook
+                try {
+                    const res = await fetch(
+                        "https://hook.eu2.make.com/p1blghe3lplkmnn6215xpmkbiyry3d5w",
+                        {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ sets }),
+                        }
+                    );
+                    if (!res.ok) throw new Error(res.statusText);
+                    const html = await res.text();
+                    window.location.reload();
+                } catch (err) {
+                    spinner.style.display = "none";
+                    submitBtn.disabled = false;
+                    alert("❌ שגיאה: " + err.message);
+                }
+            });
+
+            // --- Supplier Sidebar Logic ---
+            const rows = Array.from(document.querySelectorAll("tr.set"));
+            const supplierList = document.getElementById("supplierList");
+            const tableBody = document.getElementById("supplierTableBody");
+
+            // Get unique suppliers
+            const suppliers = Array.from(
+                new Set(rows.map((row) => row.getAttribute("data-supplier")))
+            );
+
+            // Add "All" option
+            suppliers.unshift("הכל");
+
+            // Render sidebar
+            suppliers.forEach((supplier) => {
+                const li = document.createElement("li");
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.textContent = supplier;
+                btn.dataset.supplier = supplier;
+                if (supplier === "הכל") btn.classList.add("active");
+                li.appendChild(btn);
+                supplierList.appendChild(li);
+            });
+
+            // 3) Pick default‐active supplier:
+            // if there's at least one “real” supplier use index 1, otherwise fall back to index 0
+            const defaultIndex = suppliers.length > 1 ? 1 : 0;
+            const buttons = supplierList.querySelectorAll("button");
+
+            // clear whatever was marked “active” above
+            buttons.forEach((b) => b.classList.remove("active"));
+            // mark our chosen one
+            buttons[defaultIndex].classList.add("active");
+
+            // run the filter exactly as if the user had clicked that button:
+            filterRows(suppliers[defaultIndex]);
+
+
+
+
+            // Filter function
+            function filterRows(supplier) {
+                rows.forEach((row) => {
+                    if (
+                        supplier === "הכל" ||
+                        row.getAttribute("data-supplier") === supplier
+                    ) {
+                        row.style.display = "";
+                    } else {
+                        row.style.display = "none";
+                    }
+                });
+            }
+
+            // Sidebar click handler
+            supplierList.addEventListener("click", (e) => {
+                if (e.target.tagName !== "BUTTON") return;
+                supplierList
+                    .querySelectorAll("button")
+                    .forEach((btn) => btn.classList.remove("active"));
+                e.target.classList.add("active");
+                filterRows(e.target.dataset.supplier);
+            });
+        });
+
+        // --- Show yearly form, hide main form ---
+        document.getElementById('yearly').addEventListener('click', function () {
+            document.getElementById('uploadForm').style.display = 'none';
+            document.getElementById('uploadForm1').style.display = 'block';
+            document.getElementById('uploadFormYearly').style.display = 'block';
+        });
+
+        // --- When supplier button is clicked, show main form, hide yearly form ---
+        document.getElementById('supplierList').addEventListener('click', function (e) {
+            if (e.target.tagName === 'BUTTON') {
+                document.getElementById('uploadForm').style.display = 'block';
+                document.getElementById('uploadForm1').style.display = 'none';
+                document.getElementById('uploadFormYearly').style.display = 'none';
+            }
+        });
+
+        // Find every .file-upload inside the yearly form
+        document
+            .querySelectorAll("#uploadFormYearly .file-upload")
+            .forEach((yearlyWrapper) => {
+                const yearlyPickerBtn = yearlyWrapper.querySelector(".custom-file-button");
+                const yearlyListContainer = yearlyWrapper.querySelector(".selected-files");
+                const yearlyFiles = [];
+                yearlyWrapper._files = yearlyFiles;
+
+                // When user clicks “Choose files,” inject a hidden <input type="file">
+                yearlyPickerBtn.addEventListener("click", () => {
+                    const tmp = document.createElement("input");
+                    tmp.type = "file";
+                    tmp.multiple = true;
+                    tmp.style.display = "none";
+                    yearlyWrapper.appendChild(tmp);
+
+                    tmp.addEventListener("change", () => {
+                        Array.from(tmp.files).forEach((f) => {
+                            // Avoid duplicates
+                            if (!yearlyFiles.some((x) => x.name === f.name && x.size === f.size)) {
+                                yearlyFiles.push(f);
+                            }
+                        });
+                        renderYearlyFiles();
+                        yearlyWrapper.removeChild(tmp);
+                    });
+
+                    tmp.click();
+                });
+
+                // Clicking the “×” button removes that file
+                yearlyListContainer.addEventListener("click", (e) => {
+                    if (!e.target.matches("button[data-index]")) return;
+                    const idx = Number(e.target.dataset.index);
+                    yearlyFiles.splice(idx, 1);
+                    renderYearlyFiles();
+                });
+
+                function renderYearlyFiles() {
+                    yearlyListContainer.innerHTML = "";
+                    if (yearlyFiles.length === 0) {
+                        yearlyListContainer.textContent = "No files chosen";
+                        return;
+                    }
+                    yearlyFiles.forEach((f, i) => {
+                        const span = document.createElement("span");
+                        span.className = "file-item";
+                        span.textContent = f.name;
+                        const btn = document.createElement("button");
+                        btn.type = "button";
+                        btn.dataset.index = i;
+                        btn.textContent = "×";
+                        span.appendChild(btn);
+                        yearlyListContainer.appendChild(span);
+                    });
+                }
+            });
+
+        const form1 = document.getElementById('uploadForm1');
+        const yearlySubmitBtn = form1.querySelector('button[type="submit"]'); // Or input[type="submit"], if it's an <input>
+        const yearlySpinner = document.getElementById('spinner'); // Update this if your spinner has a different id
+        const webhookUrl = 'https://hook.eu2.make.com/1area7zkgtos7f1m3n5twrd3qq50tqe5';
+        form1.addEventListener('submit', async event => {
+            event.preventDefault();
+            yearlySpinner.style.display = 'flex';
+            yearlySubmitBtn.disabled = true;
+
+            // 1) build your sets[] array
+            const sets = [];
+            for (const setDiv of document.querySelectorAll('#uploadFormYearly .yearlyset')) {
+                const idVal = setDiv.querySelector('input[type="hidden"]').value;
+                const textVal = setDiv.querySelector('input[type="text"]').value;
+                const wrapper = setDiv.querySelector('.file-upload');
+                const files = wrapper._files || [];
+
+                // Base64-encode each File
+                const encoded = await Promise.all(
+                    files.map(async f => ({
+                        name: f.name,
+                        data: await toBase64(f)
+                    }))
+                );
+
+                sets.push({
+                    id: idVal,
+                    text: textVal,
+                    files: encoded
+                });
+            }
+
+            // 2) POST as JSON
+            try {
+                const res = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sets })
+                });
+                if (!res.ok) throw new Error(res.statusText);
+
+                // 3) load returned HTML
+                const html = await res.text();
+                window.location.reload();
+
+            } catch (err) {
+                yearlySpinner.style.display = 'none';
+                yearlySubmitBtn.disabled = false;
+                alert('❌ שגיאה בשליחה: ' + err.message);
+            }
+        });
+    </script>
+</body>
+
+</html>
