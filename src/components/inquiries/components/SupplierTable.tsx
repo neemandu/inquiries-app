@@ -113,9 +113,8 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
       setModifiedKeys(new Set());
       setInitialAnswers({...answers});
       
-      setTimeout(() => {
-        router.refresh();
-      }, 1200);
+      // Refresh immediately after successful response
+      router.refresh();
     } catch (error) {
       console.error('Failed to submit supplier data:', error);
       toast.error(`שגיאה בשליחת הנתונים: ${error instanceof Error ? error.message : 'Unknown error'}`, { duration: 5000 });
