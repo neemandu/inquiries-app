@@ -87,7 +87,6 @@ export const FileUploadComponent = ({ onFilesChange, isMandatory = false }: File
               handleFileAdd(e.target.files);
             }
           }}
-          required={isMandatory && files.length === 0}
         />
         <button
           type="button"

@@ -48,18 +48,18 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
     event.preventDefault();
     if (!recordId || !filteredData) return;
 
-    // Client-side validation for mandatory fields
-    for (const item of filteredData) {
-      const key = `${item.supplier}-${item.asm}`;
-      if (item.isTextMandatory && !answers[key]?.trim()) {
-        toast.error(`שדה חובה: יש למלא תשובה עבור "${item.question}"`, { duration: 5000 });
-        return;
-      }
-      if (item.isDocMandatory && (!files[key] || files[key].length === 0)) {
-        toast.error(`שדה חובה: יש להעלות מסמך עבור "${item.question}"`, { duration: 5000 });
-        return;
-      }
-    }
+    // // Client-side validation for mandatory fields
+    // for (const item of filteredData) {
+    //   const key = `${item.supplier}-${item.asm}`;
+    //   if (item.isTextMandatory && !answers[key]?.trim()) {
+    //     toast.error(`שדה חובה: יש למלא תשובה עבור "${item.question}"`, { duration: 5000 });
+    //     return;
+    //   }
+    //   if (item.isDocMandatory && (!files[key] || files[key].length === 0)) {
+    //     toast.error(`שדה חובה: יש להעלות מסמך עבור "${item.question}"`, { duration: 5000 });
+    //     return;
+    //   }
+    // }
 
     setIsSubmitting(true);
 
@@ -125,16 +125,16 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
       <form onSubmit={handleSubmit}>
         <table className="supplier-table">
           <colgroup>
-            <col style={{ width: '12%' }} /> {/* שם ספק */}
-            <col style={{ width: '10%' }} /> {/* אסמ. */}
-            <col style={{ width: '8%' }} /> {/* אסמ. 2 */}
-            <col style={{ width: '10%' }} /> {/* תאריך */}
-            <col style={{ width: '10%' }} /> {/* פרטים */}
-            <col style={{ width: '8%' }} /> {/* חובה */}
-            <col style={{ width: '7%' }} /> {/* זכות */}
-            <col style={{ width: '30%' }} /> {/* שאלות */}
-            <col style={{ width: '30%' }} /> {/* תשובה מילולית */}
-            <col style={{ width: '20%' }} /> {/* מסמכים */}
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '8%' }} />
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '8%' }} />
+            <col style={{ width: '7%' }} />
+            <col style={{ width: '30%' }} />
+            <col style={{ width: '30%' }} />
+            <col style={{ width: '20%' }} />
           </colgroup>
           <thead>
             <tr>
