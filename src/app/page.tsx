@@ -41,7 +41,7 @@ export default function EmployeesPage() {
       if (isLoaded && user?.emailAddresses?.[0]?.emailAddress) {
         setLoading(true);
         try {
-          const data = await fetchEmployeeData('neemandu@gmail.com');
+          const data = await fetchEmployeeData(user?.emailAddresses?.[0]?.emailAddress);
           console.log('data', data);
           if (data) {
             setApiResponse({ ...data, recordId: data.recordId });
