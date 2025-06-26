@@ -16,7 +16,9 @@ interface SupplierTableProps {
 
 export default function SupplierTable({ supplierId, monthlyData, recordId, employer }: SupplierTableProps) {
   const [answers, setAnswers] = useState<{ [key: string]: string }>({});
+  const [initialAnswers, setInitialAnswers] = useState<{ [key: string]: string }>({});
   const [files, setFiles] = useState<{ [key: string]: File[] }>({});
+  const [modifiedKeys, setModifiedKeys] = useState<Set<string>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
@@ -33,38 +35,54 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
         initialAnswers[key] = item.answer || '';
       });
       setAnswers(initialAnswers);
+      setInitialAnswers(initialAnswers);
     }
   }, [filteredData]);
 
   const handleAnswerChange = (key: string, value: string) => {
     setAnswers(prev => ({ ...prev, [key]: value }));
+    
+    // Track if this answer was modified
+    const initialValue = initialAnswers[key] || '';
+    if (value !== initialValue) {
+      setModifiedKeys(prev => new Set(prev).add(key));
+    } else {
+      setModifiedKeys(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(key);
+        return newSet;
+      });
+    }
   };
 
   const handleFilesChange = (key: string, newFiles: File[]) => {
     setFiles(prev => ({ ...prev, [key]: newFiles }));
+    
+    // Mark as modified when files are added/changed
+    if (newFiles.length > 0) {
+      setModifiedKeys(prev => new Set(prev).add(key));
+    }
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!recordId || !filteredData) return;
 
-    // // Client-side validation for mandatory fields
-    // for (const item of filteredData) {
-    //   const key = `${item.supplier}-${item.asm}`;
-    //   if (item.isTextMandatory && !answers[key]?.trim()) {
-    //     toast.error(`שדה חובה: יש למלא תשובה עבור "${item.question}"`, { duration: 5000 });
-    //     return;
-    //   }
-    //   if (item.isDocMandatory && (!files[key] || files[key].length === 0)) {
-    //     toast.error(`שדה חובה: יש להעלות מסמך עבור "${item.question}"`, { duration: 5000 });
-    //     return;
-    //   }
-    // }
+    // Filter only modified items
+    const modifiedItems = filteredData.filter(item => {
+      const key = `${item.supplier}-${item.asm}`;
+      return modifiedKeys.has(key);
+    });
+
+    if (modifiedItems.length === 0) {
+      toast.error('לא נמצאו שינויים לשליחה', { duration: 3000 });
+      return;
+    }
 
     setIsSubmitting(true);
 
     const sets = await Promise.all(
-      filteredData.map(async item => {
+      modifiedItems.map(async item => {
         const key = `${item.supplier}-${item.asm}`;
         const itemFiles = files[key] || [];
         const encodedFiles = await Promise.all(
@@ -89,7 +107,12 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
         body: JSON.stringify({ sets, recordId }),
       });
       if (!res.ok) throw new Error(await res.text());
-      toast.success('הנתונים נשלחו בהצלחה!', { duration: 5000 });
+      toast.success(`הנתונים נשלחו בהצלחה! (${modifiedItems.length} רשומות עודכנו)`, { duration: 5000 });
+      
+      // Clear modified keys after successful submission
+      setModifiedKeys(new Set());
+      setInitialAnswers({...answers});
+      
       setTimeout(() => {
         router.refresh();
       }, 1200);
@@ -121,6 +144,11 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
       <div style={{ color: 'red', marginBottom: '1rem' }}>
         הערה: ניתן להגיש את הטופס גם אם חלק מהבירורים טרם הושלמו
       </div>
+      {modifiedKeys.size > 0 && (
+        <div style={{ color: 'green', marginBottom: '1rem' }}>
+          {modifiedKeys.size} רשומות שונו ויישלחו
+        </div>
+      )}
 
       <form onSubmit={handleSubmit}>
         <table className="supplier-table">
@@ -153,8 +181,9 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
           <tbody>
             {filteredData?.map((item, index) => {
               const key = `${item.supplier}-${item.asm}`;
+              const isModified = modifiedKeys.has(key);
               return (
-                <tr key={key + '-' + index}>
+                <tr key={key + '-' + index} style={{ backgroundColor: isModified ? '#fff3cd' : 'transparent' }}>
                   <td>{item.supplier}</td>
                   <td>{item.asm}</td>
                   <td>{item.asm2}</td>
@@ -200,7 +229,9 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
             })}
           </tbody>
         </table>
-        <button type="submit" disabled={isSubmitting}>שלח</button>
+        <button type="submit" disabled={isSubmitting || modifiedKeys.size === 0}>
+          {modifiedKeys.size === 0 ? 'אין שינויים לשליחה' : `שלח (${modifiedKeys.size} שינויים)`}
+        </button>
       </form>
 
       <style jsx>{`
@@ -262,22 +293,22 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
           background: #0069d9;
         }
         .supplier-table {
-  table-layout: fixed;
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 1rem;
-}
-.supplier-table th,
-.supplier-table td {
-  border: 1px solid #ccc;
-  padding: 0.5rem;
-  overflow: hidden;
-  text-align: right;
-  font-size: 0.85em;
-}
-.supplier-table th {
-  background: #eee;
-}
+          table-layout: fixed;
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 1rem;
+        }
+        .supplier-table th,
+        .supplier-table td {
+          border: 1px solid #ccc;
+          padding: 0.5rem;
+          overflow: hidden;
+          text-align: right;
+          font-size: 0.85em;
+        }
+        .supplier-table th {
+          background: #eee;
+        }
         textarea {
           width: 100%;
           min-height: 50px;
