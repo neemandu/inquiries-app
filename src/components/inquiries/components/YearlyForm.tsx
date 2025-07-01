@@ -29,26 +29,30 @@ export default function YearlyForm({ yearlyData, recordId, employer }: YearlyFor
         event.preventDefault();
         if (!recordId || !yearlyData) return;
 
-        // Client-side validation for mandatory fields
-        for (let index = 0; index < yearlyData.length; index++) {
-            const item = yearlyData[index];
-            const questionKey = `${index}-${item.question}`;
-            if (item.isTextMandatory && !answers[questionKey]?.trim()) {
-                toast.error(`שדה חובה: יש למלא תשובה עבור "${item.question}"`, { duration: 5000 });
-                return;
-            }
-            if (item.isDocMandatory && (!files[questionKey] || files[questionKey].length === 0)) {
-                toast.error(`שדה חובה: יש להעלות מסמך עבור "${item.question}"`, { duration: 5000 });
-                return;
-            }
-        }
+        // No validation - allow sending even if mandatory fields are empty
 
         setIsSubmitting(true);
         const loadingToastId = toast.loading('שולח נתונים...');
 
+        // Only send records that have been changed (have answers or files)
+        const changedItems = yearlyData.filter((item, index) => {
+            const questionKey = `${index}-${item.question}`;
+            const hasAnswer = answers[questionKey]?.trim();
+            const hasFiles = files[questionKey] && files[questionKey].length > 0;
+            return hasAnswer || hasFiles;
+        });
+
+        if (changedItems.length === 0) {
+            toast.error('לא בוצעו שינויים. אנא מלא לפחות שדה אחד כדי לשלוח.', { duration: 5000 });
+            setIsSubmitting(false);
+            return;
+        }
+
         const sets = await Promise.all(
-            yearlyData.map(async (item, index) => {
-                const questionKey = `${index}-${item.question}`;
+            changedItems.map(async (item) => {
+                // Find the original index in yearlyData
+                const yearlyIndex = yearlyData.findIndex(yearlyItem => yearlyItem === item);
+                const questionKey = `${yearlyIndex}-${item.question}`;
                 const itemFiles = files[questionKey] || [];
                 const encodedFiles = await Promise.all(
                     itemFiles.map(async f => ({
@@ -117,7 +121,6 @@ export default function YearlyForm({ yearlyData, recordId, employer }: YearlyFor
                                     type="text"
                                     value={answers[questionKey] || ''}
                                     onChange={(e) => handleAnswerChange(questionKey, e.target.value)}
-                                    required={item.isTextMandatory}
                                 />
                             </div>
                             <div className="form-group flex items-start gap-4">
