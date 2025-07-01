@@ -17,12 +17,12 @@ export default function YearlyForm({ yearlyData, recordId, employer }: YearlyFor
     const [files, setFiles] = useState<{ [key: string]: File[] }>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleAnswerChange = (question: string, value: string) => {
-        setAnswers(prev => ({ ...prev, [question]: value }));
+    const handleAnswerChange = (questionKey: string, value: string) => {
+        setAnswers(prev => ({ ...prev, [questionKey]: value }));
     };
 
-    const handleFilesChange = (question: string, newFiles: File[]) => {
-        setFiles(prev => ({ ...prev, [question]: newFiles }));
+    const handleFilesChange = (questionKey: string, newFiles: File[]) => {
+        setFiles(prev => ({ ...prev, [questionKey]: newFiles }));
     };
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -30,12 +30,14 @@ export default function YearlyForm({ yearlyData, recordId, employer }: YearlyFor
         if (!recordId || !yearlyData) return;
 
         // Client-side validation for mandatory fields
-        for (const item of yearlyData) {
-            if (item.isTextMandatory && !answers[item.question]?.trim()) {
+        for (let index = 0; index < yearlyData.length; index++) {
+            const item = yearlyData[index];
+            const questionKey = `${index}-${item.question}`;
+            if (item.isTextMandatory && !answers[questionKey]?.trim()) {
                 toast.error(`שדה חובה: יש למלא תשובה עבור "${item.question}"`, { duration: 5000 });
                 return;
             }
-            if (item.isDocMandatory && (!files[item.question] || files[item.question].length === 0)) {
+            if (item.isDocMandatory && (!files[questionKey] || files[questionKey].length === 0)) {
                 toast.error(`שדה חובה: יש להעלות מסמך עבור "${item.question}"`, { duration: 5000 });
                 return;
             }
@@ -45,8 +47,9 @@ export default function YearlyForm({ yearlyData, recordId, employer }: YearlyFor
         const loadingToastId = toast.loading('שולח נתונים...');
 
         const sets = await Promise.all(
-            yearlyData.map(async item => {
-                const itemFiles = files[item.question] || [];
+            yearlyData.map(async (item, index) => {
+                const questionKey = `${index}-${item.question}`;
+                const itemFiles = files[questionKey] || [];
                 const encodedFiles = await Promise.all(
                     itemFiles.map(async f => ({
                         name: f.name,
@@ -56,7 +59,7 @@ export default function YearlyForm({ yearlyData, recordId, employer }: YearlyFor
 
                 return {
                     ...item,
-                    answer: answers[item.question] || '',
+                    answer: answers[questionKey] || '',
                     files: encodedFiles,
                 };
             })
@@ -100,26 +103,29 @@ export default function YearlyForm({ yearlyData, recordId, employer }: YearlyFor
             </div>
 
             <form onSubmit={handleSubmit}>
-                {yearlyData.map((item, index) => (
-                    <div key={index} className="yearly-set">
-                        <label>
-                            {index + 1}) {item.chen}: {item.question}
-                            {item.isTextMandatory && <span className="required">*</span>}
-                        </label>
-                        <div className="form-group">
-                            <input
-                                type="text"
-                                value={answers[item.question] || ''}
-                                onChange={(e) => handleAnswerChange(item.question, e.target.value)}
-                                required={item.isTextMandatory}
-                            />
-                        </div>
-                        <div className="form-group flex items-start gap-4">
-                            <div>הערות:</div>
-                            <FileUploadComponent
-                                onFilesChange={(newFiles) => handleFilesChange(item.question, newFiles)}
-                                isMandatory={item.isDocMandatory}
-                            />
+                {yearlyData.map((item, index) => {
+                    const questionKey = `${index}-${item.question}`;
+                    return (
+                        <div key={`${item.question}-${index}`} className="yearly-set">
+                            <label>
+                                {index + 1}) {item.chen}: {item.question}
+                                {item.isTextMandatory && <span className="required">*</span>}
+                            </label>
+                            <div className="form-group">
+                                <input
+                                    key={`input-${item.question}-${index}`}
+                                    type="text"
+                                    value={answers[questionKey] || ''}
+                                    onChange={(e) => handleAnswerChange(questionKey, e.target.value)}
+                                    required={item.isTextMandatory}
+                                />
+                            </div>
+                            <div className="form-group flex items-start gap-4">
+                                <div>הערות:</div>
+                                <FileUploadComponent
+                                    onFilesChange={(newFiles) => handleFilesChange(questionKey, newFiles)}
+                                    isMandatory={item.isDocMandatory}
+                                />
                             {item.docs.length > 0 && (
                                 <ul className="flex flex-col gap-1 list-disc pr-4">
                                     {item.docs.map((doc) => (
@@ -138,10 +144,11 @@ export default function YearlyForm({ yearlyData, recordId, employer }: YearlyFor
                                 </ul>
                             )}
                         </div>
-                        {item.remarks && <p style={{ color: 'blue' }}>הערות: {item.remarks}</p>}
-                        <hr />
-                    </div>
-                ))}
+                            {item.remarks && <p style={{ color: 'blue' }}>הערות: {item.remarks}</p>}
+                            <hr />
+                        </div>
+                    );
+                })}
                 {yearlyData.length > 0 ? <button type="submit" disabled={isSubmitting}>שלח בירורים שנתיים</button> : <div dir="" className="text-center">אין עוד בירורים</div>}
             </form>
             <style jsx>{`
