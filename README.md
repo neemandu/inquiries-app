@@ -1,4 +1,4 @@
-# 🏢 Inquiries - Business Management System
+# 🏢 Inquiries v1.0.0- Business Management System
 
 A comprehensive business management platform built with Next.js, designed to streamline employee management and inquiry handling processes for Israeli businesses.
 
