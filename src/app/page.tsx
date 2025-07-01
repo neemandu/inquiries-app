@@ -76,6 +76,7 @@ export default function EmployeesPage() {
           const res = await fetch(`/api/inquiries/data?recordId=${apiResponse.recordId}`);
           if (res.ok) {
             const data: InquiryData = await res.json();
+            console.log('Inquiry data', data);
             setInquiryData(data);
             if (data?.monthly) {
               const uniqueSuppliers = ['הכל', ...new Set(data.monthly.map((item) => item.supplier))];

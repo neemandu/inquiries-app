@@ -57,21 +57,23 @@ export default function EmployersSidebar({
             בירורים
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {suppliers.map((supplier) => (
-            <Button
-              key={supplier}
-              onClick={() => onSupplierSelect(supplier)}
-              variant={selectedSupplier === supplier ? "default" : "ghost"}
-              className={`w-full flex items-center justify-start gap-4 px-4 py-3 h-auto text-black ${selectedSupplier === supplier
-                  ? 'bg-purple-100 border border-purple-300 hover:bg-purple-200'
-                  : 'bg-white hover:bg-purple-50'
-                }`}
-              dir="rtl"
-            >
-              <span className="font-medium text-base">{supplier}</span>
-            </Button>
-          ))}
+        <CardContent>
+          <div className="space-y-3 max-h-60 overflow-y-auto">
+            {suppliers.map((supplier) => (
+              <Button
+                key={supplier}
+                onClick={() => onSupplierSelect(supplier)}
+                variant={selectedSupplier === supplier ? "default" : "ghost"}
+                className={`w-full flex items-center justify-start gap-4 px-4 py-3 h-auto text-black ${selectedSupplier === supplier
+                    ? 'bg-purple-100 border border-purple-300 hover:bg-purple-200'
+                    : 'bg-white hover:bg-purple-50'
+                  }`}
+                dir="rtl"
+              >
+                <span className="font-medium text-base whitespace-normal break-words text-right">{supplier}</span>
+              </Button>
+            ))}
+          </div>
           <Button
             onClick={onShowYearlyForm}
             variant="ghost"

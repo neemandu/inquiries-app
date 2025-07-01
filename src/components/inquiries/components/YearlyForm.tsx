@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import FileUploadComponent from './FileUploadComponent';
 import { GeneralInquiry } from '@/lib/types';
 import { toBase64 } from '@/lib/utils';
@@ -13,9 +13,32 @@ interface YearlyFormProps {
 }
 
 export default function YearlyForm({ yearlyData, recordId, employer }: YearlyFormProps) {
+    console.log('Yearly data', yearlyData);
     const [answers, setAnswers] = useState<{ [key: string]: string }>({});
     const [files, setFiles] = useState<{ [key: string]: File[] }>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Populate answers from yearlyData on mount or when yearlyData changes
+    useEffect(() => {
+        if (yearlyData) {
+            const initialAnswers: { [key: string]: string } = {};
+            yearlyData.forEach((item, index) => {
+                const questionKey = `${index}-${item.question}`;
+                if (item.answer != null && item.answer !== undefined) {
+                    initialAnswers[questionKey] = item.answer;
+                }
+            });
+            // Only update if different to prevent infinite loop
+            const isDifferent = Object.keys(initialAnswers).some(
+                key => initialAnswers[key] !== answers[key]
+            ) || Object.keys(answers).some(
+                key => answers[key] !== initialAnswers[key]
+            );
+            if (isDifferent) {
+                setAnswers(initialAnswers);
+            }
+        }
+    }, [yearlyData]);
 
     const handleAnswerChange = (questionKey: string, value: string) => {
         setAnswers(prev => ({ ...prev, [questionKey]: value }));

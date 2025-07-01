@@ -14,6 +14,7 @@ interface SupplierTableProps {
 }
 
 export default function SupplierTable({ supplierId, monthlyData, recordId, employer }: SupplierTableProps) {
+  console.log('Supplier table data', monthlyData);
   const [answers, setAnswers] = useState<{ [key: string]: string }>({});
   const [initialAnswers, setInitialAnswers] = useState<{ [key: string]: string }>({});
   const [files, setFiles] = useState<{ [key: string]: File[] }>({});
@@ -32,9 +33,13 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
         const key = `${item.supplier}-${item.asm}`;
         initialAnswers[key] = item.answer || '';
       });
-      setAnswers(initialAnswers);
-      setInitialAnswers(initialAnswers);
+      // Only initialize if answers is empty (first load or supplier change)
+      if (Object.keys(answers).length === 0) {
+        setAnswers(initialAnswers);
+        setInitialAnswers(initialAnswers);
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredData]);
 
   const handleAnswerChange = (key: string, value: string) => {
