@@ -5,7 +5,6 @@ import FileUploadComponent from './FileUploadComponent';
 import { MonthlyInquiry } from '@/lib/types';
 import { toBase64 } from '@/lib/utils';
 import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
 
 interface SupplierTableProps {
   supplierId: string;
@@ -20,7 +19,6 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
   const [files, setFiles] = useState<{ [key: string]: File[] }>({});
   const [modifiedKeys, setModifiedKeys] = useState<Set<string>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const router = useRouter();
 
   const filteredData = supplierId === 'הכל'
     ? monthlyData
@@ -113,8 +111,8 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
       setModifiedKeys(new Set());
       setInitialAnswers({...answers});
       
-      // Refresh immediately after successful response
-      router.refresh();
+      // Refresh the page after successful response
+      window.location.reload();
     } catch (error) {
       console.error('Failed to submit supplier data:', error);
       toast.error(`שגיאה בשליחת הנתונים: ${error instanceof Error ? error.message : 'Unknown error'}`, { duration: 5000 });
