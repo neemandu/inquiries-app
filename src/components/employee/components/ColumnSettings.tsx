@@ -104,6 +104,7 @@ export default function ColumnSettings({
           {/* Bulk Actions */}
           <div className="flex gap-2 mt-3">
             <Button 
+              type="button"
               variant="outline" 
               size="sm" 
               onClick={handleSelectAll}
@@ -112,6 +113,7 @@ export default function ColumnSettings({
               בחר הכל
             </Button>
             <Button 
+              type="button"
               variant="outline" 
               size="sm" 
               onClick={handleDeselectAll}
@@ -158,6 +160,7 @@ export default function ColumnSettings({
               {Object.values(dynamicColumnSettings).filter(Boolean).length} מתוך {Object.keys(dynamicColumnSettings).length} עמודות
             </div>
             <Button 
+              type="button"
               onClick={handleSave}
               disabled={isSaving}
               className="px-8 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors disabled:opacity-50"

@@ -99,18 +99,23 @@ export default function EmployeesPage() {
     if (!apiResponse) return;
     const newValue = !dynamicColumnSettings[columnNameRecordId];
     setDynamicColumnSettings(prev => ({ ...prev, [columnNameRecordId]: newValue }));
-    try {
-      const updatedColumnNames = apiResponse.columnNames.map(col =>
-        col.columnNameRecordId === columnNameRecordId ? { ...col, isOn: newValue } : col
-      );
-      const updatedApiResponse = { ...apiResponse, columnNames: updatedColumnNames };
-      const success = await updateColumnSetting(apiResponse.recordId, updatedApiResponse);
-      if (!success) throw new Error('Failed to update column setting');
-      setApiResponse(updatedApiResponse);
-    } catch (error) {
-      console.error('Failed to update column setting:', error);
-      setDynamicColumnSettings(prev => ({ ...prev, [columnNameRecordId]: !newValue }));
-    }
+    // try {
+    //   const updatedColumnNames = apiResponse.columnNames.map(col =>
+    //     col.columnNameRecordId === columnNameRecordId ? { ...col, isOn: newValue } : col
+    //   );
+    //   const updatedApiResponse = { ...apiResponse, columnNames: updatedColumnNames };
+    //   const success = await updateColumnSetting(apiResponse.recordId, updatedApiResponse);
+    //   if (!success) {
+    //     // Optionally show a toast here, e.g. toast.error('Failed to update column setting');
+    //     setDynamicColumnSettings(prev => ({ ...prev, [columnNameRecordId]: !newValue }));
+    //     return;
+    //   }
+    //   setApiResponse(updatedApiResponse);
+    // } catch (error) {
+    //   console.error('Failed to update column setting:', error);
+    //   setDynamicColumnSettings(prev => ({ ...prev, [columnNameRecordId]: !newValue }));
+    //   // Optionally show a toast here too
+    // }
   };
 
   const toggleColumn = async (column: keyof ColumnSettingsType) => {
@@ -226,7 +231,13 @@ export default function EmployeesPage() {
           </div>
           <div className="flex items-center gap-4">
             <SignedIn>
-              <UserButton />
+              <UserButton appearance={{
+                elements: {
+                  userButtonPopoverActionButton__manageAccount: {
+                    display: 'none'
+                  }
+                }
+              }} />
             </SignedIn>
           </div>
         </div>

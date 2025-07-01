@@ -138,6 +138,7 @@ export default function YearlyForm({ yearlyData, recordId, employer }: YearlyFor
                                 {index + 1}) {item.chen}: {item.question}
                                 {item.isTextMandatory && <span className="required">*</span>}
                             </label>
+                            <div style={{ direction: 'rtl', margin: '0.5rem 0', }}>סכום: {item.sum}</div>
                             <div className="form-group">
                                 <input
                                     key={`input-${item.question}-${index}`}
@@ -147,7 +148,6 @@ export default function YearlyForm({ yearlyData, recordId, employer }: YearlyFor
                                 />
                             </div>
                             <div className="form-group flex items-start gap-4">
-                                <div>הערות:</div>
                                 <FileUploadComponent
                                     onFilesChange={(newFiles) => handleFilesChange(questionKey, newFiles)}
                                     isMandatory={item.isDocMandatory}
