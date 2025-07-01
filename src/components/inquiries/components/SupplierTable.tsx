@@ -75,7 +75,7 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
     });
 
     if (modifiedItems.length === 0) {
-      toast.error('לא נמצאו שינויים לשליחה', { duration: 3000 });
+      toast.success('לא נמצאו שינויים לשליחה', { duration: 3000 });
       return;
     }
 
@@ -197,7 +197,6 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
                       value={answers[key] || ''}
                       onChange={(e) => handleAnswerChange(key, e.target.value)}
                       placeholder="תשובה..."
-                      required={item.isTextMandatory}
                     />
                   </td>
                   <td>
@@ -228,8 +227,8 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
             })}
           </tbody>
         </table>
-        <button type="submit" disabled={isSubmitting || modifiedKeys.size === 0}>
-          {modifiedKeys.size === 0 ? 'אין שינויים לשליחה' : `שלח (${modifiedKeys.size} שינויים)`}
+        <button type="submit" disabled={isSubmitting}>
+          {modifiedKeys.size === 0 ? 'שלח' : `שלח (${modifiedKeys.size} שינויים)`}
         </button>
       </form>
 
