@@ -218,7 +218,7 @@ export default function EmployeesPage() {
       case 'pay-slip':
         return <PaySlip recordId={apiResponse?.recordId} employees={employees} />;
       case 'vacations':
-        return <Vacations recordId={apiResponse?.recordId} />;
+        return <Vacations recordId={apiResponse?.recordId || ''} link101={apiResponse?.link101 || ''} />;
       default:
         return <MonthlyReport {...{ columnSettings, onColumnToggle: toggleColumn, dynamicColumnSettings, onDynamicColumnToggle: toggleDynamicColumn, employees, apiResponse, clientRecordId: apiResponse?.recordId || '' }} />;
     }

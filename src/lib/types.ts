@@ -104,6 +104,7 @@ export interface ApiResponse {
   employees: Employee[];
   columnNames: ColumnConfig[];
   leavingReasons: LeavingReason[];
+  link101: string;
 }
 export interface Pension {
   contentType: string;

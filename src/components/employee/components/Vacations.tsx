@@ -28,6 +28,7 @@ interface EmployeeData {
 // API response structure
 interface ApiResponse {
   employees: EmployeeData[];
+  link101?: string;
 }
 
 const fileSchema = z.object({
@@ -60,10 +61,11 @@ const truncateFileName = (fileName: string | null, maxLength: number = 15): stri
 };
 
 interface VacationsProps {
-  recordId?: string;
+  recordId: string;
+  link101: string;
 }
 
-export default function Vacations({ recordId }: VacationsProps) {
+export default function Vacations({ recordId, link101 }: VacationsProps) {
   console.log('Vacations recordId', recordId);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,16 +87,17 @@ export default function Vacations({ recordId }: VacationsProps) {
     console.log('Fetching data');
     try {
       setIsLoading(true);
-      const url = recordId 
+            const url = recordId
         ? `https://hook.eu2.make.com/m0rzm7d63afsoerxyvvpxnl6gkzo67yv?recordId=${encodeURIComponent(recordId)}`
         : 'https://hook.eu2.make.com/m0rzm7d63afsoerxyvvpxnl6gkzo67yv';
       const response = await fetch(url);
-      console.log('Vacations response',await response.json());
+      
       if (!response.ok) {
         throw new Error('Failed to fetch data');
       }
 
       const data: ApiResponse = await response.json();
+      console.log('Vacations response', data);
       console.log('Vacations data', data);
       
       // Transform API data to match our form structure
@@ -200,6 +203,15 @@ export default function Vacations({ recordId }: VacationsProps) {
         <CardContent className="p-8">
           <Form {...form}>
             <div className="space-y-8" dir="rtl">
+              {/* Link101 Display Box */}
+              {link101 && (
+                <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 text-center">
+                  <span className="text-sm font-medium text-gray-900">
+                    קישור לטופס 101: {link101}
+                  </span>
+                </div>
+              )}
+              
               {/* Table */}
               <div className="overflow-hidden border border-gray-300 rounded-lg">
                 <table className="w-full">
@@ -215,13 +227,7 @@ export default function Vacations({ recordId }: VacationsProps) {
                         שם משפחה
                       </th>
                       <th className="px-4 py-4 text-center text-sm font-medium text-gray-900 border-l border-gray-300">
-                        קובץ 101
-                      </th>
-                      <th className="px-4 py-4 text-center text-sm font-medium text-gray-900 border-l border-gray-300">
                         קובץ פנסיה
-                      </th>
-                      <th className="px-4 py-4 text-center text-sm font-medium text-gray-900 border-l border-gray-300">
-                        הסכם העסקה
                       </th>
                       <th className="px-4 py-4 text-center text-sm font-medium text-gray-900 min-w-64">
                         הערות רואה חשבון
@@ -287,8 +293,8 @@ export default function Vacations({ recordId }: VacationsProps) {
                             )}
                           </div>
                         </td>
-                        {/* Work File */}
-                        <td className="px-4 py-4 border-l border-gray-200 text-center">
+                        {/* Accountant Remark - Now contains Work File functionality */}
+                        <td className="px-4 py-4 text-center">
                           <div className="flex flex-col items-center space-y-2">
                             {field.workFile?.name ? (
                               <>
@@ -325,12 +331,6 @@ export default function Vacations({ recordId }: VacationsProps) {
                                 העלה קובץ
                               </Button>
                             )}
-                          </div>
-                        </td>
-                        {/* Accountant Remark - Readonly */}
-                        <td className="px-4 py-4 text-center">
-                          <div className="text-gray-700 p-2">
-                            {field.accountantRemark || '-'}
                           </div>
                         </td>
                       </tr>
