@@ -48,15 +48,17 @@ const employeeRecognitionSchema = z.object({
 type EmployeeRecognitionFormValues = z.infer<typeof employeeRecognitionSchema>;
 
 export default function EmployeeRecognition(
-  { employees, leavingReasons }: { employees: Employee[], leavingReasons: LeavingReason[] }
+  { employees,
+    leavingReasons,
+    is161Must = false,
+  }: {
+    employees: Employee[],
+    leavingReasons: LeavingReason[],
+    is161Must?: boolean,
+  }
 ) {
 
-  //   {
-  // recordId,
-  // leavingReason,
-  // leavingDate,
-  // remarks
-  // }
+
   const form = useForm<EmployeeRecognitionFormValues>({
     resolver: zodResolver(employeeRecognitionSchema),
     defaultValues: {
@@ -67,33 +69,56 @@ export default function EmployeeRecognition(
     },
   });
 
-  // https://hook.eu2.make.com/6yvgowfqvfq0maax195lb7s0x2ayb53m
+  // State for 161 file
+  const [file161, setFile161] = React.useState<File | null>(null);
+  const [file161Error, setFile161Error] = React.useState<string | null>(null);
+
+  // Helper to convert file to base64
+  async function fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
 
   async function onSubmit(data: EmployeeRecognitionFormValues) {
+    // If 161 is required, validate
+    if (is161Must && !file161) {
+      setFile161Error('קובץ 161 הוא שדה חובה');
+      return;
+    }
+    setFile161Error(null);
+    let filePayload = undefined;
+    if (is161Must && file161) {
+      const base64 = await fileToBase64(file161);
+      // Remove the prefix (data:...;base64,)
+      const base64Data = base64.split(',')[1];
+      filePayload = {
+        contentType: file161.type,
+        file: base64Data,
+        file_name: file161.name,
+      };
+    }
     try {
-      // Show loading toast
       const loadingToast = toast.loading('מעבד את הבקשה...');
-
+      const payload = is161Must ? { ...data, "161File": filePayload } : data;
       const response = await fetch('https://hook.eu2.make.com/6yvgowfqvfq0maax195lb7s0x2ayb53m', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
-
-      // Dismiss loading toast
       toast.dismiss(loadingToast);
-
       if (response.ok) {
         toast.success('העובד הוסר בהצלחה', {
           description: 'הנתונים נשמרו במערכת',
           duration: 4000,
         });
-
-        // Reset form after successful submission
         form.reset();
-
+        setFile161(null);
       } else {
         const errorData = await response.json().catch(() => ({}));
         toast.error('שגיאה בשמירת הנתונים', {
@@ -257,7 +282,7 @@ export default function EmployeeRecognition(
                         </FormControl>
                         <SelectContent className="text-right">
                           {leavingReasons && leavingReasons.map((reason) => (
-                            <SelectItem key={reason.reason} value={reason.reason} className="text-right">{reason.reason}</SelectItem>
+                            <SelectItem key={reason.Reason} value={reason.Reason} className="text-right">{reason.Reason}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -266,6 +291,21 @@ export default function EmployeeRecognition(
                   </FormItem>
                 )}
               />
+               {/* קובץ 161 - required if is161Must */}
+               {is161Must && (
+                <div className="flex flex-row items-start gap-2">
+                  <label className="block text-lg font-medium text-gray-900 mb-1 text-right">קובץ 161 <span style={{ color: 'red' }}>*</span></label>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    onChange={e => setFile161(e.target.files?.[0] || null)}
+                    className="border border-gray-300 rounded-lg px-3 py-2"
+                  />
+                  {file161 && <span className="text-sm text-gray-700">{file161.name}</span>}
+                  {file161Error && <span className="text-sm text-red-600">{file161Error}</span>}
+                </div>
+              )}
+
 
               {/* הערות */}
               <FormField
@@ -288,6 +328,7 @@ export default function EmployeeRecognition(
                   </FormItem>
                 )}
               />
+             
 
               {/* Submit Button */}
               <div className="flex justify-center pt-8">

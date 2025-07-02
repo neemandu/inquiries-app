@@ -64,6 +64,7 @@ interface VacationsProps {
 }
 
 export default function Vacations({ recordId }: VacationsProps) {
+  console.log('Vacations recordId', recordId);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -81,19 +82,20 @@ export default function Vacations({ recordId }: VacationsProps) {
 
   // Extract fetchData function so it can be reused
   const fetchData = async () => {
+    console.log('Fetching data');
     try {
       setIsLoading(true);
       const url = recordId 
         ? `https://hook.eu2.make.com/m0rzm7d63afsoerxyvvpxnl6gkzo67yv?recordId=${encodeURIComponent(recordId)}`
         : 'https://hook.eu2.make.com/m0rzm7d63afsoerxyvvpxnl6gkzo67yv';
       const response = await fetch(url);
-      
+      console.log('Vacations response',await response.json());
       if (!response.ok) {
         throw new Error('Failed to fetch data');
       }
 
       const data: ApiResponse = await response.json();
-      console.log('data', data);
+      console.log('Vacations data', data);
       
       // Transform API data to match our form structure
       const transformedRows: EmployeeRow[] = [];

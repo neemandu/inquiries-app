@@ -35,6 +35,7 @@ export default function EmployeesPage() {
   const [selectedSupplier, setSelectedSupplier] = useState<string | null>('הכל');
   const [showYearlyForm, setShowYearlyForm] = useState<boolean>(false);
   const [inquiryData, setInquiryData] = useState<InquiryData | null>(null);
+  const [changeTime, setChangeTime] = useState<string>('');
 
   useEffect(() => {
     const loadEmployeeData = async () => {
@@ -42,11 +43,12 @@ export default function EmployeesPage() {
         setLoading(true);
         try {
           const data = await fetchEmployeeData(user?.emailAddresses?.[0]?.emailAddress);
-          console.log('data', data);
+          console.log('Employee data', data);
           if (data) {
             setApiResponse({ ...data, recordId: data.recordId });
             // setApiResponse({ ...data, recordId: 'recObnrdp6wLl26Pm' });
             setEmployees(data.employees);
+            setChangeTime(data.changeTime);
             if (data.columnNames) {
               const newDynamicSettings: DynamicColumnSettings = {};
               data.columnNames.forEach(col => {
@@ -212,7 +214,7 @@ export default function EmployeesPage() {
       case 'add-employee':
         return <AddEmployee recordId={apiResponse?.recordId || ''} />;
       case 'employee-recognition':
-        return <EmployeeRecognition employees={employees} leavingReasons={leavingReasons} />;
+        return <EmployeeRecognition employees={employees} leavingReasons={leavingReasons} is161Must={apiResponse?.is161Must} />;
       case 'pay-slip':
         return <PaySlip recordId={apiResponse?.recordId} employees={employees} />;
       case 'vacations':
@@ -246,8 +248,15 @@ export default function EmployeesPage() {
       <main className="mx-auto p-6 w-full">
         <SignedIn>
           <div className="flex h-full">
-            <div className="flex-1 bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-              {renderMainContent()}
+            <div className="flex-1">
+              <div className="flex justify-end items-center mb-2">
+                <span className="text-right" dir="rtl" style={{ fontWeight: 'bold' }}>
+                  תקופת דיווח: {changeTime}
+                </span>
+              </div>
+              <div className="flex-1 bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+                {renderMainContent()}
+              </div>
             </div>
             <div className="w-[220px] mx-6">
               <EmployersSidebar

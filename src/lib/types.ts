@@ -35,7 +35,7 @@ export interface ColumnConfig {
 }
 
 export interface LeavingReason {
-  reason: string;
+  Reason: string;
 }
 
 export interface Docs {
@@ -99,6 +99,8 @@ export interface InquiryData {
 
 export interface ApiResponse {
   recordId: string;
+  changeTime: string;
+  is161Must: boolean;
   employees: Employee[];
   columnNames: ColumnConfig[];
   leavingReasons: LeavingReason[];

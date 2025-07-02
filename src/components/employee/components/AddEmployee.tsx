@@ -48,6 +48,7 @@ const addEmployeeSchema = z.object({
   }),
   incomeFile: z.any().optional(),
   exemptionFile: z.any().optional(),
+  department: z.string().optional(),
 });
 
 type AddEmployeeFormValues = z.infer<typeof addEmployeeSchema>;
@@ -92,6 +93,7 @@ export default function AddEmployee( {recordId}: {recordId: string} ) {
       lastName: "",
       startDate: "",
       form101: "",
+      department: "",
     },
   });
 
@@ -128,7 +130,8 @@ export default function AddEmployee( {recordId}: {recordId: string} ) {
           contentType: "application/pdf",
           file_name: data.exemptionFile?.name || "",
           file: workFileBase64
-        }
+        },
+        department: data.department,
       };
       
       // Send POST request to backend
@@ -237,6 +240,20 @@ export default function AddEmployee( {recordId}: {recordId: string} ) {
                 </FormItem>
               )}
             />
+
+            {/* department */}
+            <div className="mb-4 flex items-center justify-start gap-4">
+              <label htmlFor="department" className="block text-lg font-medium text-gray-900 mb-2 text-right">מחלקה:</label>
+              <input
+                id="department"
+                name="department"
+                type="text"
+                className="w-md px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-right text-base"
+                placeholder="הזן מחלקה"
+                value={form.watch("department")}
+                onChange={(e) => form.setValue("department", e.target.value)}
+              />
+            </div>
 
             {/* תאריך תחילת עבודה */}
             <FormField
