@@ -15,6 +15,7 @@ interface ColumnSettingsProps {
   onDynamicColumnToggle: (columnNameRecordId: string) => void;
   apiResponse: ApiResponse | null;
   clientRecordId: string;
+  onRefetchData?: () => void;
 }
 
 export default function ColumnSettings({ 
@@ -23,7 +24,8 @@ export default function ColumnSettings({
   dynamicColumnSettings,
   onDynamicColumnToggle,
   apiResponse,
-  clientRecordId
+  clientRecordId,
+  onRefetchData
 }: ColumnSettingsProps) {
   const [isSaving, setIsSaving] = useState(false);
 
@@ -74,6 +76,11 @@ export default function ColumnSettings({
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Trigger data refetch if callback is provided
+      if (onRefetchData) {
+        onRefetchData();
       }
 
       // Close the popup after successful save

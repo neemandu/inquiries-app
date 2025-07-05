@@ -15,6 +15,7 @@ interface MonthlyReportProps {
   employees: Employee[];
   apiResponse: ApiResponse | null;
   clientRecordId: string;
+  onRefetchData?: () => void;
 }
 
 interface EmployeeData {
@@ -54,7 +55,7 @@ const generateSampleData = (): EmployeeData[] => {
   }));
 };
 
-export default function MonthlyReport({ columnSettings, onColumnToggle, dynamicColumnSettings, onDynamicColumnToggle, employees, apiResponse, clientRecordId }: MonthlyReportProps) {
+export default function MonthlyReport({ columnSettings, onColumnToggle, dynamicColumnSettings, onDynamicColumnToggle, employees, apiResponse, clientRecordId, onRefetchData }: MonthlyReportProps) {
   const [showSettingsPopup, setShowSettingsPopup] = useState(false);
 
   // Use API data if available, otherwise fallback to sample data
@@ -142,6 +143,7 @@ export default function MonthlyReport({ columnSettings, onColumnToggle, dynamicC
             onDynamicColumnToggle={onDynamicColumnToggle}
             apiResponse={apiResponse}
             clientRecordId={clientRecordId}
+            onRefetchData={onRefetchData}
           />
         </div>
       </div>
