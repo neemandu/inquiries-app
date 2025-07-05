@@ -211,7 +211,7 @@ export default function YearlyForm({
         })}
         {yearlyData.length > 0 ? (
           <button type="submit" disabled={isSubmitting}>
-          שלחs
+          שלח
           </button>
         ) : (
           <div dir="" className="text-center">
