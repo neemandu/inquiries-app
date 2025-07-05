@@ -126,6 +126,7 @@ export interface AddEmployee {
   is101Full: boolean;
   pension: Pension;
   workFile: WorkFile;
+  department: string;
 }
 
 export interface PDF {

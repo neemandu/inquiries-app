@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 // File type for file objects
 interface FileData {
@@ -206,9 +207,9 @@ export default function Vacations({ recordId, link101 }: VacationsProps) {
               {/* Link101 Display Box */}
               {link101 && (
                 <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 text-center">
-                  <span className="text-sm font-medium text-gray-900">
+                  <Link href={link101} className="text-sm font-medium text-gray-900" target="_blank">
                     קישור לטופס 101: {link101}
-                  </span>
+                  </Link>
                 </div>
               )}
               

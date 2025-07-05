@@ -36,6 +36,7 @@ export default function EmployeesPage() {
   const [showYearlyForm, setShowYearlyForm] = useState<boolean>(false);
   const [inquiryData, setInquiryData] = useState<InquiryData | null>(null);
   const [changeTime, setChangeTime] = useState<string>('');
+  const [employeerName, setEmployeerName] = useState<string>('');
 
   useEffect(() => {
     const loadEmployeeData = async () => {
@@ -84,6 +85,7 @@ export default function EmployeesPage() {
               const uniqueSuppliers = ['הכל', ...new Set(data.monthly.map((item) => item.supplier))];
               setSuppliers(uniqueSuppliers as string[]);
             }
+            setEmployeerName(data.employer);
           } else {
             console.error('Failed to fetch inquiry data');
           }
@@ -212,9 +214,9 @@ export default function EmployeesPage() {
       case 'monthly-report':
         return <MonthlyReport {...{ columnSettings, onColumnToggle: toggleColumn, dynamicColumnSettings, onDynamicColumnToggle: toggleDynamicColumn, employees, apiResponse, clientRecordId: apiResponse?.recordId || '' }} />;
       case 'add-employee':
-        return <AddEmployee recordId={apiResponse?.recordId || ''} />;
+        return <AddEmployee recordId={apiResponse?.recordId || ''} changeTime={changeTime} />;
       case 'employee-recognition':
-        return <EmployeeRecognition employees={employees} leavingReasons={leavingReasons} is161Must={apiResponse?.is161Must} />;
+        return <EmployeeRecognition employees={employees} leavingReasons={leavingReasons} is161Must={apiResponse?.is161Must} changeTime={changeTime} />;
       case 'pay-slip':
         return <PaySlip recordId={apiResponse?.recordId} employees={employees} />;
       case 'vacations':
@@ -232,6 +234,9 @@ export default function EmployeesPage() {
             <Image src="https://i.imgur.com/J6mXT1Z.jpeg" alt="לוגו" width={200} height={200} />
           </div>
           <div className="flex items-center gap-4">
+            {isLoaded && (
+              <span className="text-right" dir="rtl" style={{ fontWeight: 'bold' }}>{employeerName}</span>
+            )}
             <SignedIn>
               <UserButton appearance={{
                 elements: {

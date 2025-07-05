@@ -83,8 +83,56 @@ const formatDateToAPI = (dateString: string): string => {
   return `${day}/${month}/${year}`;
 };
 
-export default function AddEmployee( {recordId}: {recordId: string} ) {
+export default function AddEmployee( {recordId, changeTime}: {recordId: string, changeTime: string} ) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  // Parse changeTime to extract month and year
+  const parseChangeTime = (changeTime: string): Date => {
+    // Handle null/undefined/empty changeTime
+    if (!changeTime || typeof changeTime !== 'string') {
+      return new Date();
+    }
+    
+    // Try to parse different formats
+    // Example: "May 2025", "2025-05", "05/2025", etc.
+    const monthNames = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ];
+    
+    // Try parsing "Month Year" format
+    const monthYearMatch = changeTime.match(/(\w+)\s+(\d{4})/);
+    if (monthYearMatch) {
+      const [, monthStr, yearStr] = monthYearMatch;
+      const monthIndex = monthNames.findIndex(month => 
+        month.toLowerCase().startsWith(monthStr.toLowerCase())
+      );
+      if (monthIndex !== -1) {
+        return new Date(parseInt(yearStr), monthIndex, 1);
+      }
+    }
+    
+    // Try parsing "YYYY-MM" format
+    const yearMonthMatch = changeTime.match(/(\d{4})-(\d{1,2})/);
+    if (yearMonthMatch) {
+      const [, yearStr, monthStr] = yearMonthMatch;
+      return new Date(parseInt(yearStr), parseInt(monthStr) - 1, 1);
+    }
+    
+    // Try parsing "MM/YYYY" format
+    const monthYearSlashMatch = changeTime.match(/(\d{1,2})\/(\d{4})/);
+    if (monthYearSlashMatch) {
+      const [, monthStr, yearStr] = monthYearSlashMatch;
+      return new Date(parseInt(yearStr), parseInt(monthStr) - 1, 1);
+    }
+    
+    // Default fallback
+    return new Date();
+  };
+
+  const targetMonth = parseChangeTime(changeTime);
+  const targetYear = targetMonth.getFullYear();
+  const targetMonthIndex = targetMonth.getMonth();
 
   const form = useForm<AddEmployeeFormValues>({
     resolver: zodResolver(addEmployeeSchema),
@@ -99,6 +147,8 @@ export default function AddEmployee( {recordId}: {recordId: string} ) {
 
   async function onSubmit(data: AddEmployeeFormValues) {
     setIsSubmitting(true);
+
+    console.log("data", data);
     
     try {
 
@@ -131,8 +181,10 @@ export default function AddEmployee( {recordId}: {recordId: string} ) {
           file_name: data.exemptionFile?.name || "",
           file: workFileBase64
         },
-        department: data.department,
+        department: data.department || "",
       };
+
+      console.log("apiData", apiData);
       
       // Send POST request to backend
       const response = await addEmployee(apiData);
@@ -149,8 +201,8 @@ export default function AddEmployee( {recordId}: {recordId: string} ) {
       
       // Reset form on success
       form.reset();
-      setDate(new Date("2025-06-01"));
-      setMonth(new Date("2025-06-01"));
+      setDate(targetMonth);
+      setMonth(targetMonth);
       
     } catch (error) {
       console.error('Error submitting form:', error);
@@ -172,12 +224,14 @@ export default function AddEmployee( {recordId}: {recordId: string} ) {
     return !isNaN(date.getTime());
   }
 
-  const [open, setOpen] = React.useState(false);
-  const [date, setDate] = React.useState<Date | undefined>(
-    new Date("2025-06-01")
-  );
+  // Function to check if a date is within the allowed month/year
+  function isDateInAllowedMonth(date: Date): boolean {
+    return date.getFullYear() === targetYear && date.getMonth() === targetMonthIndex;
+  }
 
-  const [month, setMonth] = React.useState<Date | undefined>(date);
+  const [open, setOpen] = React.useState(false);
+  const [date, setDate] = React.useState<Date | undefined>(targetMonth);
+  const [month, setMonth] = React.useState<Date | undefined>(targetMonth);
 
   function formatDate(date: Date | undefined) {
     if (!date) {
@@ -241,19 +295,29 @@ export default function AddEmployee( {recordId}: {recordId: string} ) {
               )}
             />
 
-            {/* department */}
-            <div className="mb-4 flex items-center justify-start gap-4">
-              <label htmlFor="department" className="block text-lg font-medium text-gray-900 mb-2 text-right">מחלקה:</label>
-              <input
-                id="department"
-                name="department"
-                type="text"
-                className="w-md px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-right text-base"
-                placeholder="הזן מחלקה"
-                value={form.watch("department")}
-                onChange={(e) => form.setValue("department", e.target.value)}
-              />
-            </div>
+            {/* מחלקה */}
+            <FormField
+              control={form.control}
+              name="department"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex items-center justify-start gap-4">
+                  <FormLabel className="text-lg font-medium text-gray-900 text-right">
+                    מחלקה:
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      className="text-right text-lg h-10 max-w-sm"
+                      dir="rtl"
+                      placeholder="הזן מחלקה"
+                    />
+                  </FormControl>
+                  </div>
+                  <FormMessage className="text-right" />
+                </FormItem>
+              )}
+            />
 
             {/* תאריך תחילת עבודה */}
             <FormField
@@ -270,12 +334,12 @@ export default function AddEmployee( {recordId}: {recordId: string} ) {
                       <Input
                         id="date"
                         value={field.value}
-                        placeholder="June 01, 2025"
+                        placeholder={`${targetMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}`}
                         className="bg-background pr-10 max-w-[150px]"
                         onChange={(e) => {
                           const date = new Date(e.target.value);
                           field.onChange(e.target.value);
-                          if (isValidDate(date)) {
+                          if (isValidDate(date) && isDateInAllowedMonth(date)) {
                             setDate(date);
                             setMonth(date);
                           }
@@ -309,12 +373,23 @@ export default function AddEmployee( {recordId}: {recordId: string} ) {
                             selected={date}
                             captionLayout="dropdown"
                             month={month}
-                            onMonthChange={setMonth}
-                            onSelect={(date) => {
-                              setDate(date);
-                              field.onChange(formatDate(date));
-                              setOpen(false);
+                            onMonthChange={(newMonth) => {
+                              // Only allow navigation within the target month/year
+                              if (newMonth && isDateInAllowedMonth(newMonth)) {
+                                setMonth(newMonth);
+                              }
                             }}
+                            onSelect={(date) => {
+                              if (date && isDateInAllowedMonth(date)) {
+                                setDate(date);
+                                field.onChange(formatDate(date));
+                                setOpen(false);
+                              }
+                            }}
+                            disabled={(date) => !isDateInAllowedMonth(date)}
+                            defaultMonth={targetMonth}
+                            fromMonth={targetMonth}
+                            toMonth={new Date(targetYear, targetMonthIndex, 31)}
                           />
                         </PopoverContent>
                       </Popover>
