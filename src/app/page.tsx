@@ -38,36 +38,37 @@ export default function EmployeesPage() {
   const [changeTime, setChangeTime] = useState<string>('');
   const [employeerName, setEmployeerName] = useState<string>('');
 
-  useEffect(() => {
-    const loadEmployeeData = async () => {
-      if (isLoaded && user?.emailAddresses?.[0]?.emailAddress) {
-        setLoading(true);
-        try {
-          const data = await fetchEmployeeData(user?.emailAddresses?.[0]?.emailAddress);
-          console.log('Employee data', data);
-          if (data) {
-            setApiResponse({ ...data, recordId: data.recordId });
-            // setApiResponse({ ...data, recordId: 'recObnrdp6wLl26Pm' });
-            setEmployees(data.employees);
-            setChangeTime(data.changeTime);
-            if (data.columnNames) {
-              const newDynamicSettings: DynamicColumnSettings = {};
-              data.columnNames.forEach(col => {
-                newDynamicSettings[col.columnNameRecordId] = col.isOn ?? false;
-              });
-              setDynamicColumnSettings(newDynamicSettings);
-            }
-            if (data.leavingReasons) {
-              setLeavingReasons(data.leavingReasons);
-            }
+  const loadEmployeeData = async () => {
+    if (isLoaded && user?.emailAddresses?.[0]?.emailAddress) {
+      setLoading(true);
+      try {
+        const data = await fetchEmployeeData(user?.emailAddresses?.[0]?.emailAddress);
+        console.log('Employee data', data);
+        if (data) {
+          setApiResponse({ ...data, recordId: data.recordId });
+          // setApiResponse({ ...data, recordId: 'recObnrdp6wLl26Pm' });
+          setEmployees(data.employees);
+          setChangeTime(data.changeTime);
+          if (data.columnNames) {
+            const newDynamicSettings: DynamicColumnSettings = {};
+            data.columnNames.forEach(col => {
+              newDynamicSettings[col.columnNameRecordId] = col.isOn ?? false;
+            });
+            setDynamicColumnSettings(newDynamicSettings);
           }
-        } catch (error) {
-          console.error('Failed to load employee data:', error);
-        } finally {
-          setLoading(false);
+          if (data.leavingReasons) {
+            setLeavingReasons(data.leavingReasons);
+          }
         }
+      } catch (error) {
+        console.error('Failed to load employee data:', error);
+      } finally {
+        setLoading(false);
       }
-    };
+    }
+  };
+
+  useEffect(() => {
     loadEmployeeData();
   }, [isLoaded, user]);
 
@@ -174,6 +175,8 @@ export default function EmployeesPage() {
       }
 
       setApiResponse(updatedApiResponse);
+      loadEmployeeData();
+      window.location.reload();
 
       console.log(`Column update successful: column=${column}, newValue=${newValue}`);
     } catch (error) {
@@ -212,7 +215,10 @@ export default function EmployeesPage() {
 
     switch (activeView) {
       case 'monthly-report':
-        return <MonthlyReport {...{ columnSettings, onColumnToggle: toggleColumn, dynamicColumnSettings, onDynamicColumnToggle: toggleDynamicColumn, employees, apiResponse, clientRecordId: apiResponse?.recordId || '' }} />;
+        return <MonthlyReport {...{
+          columnSettings, onColumnToggle: toggleColumn, dynamicColumnSettings,
+          onDynamicColumnToggle: toggleDynamicColumn, employees, apiResponse, clientRecordId: apiResponse?.recordId || ''
+        }} />;
       case 'add-employee':
         return <AddEmployee recordId={apiResponse?.recordId || ''} changeTime={changeTime} />;
       case 'employee-recognition':
