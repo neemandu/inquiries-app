@@ -5,21 +5,34 @@ import React, { useState, useRef } from 'react';
 interface FileUploadProps {
   onFilesChange: (files: File[]) => void;
   isMandatory: boolean;
+  maxSizeInMB?: number;
 }
 
-export const FileUploadComponent = ({ onFilesChange, isMandatory = false }: FileUploadProps) => {
+export const FileUploadComponent = ({ onFilesChange, isMandatory = false, maxSizeInMB = 5 }: FileUploadProps) => {
   const [files, setFiles] = useState<File[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFileAdd = (newFiles: FileList) => {
     const newFilesArray = Array.from(newFiles);
     const updatedFiles = [...files];
+    const maxSizeInBytes = maxSizeInMB * 1024 * 1024;
+    
+    const rejectedFiles: string[] = [];
 
     newFilesArray.forEach(newFile => {
+      if (newFile.size > maxSizeInBytes) {
+        rejectedFiles.push(`${newFile.name} (${(newFile.size / 1024 / 1024).toFixed(1)}MB)`);
+        return;
+      }
+
       if (!updatedFiles.some(existing => existing.name === newFile.name && existing.size === newFile.size)) {
         updatedFiles.push(newFile);
       }
     });
+
+    if (rejectedFiles.length > 0) {
+      alert(`הקבצים הבאים גדולים מדי (מקסימום ${maxSizeInMB}MB):\n${rejectedFiles.join('\n')}`);
+    }
 
     setFiles(updatedFiles);
     onFilesChange(updatedFiles);
@@ -98,7 +111,6 @@ export const FileUploadComponent = ({ onFilesChange, isMandatory = false }: File
         <div className="selected-files">
           {files.map((file, index) => (
             <span key={index} className="file-item">
-              {/* if file name is too long, show only the first 10 characters and add ...  and show full name when hover*/}
               <span title={file.name}>{file.name.length > 10 ? file.name.slice(0, 10) + '...' : file.name}</span>
               <button
                 type="button"

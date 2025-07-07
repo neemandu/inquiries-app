@@ -206,6 +206,7 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
                     <FileUploadComponent
                       onFilesChange={(newFiles) => handleFilesChange(key, newFiles)}
                       isMandatory={item.isDocMandatory}
+                      maxSizeInMB={8}
                     />
                     {item.docs.length > 0 && (
                       <ul className="flex flex-col gap-1 list-disc pr-4 w-full">

@@ -181,6 +181,7 @@ export default function YearlyForm({
                     handleFilesChange(questionKey, newFiles)
                   }
                   isMandatory={item.isDocMandatory}
+                  maxSizeInMB={8}
                 />
                 {item.docs.length > 0 && (
                   <ul className="flex flex-col gap-1 list-disc pr-4">
