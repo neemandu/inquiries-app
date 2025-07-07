@@ -202,34 +202,6 @@ export default function UpdateInquiriesPage() {
   const FileUploadComponent = ({ sectionId, isYearly = false }: { sectionId: string, isYearly?: boolean }) => {
     const inputRef = useRef<HTMLInputElement>(null)
     const files = isYearly ? yearlyFiles[sectionId] || [] : supplierFiles[sectionId] || []
-    const maxSizeInMB = 8
-    const maxSizeInBytes = maxSizeInMB * 1024 * 1024
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (e.target.files) {
-        const fileArray = Array.from(e.target.files)
-        const rejectedFiles: string[] = []
-        const validFiles: File[] = []
-
-        fileArray.forEach(file => {
-          if (file.size > maxSizeInBytes) {
-            rejectedFiles.push(`${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`)
-          } else {
-            validFiles.push(file)
-          }
-        })
-
-        if (rejectedFiles.length > 0) {
-          alert(`הקבצים הבאים גדולים מדי (מקסימום ${maxSizeInMB}MB):\n${rejectedFiles.join('\n')}`)
-        }
-
-        if (validFiles.length > 0) {
-          const dt = new DataTransfer()
-          validFiles.forEach(file => dt.items.add(file))
-          handleFileSelection(sectionId, dt.files, isYearly)
-        }
-      }
-    }
 
     return (
       <div className="file-upload">
@@ -238,7 +210,11 @@ export default function UpdateInquiriesPage() {
           type="file"
           multiple
           style={{ display: 'none' }}
-          onChange={handleFileChange}
+          onChange={(e) => {
+            if (e.target.files) {
+              handleFileSelection(sectionId, e.target.files, isYearly)
+            }
+          }}
         />
         <button
           type="button"

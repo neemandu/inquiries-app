@@ -1,13 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 
-const WEBHOOK_URL =
-  "https://hook.eu2.make.com/1area7zkgtos7f1m3n5twrd3qq50tqe5";
-
-// Configure body size limit for file uploads
-export const runtime = "nodejs";
-export const bodyParser = {
-  sizeLimit: "15mb",
-};
+const WEBHOOK_URL = 'https://hook.eu2.make.com/1area7zkgtos7f1m3n5twrd3qq50tqe5';
 
 export async function POST(request: Request) {
   try {
@@ -15,17 +8,14 @@ export async function POST(request: Request) {
     const { sets, recordId } = body;
 
     if (!recordId) {
-      return NextResponse.json(
-        { success: false, message: "recordId is required for submission." },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, message: 'recordId is required for submission.' }, { status: 400 });
     }
 
     const url = `${WEBHOOK_URL}?recordId=${recordId}`;
 
     const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sets }),
     });
 
@@ -33,14 +23,10 @@ export async function POST(request: Request) {
       throw new Error(`Webhook failed with status: ${response.status}`);
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "Form submitted successfully",
-    });
+    return NextResponse.json({ success: true, message: 'Form submitted successfully' });
   } catch (error) {
-    console.error("API Error:", error);
-    const message =
-      error instanceof Error ? error.message : "An unknown error occurred";
+    console.error('API Error:', error);
+    const message = error instanceof Error ? error.message : 'An unknown error occurred';
     return NextResponse.json({ success: false, message }, { status: 500 });
   }
-}
+} 
