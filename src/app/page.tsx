@@ -217,7 +217,7 @@ export default function EmployeesPage() {
       case 'monthly-report':
         return <MonthlyReport {...{
           columnSettings, onColumnToggle: toggleColumn, dynamicColumnSettings,
-          onDynamicColumnToggle: toggleDynamicColumn, employees, apiResponse, clientRecordId: apiResponse?.recordId || '', onRefetchData: loadEmployeeData
+          onDynamicColumnToggle: toggleDynamicColumn, apiResponse, clientRecordId: apiResponse?.recordId || '', onRefetchData: loadEmployeeData
         }} />;
       case 'add-employee':
         return <AddEmployee recordId={apiResponse?.recordId || ''} changeTime={changeTime} />;
@@ -228,7 +228,7 @@ export default function EmployeesPage() {
       case 'vacations':
         return <Vacations recordId={apiResponse?.recordId || ''} link101={apiResponse?.link101 || ''} />;
       default:
-        return <MonthlyReport {...{ columnSettings, onColumnToggle: toggleColumn, dynamicColumnSettings, onDynamicColumnToggle: toggleDynamicColumn, employees, apiResponse, clientRecordId: apiResponse?.recordId || '', onRefetchData: loadEmployeeData }} />;
+        return <MonthlyReport {...{ columnSettings, onColumnToggle: toggleColumn, dynamicColumnSettings, onDynamicColumnToggle: toggleDynamicColumn, apiResponse, clientRecordId: apiResponse?.recordId || '', onRefetchData: loadEmployeeData }} />;
     }
   };
 

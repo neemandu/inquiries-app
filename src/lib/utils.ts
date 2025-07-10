@@ -1,6 +1,12 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { AddEmployee, ApiResponse, PDFResponse } from "@/lib/types";
+import {
+  AddEmployee,
+  ApiResponse,
+  PDFResponse,
+  EmployeeResponse,
+  UpdateMonthlyEmployeesPayload,
+} from "@/lib/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -11,9 +17,7 @@ export async function fetchEmployeeData(
 ): Promise<ApiResponse | null> {
   try {
     const response = await fetch(
-      `https://hook.eu2.make.com/orcsdly3165xy9ig2ncqenggv18adl23?email=${encodeURIComponent(
-        email
-      )}`
+      `/api/monthly-employees?email=${encodeURIComponent(email)}`
     );
 
     if (!response.ok) {
@@ -24,6 +28,26 @@ export async function fetchEmployeeData(
     return data;
   } catch (error) {
     console.error("Error fetching employee data:", error);
+    return null;
+  }
+}
+
+export async function fetchMonthlyEmployeesData(
+  email: string
+): Promise<EmployeeResponse | null> {
+  try {
+    const response = await fetch(
+      `/api/monthly-employees?email=${encodeURIComponent(email)}`
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data: EmployeeResponse = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching monthly employees data:", error);
     return null;
   }
 }
@@ -134,4 +158,27 @@ export async function toBase64(file: File): Promise<string> {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+export async function updateMonthlyEmployeeData(
+  updateData: UpdateMonthlyEmployeesPayload
+): Promise<boolean> {
+  try {
+    const response = await fetch(`/api/monthly-employees/update`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(updateData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error updating monthly employee data:", error);
+    return false;
+  }
 }

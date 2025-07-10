@@ -12,6 +12,73 @@ export interface DynamicColumnSettings {
   [columnNameRecordId: string]: boolean;
 }
 
+// New types for editable monthly report
+export interface EditableColumn {
+  name: string;
+  columnId: string;
+  oldValue: string | number | { fileName: string; fileData: string };
+  type: "int" | "string" | "doc" | "autoNumber";
+  isMust: boolean;
+  newValue?: string | number | { fileName: string; fileData: string };
+}
+
+// Add EditableEmployee interface for MonthlyReport component
+export interface EditableEmployee {
+  id: string;
+  columns: EditableColumn[];
+}
+
+interface Column {
+  name: string;
+  columnId: string;
+  oldValue: string | number | string[] | number[] | null;
+  type:
+    | "autoNumber"
+    | "multipleRecordLinks"
+    | "multipleLookupValues"
+    | "multilineText";
+  isMust: boolean;
+}
+
+interface EmployeeData {
+  id: string;
+  columns: Column[];
+}
+
+interface ColumnNameConfig {
+  isOn: boolean;
+  recordId: string | null;
+  columnName: string;
+  columnNameRecordId: string;
+}
+
+export interface EmployeeResponse {
+  employees: EmployeeData[];
+  leavingReasons: LeavingReason[];
+  link101: string;
+  changeTime: string;
+  is161Must: boolean;
+  recordId: string;
+  columnNames: ColumnNameConfig[];
+}
+
+// Simplified update payload interface
+export interface UpdateEmployeeColumn {
+  name: string;
+  columnId: string;
+  oldValue: string | number;
+  newValue: string | number | undefined;
+  type: "int" | "string" | "doc" | "autoNumber";
+  isMust: boolean;
+}
+
+export interface UpdateEmployeePayload {
+  id: string;
+  columns: UpdateEmployeeColumn[];
+}
+
+export type UpdateMonthlyEmployeesPayload = UpdateEmployeePayload[];
+
 export type ViewType =
   | "monthly-report"
   | "add-employee"
@@ -106,6 +173,7 @@ export interface ApiResponse {
   leavingReasons: LeavingReason[];
   link101: string;
 }
+
 export interface Pension {
   contentType: string;
   file_name: string;
