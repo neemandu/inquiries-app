@@ -14,6 +14,7 @@ import Image from 'next/image';
 import MonthlyReport from '@/components/employee/components/MonthlyReport';
 import YearlyForm from '@/components/inquiries/components/YearlyForm';
 import SupplierTable from '@/components/inquiries/components/SupplierTable';
+import DocumentUpload from '@/components/employee/components/DocumentUpload';
 
 export default function EmployeesPage() {
   const { user, isLoaded } = useUser();
@@ -219,6 +220,8 @@ export default function EmployeesPage() {
         return <PaySlip recordId={apiResponse?.recordId} employees={employees} />;
       case 'vacations':
         return <Vacations recordId={apiResponse?.recordId || ''} link101={apiResponse?.link101 || ''} />;
+      case 'document-upload':
+        return <DocumentUpload employees={employees} recordId={apiResponse?.recordId || ''} />;
       default:
         return <MonthlyReport {...{ columnSettings, onColumnToggle: toggleColumn, dynamicColumnSettings, onDynamicColumnToggle: toggleDynamicColumn, employees, apiResponse, clientRecordId: apiResponse?.recordId || '' }} />;
     }

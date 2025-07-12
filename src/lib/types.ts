@@ -17,7 +17,8 @@ export type ViewType =
   | "add-employee"
   | "employee-recognition"
   | "pay-slip"
-  | "vacations";
+  | "vacations"
+  | "document-upload";
 
 export interface Employee {
   salary: number | null;

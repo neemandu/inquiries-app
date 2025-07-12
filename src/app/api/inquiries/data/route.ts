@@ -33,9 +33,10 @@ export async function GET(request: Request) {
 
     try {
         const response = await fetch(
-            `https://hook.eu2.make.com/174t1jy81tnmqbp9sdxjacupvjbxdaga?recordId=${recordId}`
+            `https://kt08aagomj.execute-api.eu-west-2.amazonaws.com/default/getInquires?recordId=${recordId}`
         );
-
+        console.log('response');
+        console.log(response);
         if (!response.ok) {
             throw new Error(`Webhook failed with status: ${response.status}`);
         }
