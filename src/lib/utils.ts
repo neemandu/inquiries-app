@@ -79,6 +79,7 @@ export async function addEmployee(
           is101Full: updatedApiResponse.is101Full,
           pension: updatedApiResponse.pension,
           workFile: updatedApiResponse.workFile,
+          department: updatedApiResponse.department,
         }),
       }
     );

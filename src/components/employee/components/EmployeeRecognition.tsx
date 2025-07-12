@@ -27,7 +27,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Upload } from "lucide-react";
 import { toast } from "sonner";
 import React from "react";
 import { Employee, LeavingReason } from "@/lib/types";
@@ -51,13 +51,62 @@ export default function EmployeeRecognition(
   { employees,
     leavingReasons,
     is161Must = false,
+    changeTime,
   }: {
     employees: Employee[],
     leavingReasons: LeavingReason[],
     is161Must?: boolean,
+    changeTime: string,
   }
 ) {
 
+  // Parse changeTime to extract month and year
+  const parseChangeTime = (changeTime: string): Date => {
+    // Handle null/undefined/empty changeTime
+    if (!changeTime || typeof changeTime !== 'string') {
+      return new Date();
+    }
+    
+    // Try to parse different formats
+    // Example: "May 2025", "2025-05", "05/2025", etc.
+    const monthNames = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ];
+    
+    // Try parsing "Month Year" format
+    const monthYearMatch = changeTime.match(/(\w+)\s+(\d{4})/);
+    if (monthYearMatch) {
+      const [, monthStr, yearStr] = monthYearMatch;
+      const monthIndex = monthNames.findIndex(month => 
+        month.toLowerCase().startsWith(monthStr.toLowerCase())
+      );
+      if (monthIndex !== -1) {
+        return new Date(parseInt(yearStr), monthIndex, 1);
+      }
+    }
+    
+    // Try parsing "YYYY-MM" format
+    const yearMonthMatch = changeTime.match(/(\d{4})-(\d{1,2})/);
+    if (yearMonthMatch) {
+      const [, yearStr, monthStr] = yearMonthMatch;
+      return new Date(parseInt(yearStr), parseInt(monthStr) - 1, 1);
+    }
+    
+    // Try parsing "MM/YYYY" format
+    const monthYearSlashMatch = changeTime.match(/(\d{1,2})\/(\d{4})/);
+    if (monthYearSlashMatch) {
+      const [, monthStr, yearStr] = monthYearSlashMatch;
+      return new Date(parseInt(yearStr), parseInt(monthStr) - 1, 1);
+    }
+    
+    // Default fallback
+    return new Date();
+  };
+
+  const targetMonth = parseChangeTime(changeTime);
+  const targetYear = targetMonth.getFullYear();
+  const targetMonthIndex = targetMonth.getMonth();
 
   const form = useForm<EmployeeRecognitionFormValues>({
     resolver: zodResolver(employeeRecognitionSchema),
@@ -119,6 +168,8 @@ export default function EmployeeRecognition(
         });
         form.reset();
         setFile161(null);
+        setDate(targetMonth);
+        setMonth(targetMonth);
       } else {
         const errorData = await response.json().catch(() => ({}));
         toast.error('שגיאה בשמירת הנתונים', {
@@ -142,12 +193,14 @@ export default function EmployeeRecognition(
     return !isNaN(date.getTime());
   }
 
-  const [open, setOpen] = React.useState(false);
-  const [date, setDate] = React.useState<Date | undefined>(
-    new Date("2025-06-01")
-  );
+  // Function to check if a date is within the allowed month/year
+  function isDateInAllowedMonth(date: Date): boolean {
+    return date.getFullYear() === targetYear && date.getMonth() === targetMonthIndex;
+  }
 
-  const [month, setMonth] = React.useState<Date | undefined>(date);
+  const [open, setOpen] = React.useState(false);
+  const [date, setDate] = React.useState<Date | undefined>(targetMonth);
+  const [month, setMonth] = React.useState<Date | undefined>(targetMonth);
 
   function formatDate(date: Date | undefined) {
     if (!date) {
@@ -208,12 +261,12 @@ export default function EmployeeRecognition(
                           <Input
                             id="date"
                             value={field.value}
-                            placeholder="01/06/2025"
+                            placeholder={`${targetMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}`}
                             className="w-sm bg-background pl-10 text-right text-base"
                             onChange={(e) => {
                               const date = new Date(e.target.value);
                               field.onChange(e.target.value);
-                              if (isValidDate(date)) {
+                              if (isValidDate(date) && isDateInAllowedMonth(date)) {
                                 setDate(date);
                                 setMonth(date);
                               }
@@ -247,12 +300,23 @@ export default function EmployeeRecognition(
                                 selected={date}
                                 captionLayout="dropdown"
                                 month={month}
-                                onMonthChange={setMonth}
-                                onSelect={(date) => {
-                                  setDate(date);
-                                  field.onChange(formatDate(date));
-                                  setOpen(false);
+                                onMonthChange={(newMonth) => {
+                                  // Only allow navigation within the target month/year
+                                  if (newMonth && isDateInAllowedMonth(newMonth)) {
+                                    setMonth(newMonth);
+                                  }
                                 }}
+                                onSelect={(date) => {
+                                  if (date && isDateInAllowedMonth(date)) {
+                                    setDate(date);
+                                    field.onChange(formatDate(date));
+                                    setOpen(false);
+                                  }
+                                }}
+                                disabled={(date) => !isDateInAllowedMonth(date)}
+                                defaultMonth={targetMonth}
+                                fromMonth={targetMonth}
+                                toMonth={new Date(targetYear, targetMonthIndex, 31)}
                               />
                             </PopoverContent>
                           </Popover>
@@ -293,16 +357,29 @@ export default function EmployeeRecognition(
               />
                {/* קובץ 161 - required if is161Must */}
                {is161Must && (
-                <div className="flex flex-row items-start gap-2">
+                <div className="flex flex-row items-start gap-4">
                   <label className="block text-lg font-medium text-gray-900 mb-1 text-right">קובץ 161 <span style={{ color: 'red' }}>*</span></label>
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                    onChange={e => setFile161(e.target.files?.[0] || null)}
-                    className="border border-gray-300 rounded-lg px-3 py-2"
-                  />
-                  {file161 && <span className="text-sm text-gray-700">{file161.name}</span>}
-                  {file161Error && <span className="text-sm text-red-600">{file161Error}</span>}
+                  <div className="flex flex-col gap-2">
+                    <div className="relative flex items-center gap-2">
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                        onChange={e => setFile161(e.target.files?.[0] || null)}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        id="file161-input"
+                      />
+                      <label
+                        htmlFor="file161-input"
+                        className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 cursor-pointer text-base"
+                      >
+                        {file161 ? file161.name : "לא נבחר קובץ - בחר קובץ"}
+                      </label>
+                      <div className="flex items-center gap-2 bg-purple-100 rounded-lg p-2">
+                        <Upload className="h-5 w-5 text-purple-600" />
+                      </div>
+                    </div>
+                    {file161Error && <span className="text-sm text-red-600">{file161Error}</span>}
+                  </div>
                 </div>
               )}
 
