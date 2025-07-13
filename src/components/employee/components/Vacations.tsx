@@ -208,7 +208,14 @@ export default function Vacations({ recordId, link101 }: VacationsProps) {
               {link101 && (
                 <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 text-center">
                   <Link href={link101} className="text-sm font-medium text-gray-900" target="_blank">
-                    קישור לטופס 101: {link101}
+                    קישור לטופס 101: <a
+                      href={link101}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 underline hover:text-blue-800"
+                    >
+                      {link101}
+                    </a>
                   </Link>
                 </div>
               )}
@@ -231,6 +238,9 @@ export default function Vacations({ recordId, link101 }: VacationsProps) {
                         קובץ פנסיה
                       </th>
                       <th className="px-4 py-4 text-center text-sm font-medium text-gray-900 min-w-64">
+                        הסכם העסקה
+                      </th>
+                      <th className="border-r border-gray-200 px-4 py-4 text-center text-sm font-medium text-gray-900 min-w-64">
                         הערות רואה חשבון
                       </th>
                     </tr>
@@ -294,7 +304,7 @@ export default function Vacations({ recordId, link101 }: VacationsProps) {
                             )}
                           </div>
                         </td>
-                        {/* Accountant Remark - Now contains Work File functionality */}
+                        {/* Work File functionality */}
                         <td className="px-4 py-4 text-center">
                           <div className="flex flex-col items-center space-y-2">
                             {field.workFile?.name ? (
@@ -332,6 +342,12 @@ export default function Vacations({ recordId, link101 }: VacationsProps) {
                                 העלה קובץ
                               </Button>
                             )}
+                          </div>
+                        </td>
+                        {/* Accountant Remark - Readonly */}
+                        <td className="border-r px-4 py-4 border-l border-gray-200 text-center">
+                          <div className="text-gray-700 p-2">
+                            {field.accountantRemark || '-'}
                           </div>
                         </td>
                       </tr>

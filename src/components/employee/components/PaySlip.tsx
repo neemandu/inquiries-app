@@ -257,7 +257,7 @@ export default function PaySlip({ recordId, employees = [] }: PaySlipProps) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <div className="flex h-full items-center justify-end text-right">
-          <div className="text-lg text-gray-600">טוען תלושי שכר...</div>
+          <div className="text-lg text-gray-600" dir="rtl">טוען תלושי שכר...</div>
         </div>
       </div>
     );

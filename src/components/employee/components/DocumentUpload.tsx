@@ -40,6 +40,7 @@ const documentTypes = [
   { value: "pension", label: "פנסיה" },
   { value: "miluim", label: "מילואים" },
   { value: "161", label: "161" },
+  { value: "driver license", label: "רישיון רכב" },
   { value: "other", label: "אחר" },
 ];
 

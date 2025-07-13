@@ -174,13 +174,15 @@ export default function MonthlyReport({
           columns: emp.columns.map((col: EditableColumn) => {
             if (col.columnId === columnId) {
               // Validate salary cannot be lower than oldValue
-              if (col.name.includes('שכר') && (col.type === 'int' || col.type === 'autoNumber')) {
+              if (col.name === "תעריף חודשי / שעתי" ||
+                col.name === "נסיעות חודשי" ||
+                col.name === "שעות נוספות גלובליות") {
                 const numValue = typeof value === 'string' ? parseFloat(value) : value;
                 const oldValue = typeof col.oldValue === 'number' ? col.oldValue : parseFloat(String(col.oldValue));
                 if (numValue < oldValue) {
                   setErrors(prev => ({
                     ...prev,
-                    [`${employeeId}_${columnId}`]: 'לא ניתן לעדכן שכר נמוך יותר מחודש קודם'
+                    [`${employeeId}_${columnId}`]: 'לא ניתן לעדכן ערך נמוך יותר מחודש קודם'
                   }));
                 } else {
                   setErrors(prev => {
@@ -434,7 +436,7 @@ export default function MonthlyReport({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg text-gray-600">טוען נתוני העובדים...</div>
+        <div className="text-lg text-gray-600" dir="rtl">טוען נתוני העובדים...</div>
       </div>
     );
   }
@@ -445,7 +447,7 @@ export default function MonthlyReport({
       <div className="flex justify-between items-center mb-4">
         <Button
           onClick={handleSave}
-          disabled={isSaving}
+          disabled={isSaving || Object.keys(errors).length > 0}
           className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
         >
           <Save className="w-4 h-4" />
