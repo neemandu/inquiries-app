@@ -241,7 +241,7 @@ export default function EmployeesPage() {
           onDynamicColumnToggle: toggleDynamicColumn, apiResponse, clientRecordId: apiResponse?.recordId || '', onRefetchData: loadEmployeeData
         }} />;
       case 'add-employee':
-        return <AddEmployee recordId={apiResponse?.recordId || ''} changeTime={changeTime} />;
+        return <AddEmployee recordId={apiResponse?.recordId || ''} changeTime={changeTime} link101={apiResponse?.link101 || ''} />;
       case 'employee-recognition':
         return <EmployeeRecognition employees={employees} leavingReasons={leavingReasons} is161Must={apiResponse?.is161Must} changeTime={changeTime} />;
       case 'pay-slip':

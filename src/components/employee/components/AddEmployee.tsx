@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Upload } from "lucide-react";
+import { Link, Upload } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -83,7 +83,7 @@ const formatDateToAPI = (dateString: string): string => {
   return `${day}/${month}/${year}`;
 };
 
-export default function AddEmployee( {recordId, changeTime}: {recordId: string, changeTime: string} ) {
+export default function AddEmployee( {recordId, changeTime, link101}: {recordId: string, changeTime: string, link101: string} ) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   // Parse changeTime to extract month and year
@@ -401,6 +401,7 @@ export default function AddEmployee( {recordId, changeTime}: {recordId: string, 
               )}
             />
 
+
             {/* הכנסה העתקה */}
             <FormField
               control={form.control}
@@ -523,6 +524,21 @@ export default function AddEmployee( {recordId, changeTime}: {recordId: string, 
                 </FormItem>
               )}
             />
+
+            {link101 && (
+                <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 text-right w-full" dir="rtl">
+                  <span className="text-base font-medium text-gray-900">קישור לטופס 101: </span>
+                  <a
+                    href={link101}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-base text-blue-600 underline hover:text-blue-800 break-all"
+                  >
+                    {link101}
+                  </a>
+                </div>
+              )}
+
 
             {/* Submit Button */}
             <div className="flex justify-center pt-8">
