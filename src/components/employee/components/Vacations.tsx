@@ -185,7 +185,7 @@ export default function Vacations({ recordId, link101 }: VacationsProps) {
   if (isLoading) {
     return (
       <div className="flex justify-end items-center p-8">
-        <div className="text-lg">טוען נתונים...</div>
+        <div className="text-lg" dir="rtl">טוען נתונים...</div>
       </div>
     );
   }

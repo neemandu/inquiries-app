@@ -59,10 +59,22 @@ export default function PaySlip({ recordId, employees = [] }: PaySlipProps) {
   const [fitMode, setFitMode] = useState<'width' | 'page' | 'custom'>('custom');
 
   // Convert employees to the format expected by the dropdown
-  const employeeOptions = employees.map(emp => ({
-    value: emp.recordId,
-    label: `${emp.firstName} ${emp.lastName}`
-  }));
+  const employeeOptions = employees.map(emp => {
+    const firstNameCol = emp.columns.find(col => 
+      col.name === 'שם פרטי' || col.name.includes('שם פרטי')
+    );
+    const lastNameCol = emp.columns.find(col => 
+      col.name === 'שם משפחה' || col.name.includes('שם משפחה')
+    );
+    
+    const firstName = Array.isArray(firstNameCol?.oldValue) ? firstNameCol.oldValue.join(', ') : String(firstNameCol?.oldValue || '');
+    const lastName = Array.isArray(lastNameCol?.oldValue) ? lastNameCol.oldValue.join(', ') : String(lastNameCol?.oldValue || '');
+    
+    return {
+      value: emp.id,
+      label: `${firstName} ${lastName}`
+    };
+  });
 
   const form = useForm<PaySlipFormValues>({
     resolver: zodResolver(paySlipSchema),

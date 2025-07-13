@@ -235,9 +235,21 @@ export default function EmployeeRecognition(
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent className="text-right">
-                          {employees && employees.map((employee) => (
-                            <SelectItem key={employee.recordId} value={employee.recordId} className="text-right">{employee.firstName} {employee.lastName}</SelectItem>
-                          ))}
+                          {employees && employees.map((employee) => {
+                            const firstNameCol = employee.columns.find(col => 
+                              col.name === 'שם פרטי' || col.name.includes('שם פרטי')
+                            );
+                            const lastNameCol = employee.columns.find(col => 
+                              col.name === 'שם משפחה' || col.name.includes('שם משפחה')
+                            );
+                            
+                            const firstName = Array.isArray(firstNameCol?.oldValue) ? firstNameCol.oldValue.join(', ') : String(firstNameCol?.oldValue || '');
+                            const lastName = Array.isArray(lastNameCol?.oldValue) ? lastNameCol.oldValue.join(', ') : String(lastNameCol?.oldValue || '');
+                            
+                            return (
+                              <SelectItem key={employee.id} value={employee.id} className="text-right">{firstName} {lastName}</SelectItem>
+                            );
+                          })}
                         </SelectContent>
                       </Select>
                     </div>

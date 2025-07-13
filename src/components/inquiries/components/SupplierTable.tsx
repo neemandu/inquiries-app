@@ -127,7 +127,7 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
   };
 
   if (!monthlyData) {
-    return <div dir="" className="text-center">טוען נתונים...</div>;
+    return <div dir="rtl" className="text-center">טוען נתונים...</div>;
   }
 
   if (isSubmitting) {

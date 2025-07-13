@@ -161,8 +161,8 @@ export default function DocumentUpload({
                         </FormControl>
                         <SelectContent className="text-right">
                           {employees && employees.map((employee) => (
-                            <SelectItem key={employee.recordId} value={employee.recordId} className="text-right">
-                              {employee.firstName} {employee.lastName}
+                            <SelectItem key={employee.id} value={employee.id} className="text-right">
+                              {employee.columns.find(column => column.name === "firstName")?.oldValue} {employee.columns.find(column => column.name === "lastName")?.oldValue}
                             </SelectItem>
                           ))}
                         </SelectContent>

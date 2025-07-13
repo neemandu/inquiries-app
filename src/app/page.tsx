@@ -9,7 +9,7 @@ import PaySlip from '@/components/employee/components/PaySlip';
 import Vacations from '@/components/employee/components/Vacations';
 import EmployersSidebar from '@/components/employee/components/EmployersSidebar';
 import { ColumnSettingsType, ViewType, Employee, ApiResponse, LeavingReason, DynamicColumnSettings, InquiryData } from '@/lib/types';
-import { fetchEmployeeData, updateColumnSetting } from '@/lib/utils';
+import { fetchMonthlyEmployeesData, updateColumnSetting } from '@/lib/utils';
 import Image from 'next/image';
 import MonthlyReport from '@/components/employee/components/MonthlyReport';
 import YearlyForm from '@/components/inquiries/components/YearlyForm';
@@ -43,16 +43,36 @@ export default function EmployeesPage() {
     if (isLoaded && user?.emailAddresses?.[0]?.emailAddress) {
       setLoading(true);
       try {
-        const data = await fetchEmployeeData(user?.emailAddresses?.[0]?.emailAddress);
+        const data = await fetchMonthlyEmployeesData(user?.emailAddresses?.[0]?.emailAddress);
         console.log('Employee data', data);
         if (data) {
-          setApiResponse({ ...data, recordId: data.recordId });
-          // setApiResponse({ ...data, recordId: 'recObnrdp6wLl26Pm' });
-          setEmployees(data.employees);
+          // Create a compatible ApiResponse for backward compatibility
+          const compatibleApiResponse: ApiResponse = {
+            recordId: data.recordId,
+            changeTime: data.changeTime,
+            is161Must: data.is161Must,
+            employees: [], // Will be populated below
+            columnNames: data.columnNames.map(col => ({
+              columnNameRecordId: col.columnNameRecordId,
+              columnName: col.columnName,
+              isOn: col.isOn,
+              recordId: col.recordId || ''
+            })),
+            leavingReasons: data.leavingReasons,
+            link101: data.link101
+          };
+
+          // Use employees directly from the response
+          const employees: Employee[] = data.employees;
+
+          compatibleApiResponse.employees = employees;
+          setApiResponse(compatibleApiResponse);
+          setEmployees(employees);
           setChangeTime(data.changeTime);
+          
           if (data.columnNames) {
             const newDynamicSettings: DynamicColumnSettings = {};
-            data.columnNames.forEach(col => {
+            data.columnNames.forEach((col) => {
               newDynamicSettings[col.columnNameRecordId] = col.isOn ?? false;
             });
             setDynamicColumnSettings(newDynamicSettings);
@@ -218,7 +238,7 @@ export default function EmployeesPage() {
       case 'monthly-report':
         return <MonthlyReport {...{
           columnSettings, onColumnToggle: toggleColumn, dynamicColumnSettings,
-          onDynamicColumnToggle: toggleDynamicColumn, employees, apiResponse, clientRecordId: apiResponse?.recordId || '', onRefetchData: loadEmployeeData
+          onDynamicColumnToggle: toggleDynamicColumn, apiResponse, clientRecordId: apiResponse?.recordId || '', onRefetchData: loadEmployeeData
         }} />;
       case 'add-employee':
         return <AddEmployee recordId={apiResponse?.recordId || ''} changeTime={changeTime} />;
@@ -231,7 +251,7 @@ export default function EmployeesPage() {
       case 'document-upload':
         return <DocumentUpload employees={employees} recordId={apiResponse?.recordId || ''} />;
       default:
-        return <MonthlyReport {...{ columnSettings, onColumnToggle: toggleColumn, dynamicColumnSettings, onDynamicColumnToggle: toggleDynamicColumn, employees, apiResponse, clientRecordId: apiResponse?.recordId || '', onRefetchData: loadEmployeeData }} />;
+        return <MonthlyReport {...{ columnSettings, onColumnToggle: toggleColumn, dynamicColumnSettings, onDynamicColumnToggle: toggleDynamicColumn, apiResponse, clientRecordId: apiResponse?.recordId || '', onRefetchData: loadEmployeeData }} />;
     }
   };
 
@@ -240,7 +260,12 @@ export default function EmployeesPage() {
       <header className="w-full p-4 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="logo-container">
-            <Image src="https://i.imgur.com/J6mXT1Z.jpeg" alt="לוגו" width={200} height={200} />
+            <Image
+              src="/big_logo.jpg"
+              alt="לוגו"
+              width={200}
+              height={200}
+            />
           </div>
           <div className="flex items-center gap-4">
             {isLoaded && (
