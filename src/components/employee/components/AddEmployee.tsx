@@ -46,9 +46,20 @@ const addEmployeeSchema = z.object({
   form101: z.string().min(1, {
     message: "יש לבחור אפשרות.",
   }),
+  hasActivePension: z.string().min(1, {
+    message: "יש לבחור אפשרות.",
+  }),
   incomeFile: z.any().optional(),
   exemptionFile: z.any().optional(),
   department: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.hasActivePension === "כן" && !data.exemptionFile) {
+    ctx.addIssue({
+      path: ["exemptionFile"],
+      code: z.ZodIssueCode.custom,
+      message: "יש להעלות קובץ פנסיה פעילה",
+    });
+  }
 });
 
 type AddEmployeeFormValues = z.infer<typeof addEmployeeSchema>;
@@ -141,6 +152,7 @@ export default function AddEmployee( {recordId, changeTime, link101}: {recordId:
       lastName: "",
       startDate: "",
       form101: "",
+      hasActivePension: "",
       department: "",
     },
   });
@@ -244,11 +256,16 @@ export default function AddEmployee( {recordId, changeTime, link101}: {recordId:
     });
   }
 
+  const hasActivePension = form.watch("hasActivePension");
+
   return (
     <div className="space-y-6">
       <div className="w-full" dir="rtl">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+          {/* Column 1: All other fields */}
+          <div className="space-y-6">
             {/* שם פרטי */}
             <FormField
               control={form.control}
@@ -388,8 +405,8 @@ export default function AddEmployee( {recordId, changeTime, link101}: {recordId:
                             }}
                             disabled={(date) => !isDateInAllowedMonth(date)}
                             defaultMonth={targetMonth}
-                            fromMonth={targetMonth}
-                            toMonth={new Date(targetYear, targetMonthIndex, 31)}
+                            startMonth={targetMonth}
+                            endMonth={new Date(targetYear, targetMonthIndex, 31)}
                           />
                         </PopoverContent>
                       </Popover>
@@ -401,7 +418,9 @@ export default function AddEmployee( {recordId, changeTime, link101}: {recordId:
               )}
             />
 
-
+        </div>
+        {/* Column 2: The requested fields */}
+        <div className="space-y-6">
             {/* הכנסה העתקה */}
             <FormField
               control={form.control}
@@ -478,55 +497,86 @@ export default function AddEmployee( {recordId, changeTime, link101}: {recordId:
               )}
             />
 
-            {/* פטירה פעילה */}
+            {/* האם יש פנסיה פעילה */}
             <FormField
               control={form.control}
-              name="exemptionFile"
+              name="hasActivePension"
               render={({ field }) => (
-                <FormItem>
+                <FormItem >
                   <div className="flex items-center justify-start gap-4">
                     <FormLabel className="text-lg font-medium text-gray-900 text-right">
-                       פנסיה פעילה:                   </FormLabel>
-                    <div className="flex items-center gap-3">
-                      <span className="text-purple-600 text-sm">
-                        העלאת קובץ
-                      </span>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className="h-10 w-10 bg-purple-100 text-purple-600 hover:bg-purple-200 border-purple-200"
-                        onClick={() => {
-                          const input = document.createElement("input");
-                          input.type = "file";
-                          input.accept = ".pdf,.jpg,.jpeg,.png";
-                          input.onchange = (e) => {
-                            const file = (e.target as HTMLInputElement)
-                              .files?.[0];
-                            field.onChange(file);
-                          };
-                          input.click();
-                        }}
+                      האם יש פנסיה פעילה:
+                    </FormLabel>
+                    <FormControl>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
                       >
-                        <Upload className="h-5 w-5" />
-                      </Button>
-                      {field.value && (
-                        <span className="text-green-600 text-sm font-medium">
-                          {field.value.name}
-                        </span>
-                      )}
-                    </div>
+                        <SelectTrigger className="w-[80px]">
+                          <SelectValue placeholder="בחר אפשרות" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="כן">כן</SelectItem>
+                          <SelectItem value="לא">לא</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
                   </div>
-                  <FormDescription className="text-sm text-red-500 text-right mt-2">
-                 במידה ולא הועלה קובץ התייחסות ברירת המחדל הינה שאין פנסיה פעילה
-                  </FormDescription>
                   <FormMessage className="text-right" />
                 </FormItem>
               )}
             />
 
+            {/* פטירה פעילה */}
+            {hasActivePension === "כן" && (
+              <FormField
+                control={form.control}
+                name="exemptionFile"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center justify-start gap-4">
+                      <FormLabel className="text-lg font-medium text-gray-900 text-right">
+                        פנסיה פעילה:
+                      </FormLabel>
+                      <div className="flex items-center gap-3">
+                        <span className="text-purple-600 text-sm">
+                          העלאת קובץ
+                        </span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="h-10 w-10 bg-purple-100 text-purple-600 hover:bg-purple-200 border-purple-200"
+                          onClick={() => {
+                            const input = document.createElement("input");
+                            input.type = "file";
+                            input.accept = ".pdf,.jpg,.jpeg,.png";
+                            input.onchange = (e) => {
+                              const file = (e.target as HTMLInputElement)
+                                .files?.[0];
+                              field.onChange(file);
+                            };
+                            input.click();
+                          }}
+                        >
+                          <Upload className="h-5 w-5" />
+                        </Button>
+                        {field.value && (
+                          <span className="text-green-600 text-sm font-medium">
+                            {field.value.name}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <FormMessage className="text-right" />
+                  </FormItem>
+                )}
+              />
+            )}
+           </div>
+          </div>
             {link101 && (
-                <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 text-right w-full" dir="rtl">
+                <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 text-center w-full" dir="rtl">
                   <span className="text-base font-medium text-gray-900">קישור לטופס 101: </span>
                   <a
                     href={link101}

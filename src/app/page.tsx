@@ -223,7 +223,7 @@ export default function EmployeesPage() {
 
   const renderMainContent = () => {
     if (loading) {
-      return <div dir="" className="flex items-center justify-center h-64"><div className="text-lg text-gray-600">...טוען נתוני עובדים</div></div>;
+      return <div dir="rtl" className="flex items-center justify-center h-64"><div className="text-lg text-gray-600">טוען נתונים...</div></div>;
     }
 
     if (showYearlyForm) {
@@ -288,11 +288,13 @@ export default function EmployeesPage() {
         <SignedIn>
           <div className="flex h-full">
             <div className="flex-1">
-              <div className="flex justify-end items-center mb-2">
-                <span className="text-right" dir="rtl" style={{ fontWeight: 'bold' }}>
-                  תקופת דיווח: {changeTime}
-                </span>
-              </div>
+              {(activeView) && (
+                <div className="flex justify-end items-center mb-2">
+                  <span className="text-right" dir="rtl" style={{ fontWeight: 'bold' }}>
+                    תקופת דיווח: {changeTime}
+                  </span>
+                </div>
+              )}
               <div className="flex-1 bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
                 {renderMainContent()}
               </div>

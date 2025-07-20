@@ -17,7 +17,7 @@ export interface EditableColumn {
   name: string;
   columnId: string;
   oldValue: string | number | { fileName: string; fileData: string };
-  type: "int" | "string" | "doc" | "autoNumber";
+  type: "int" | "string" | "doc" | "autoNumber" | "number" | "multilineText";
   isMust: boolean;
   newValue?: string | number | { fileName: string; fileData: string };
 }
@@ -34,6 +34,7 @@ interface Column {
   oldValue: string | number | string[] | number[] | null;
   type:
     | "autoNumber"
+    | "number"
     | "multipleRecordLinks"
     | "multipleLookupValues"
     | "multilineText";

@@ -67,6 +67,7 @@ export default function MonthlyReport({
             oldValue: Array.isArray(col.oldValue) ? col.oldValue.join(', ') : (col.oldValue ?? ''),
             type: col.type === 'multilineText' ? 'string' : 
                   col.type === 'autoNumber' ? 'autoNumber' : 
+                  col.type === 'number' ? 'number' : 
                   col.type === 'multipleRecordLinks' ? 'string' : 
                   col.type === 'multipleLookupValues' ? 'string' : 'string',
             isMust: col.isMust,
@@ -241,13 +242,13 @@ export default function MonthlyReport({
         const key = `${employee.id}_${column.columnId}`;
         
         // Check if isMust fields are filled
-        if (column.isMust && (!column.newValue || column.newValue === column.oldValue)) {
+        if (column.isMust && !column.newValue) {
           newErrors[key] = 'שדה חובה - יש לעדכן ערך';
           isValid = false;
         }
 
         // Check salary validation
-        if (column.name.includes('שכר') && (column.type === 'int' || column.type === 'autoNumber') && column.newValue !== undefined) {
+        if (column.name.includes('שכר') && (column.type === 'number' || column.type === 'autoNumber') && column.newValue !== undefined) {
           const numValue = typeof column.newValue === 'string' ? parseFloat(column.newValue) : column.newValue as number;
           const oldValue = typeof column.oldValue === 'number' ? column.oldValue : parseFloat(String(column.oldValue));
           if (numValue < oldValue) {
@@ -279,6 +280,7 @@ export default function MonthlyReport({
           // Filter only columns that have been changed
           const changedColumns = emp.columns
             .filter(col => {
+              console.log('col', col);
               // Check if newValue exists and is different from oldValue
               if (col.newValue === undefined || col.newValue === null) {
                 return false;
@@ -300,24 +302,46 @@ export default function MonthlyReport({
               return newValue !== oldValue;
             })
             .map(col => {
-              // Convert file objects to strings for API compatibility
               let newValue = col.newValue;
               let oldValue = col.oldValue;
-              
+
               if (typeof newValue === 'object' && newValue !== null && 'fileName' in newValue) {
                 newValue = (newValue as { fileName: string }).fileName;
               }
-              
               if (typeof oldValue === 'object' && oldValue !== null && 'fileName' in oldValue) {
                 oldValue = (oldValue as { fileName: string }).fileName;
               }
-              
+
+              // Convert to number if type is number or autoNumber
+              if (
+                (col.type === 'number' || col.type === 'autoNumber' || col.type === 'int') &&
+                newValue !== undefined &&
+                newValue !== null &&
+                newValue !== ''
+              ) {
+                newValue = Number(newValue);
+              }
+              if (
+                (col.type === 'number' || col.type === 'autoNumber' || col.type === 'int') &&
+                oldValue !== undefined &&
+                oldValue !== null &&
+                oldValue !== ''
+              ) {
+                oldValue = Number(oldValue);
+              }
+
+              // Map type to backend-compatible values
+              let backendType: 'string' | 'int' | 'doc' | 'autoNumber' =
+                col.type === 'number' ? 'int'
+                : col.type === 'multilineText' ? 'string'
+                : col.type;
+
               return {
                 name: col.name,
                 columnId: col.columnId,
                 oldValue: oldValue,
                 newValue: newValue,
-                type: col.type,
+                type: backendType,
                 isMust: col.isMust
               };
             });
@@ -398,7 +422,7 @@ export default function MonthlyReport({
       );
     }
 
-    if (employeeColumn.type === 'int' || employeeColumn.type === 'autoNumber') {
+    if (employeeColumn.type === 'number' || employeeColumn.type === 'autoNumber') {
       const isReadOnly = employeeColumn.type === 'autoNumber';
       return (
         <div className="flex flex-col">
@@ -436,7 +460,7 @@ export default function MonthlyReport({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg text-gray-600" dir="rtl">טוען נתוני העובדים...</div>
+        <div className="text-lg text-gray-600" dir="rtl">טוען נתונים...</div>
       </div>
     );
   }

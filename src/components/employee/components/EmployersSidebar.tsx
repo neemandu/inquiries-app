@@ -63,7 +63,7 @@ export default function EmployersSidebar({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3 max-h-60 overflow-y-auto">
+          <div className="space-y-3 max-h-96 overflow-y-auto">
             {suppliers.map((supplier) => (
               <Button
                 key={supplier}

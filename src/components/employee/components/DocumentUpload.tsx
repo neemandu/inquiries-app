@@ -25,22 +25,31 @@ import React from "react";
 import { Employee } from "@/lib/types";
 
 const documentUploadSchema = z.object({
-  employeeId: z.string().min(1, {
-    message: "יש לבחור עובד.",
-  }),
+  documentScope: z.string().min(1, { message: "יש לבחור סוג מסמך" }),
+  employeeId: z.string().optional(),
   documentType: z.string().min(1, {
     message: "יש לבחור סוג מסמך.",
   }),
   remarks: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.documentScope === "employee" && !data.employeeId) {
+    ctx.addIssue({
+      path: ["employeeId"],
+      code: z.ZodIssueCode.custom,
+      message: "יש לבחור עובד",
+    });
+  }
 });
 
 type DocumentUploadFormValues = z.infer<typeof documentUploadSchema>;
 
 const documentTypes = [
-  { value: "pension", label: "פנסיה" },
-  { value: "miluim", label: "מילואים" },
+  { value: "פנסיה", label: "פנסיה" },
+  { value: "מילואים", label: "מילואים" },
   { value: "161", label: "161" },
-  { value: "driver license", label: "רישיון רכב" },
+  { value: "רישיון נהיגה", label: "רישיון רכב" },
+  { value: "דוח מלווה", label: "דוח מלווה" },
+  { value: "שווי ארוחות", label: "שווי ארוחות" },
   { value: "other", label: "אחר" },
 ];
 
@@ -54,6 +63,7 @@ export default function DocumentUpload({
   const form = useForm<DocumentUploadFormValues>({
     resolver: zodResolver(documentUploadSchema),
     defaultValues: {
+      documentScope: "",
       employeeId: "",
       documentType: "",
       remarks: "",
@@ -74,6 +84,23 @@ export default function DocumentUpload({
     });
   }
 
+  const employeeOptions = employees.map(emp => {
+    const firstNameCol = emp.columns.find(col => 
+      col.name === 'שם פרטי' || col.name.includes('שם פרטי')
+    );
+    const lastNameCol = emp.columns.find(col => 
+      col.name === 'שם משפחה' || col.name.includes('שם משפחה')
+    );
+    
+    const firstName = Array.isArray(firstNameCol?.oldValue) ? firstNameCol.oldValue.join(', ') : String(firstNameCol?.oldValue || '');
+    const lastName = Array.isArray(lastNameCol?.oldValue) ? lastNameCol.oldValue.join(', ') : String(lastNameCol?.oldValue || '');
+    
+    return {
+      value: emp.id,
+      label: `${firstName} ${lastName}`
+    };
+  });
+
   const handleFileChange = (file: File | null) => {
     setUploadedFile(file);
     setFileError(null);
@@ -93,8 +120,11 @@ export default function DocumentUpload({
       const base64 = await fileToBase64(uploadedFile);
       const base64Data = base64.split(',')[1];
 
+      const recordIdToSend = data.documentScope === "general" ? -1 : data.employeeId;
+
       const payload = {
-        recordId: data.employeeId,
+        recordId: recordIdToSend,
+        employerId: recordId, // <-- Add this line
         fileType: data.documentType,
         remarks: data.remarks,
         file: {
@@ -138,34 +168,33 @@ export default function DocumentUpload({
     }
   }
 
+  const documentScope = form.watch("documentScope");
+
   return (
     <div className="space-y-6">
       <Card className="w-full">
         <CardContent className="p-8">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8" dir="rtl">
-              {/* שם העובד */}
+              {/* האם המסמך נוגע לעובד מסויים או שהוא כללי? */}
               <FormField
                 control={form.control}
-                name="employeeId"
+                name="documentScope"
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex items-center justify-start gap-4">
                       <FormLabel className="block text-lg font-medium text-gray-900 mb-3 text-right">
-                        שם העובד:
+                        האם המסמך נוגע לעובד מסויים או שהוא כללי?
                       </FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
                         <FormControl>
                           <SelectTrigger className="w-sm px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-right text-base">
-                            <SelectValue placeholder="בחר עובד" />
+                            <SelectValue placeholder="בחר אפשרות" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent className="text-right">
-                          {employees && employees.map((employee) => (
-                            <SelectItem key={employee.id} value={employee.id} className="text-right">
-                              {employee.columns.find(column => column.name === "firstName")?.oldValue} {employee.columns.find(column => column.name === "lastName")?.oldValue}
-                            </SelectItem>
-                          ))}
+                          <SelectItem value="employee" className="text-right">עובד מסויים</SelectItem>
+                          <SelectItem value="general" className="text-right">כללי</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -173,6 +202,38 @@ export default function DocumentUpload({
                   </FormItem>
                 )}
               />
+
+              {/* שם העובד - only if עובד מסויים */}
+              {documentScope === "employee" && (
+                <FormField
+                  control={form.control}
+                  name="employeeId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center justify-start gap-4">
+                        <FormLabel className="block text-lg font-medium text-gray-900 mb-3 text-right">
+                          שם העובד:
+                        </FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                          <FormControl>
+                            <SelectTrigger className="w-sm px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-right text-base">
+                              <SelectValue placeholder="בחר עובד" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="text-right">
+                            {employeeOptions && employeeOptions.map((employee) => (
+                              <SelectItem key={employee.value} value={employee.value} className="text-right">
+                                {employee.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <FormMessage className="text-right" />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               {/* סוג מסמך */}
               <FormField
