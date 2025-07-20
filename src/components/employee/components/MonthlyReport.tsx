@@ -331,7 +331,7 @@ export default function MonthlyReport({
               }
 
               // Map type to backend-compatible values
-              let backendType: 'string' | 'int' | 'doc' | 'autoNumber' =
+              const backendType: 'string' | 'int' | 'doc' | 'autoNumber' =
                 col.type === 'number' ? 'int'
                 : col.type === 'multilineText' ? 'string'
                 : col.type;
@@ -378,8 +378,8 @@ export default function MonthlyReport({
     if (!column.isEditable) {
       // Non-editable cells (ID, Name)
       if (column.key === 'id') {
-        const index = editableEmployees.findIndex(emp => emp.id === employee.id);
-        return index + 1;
+        const _index = editableEmployees.findIndex(emp => emp.id === employee.id);
+        return _index + 1;
       }
       if (column.key === 'name') {
         return getEmployeeName(employee);
@@ -509,7 +509,7 @@ export default function MonthlyReport({
             <table className="w-full" dir="rtl">
               <thead>
                 <tr className="bg-gray-50">
-                  {visibleColumns.map((column, index) => (
+                  {visibleColumns.map((column) => (
                     <th
                       key={column.key}
                       className={`px-4 py-3 text-right text-sm font-medium text-gray-900 border-r border-gray-300`}
@@ -527,7 +527,7 @@ export default function MonthlyReport({
                       rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-25'
                     }`}
                   >
-                    {visibleColumns.map((column, colIndex) => (
+                    {visibleColumns.map((column) => (
                       <td
                         key={column.key}
                         className={`px-4 py-4 text-right text-sm border-r border-gray-200`}
