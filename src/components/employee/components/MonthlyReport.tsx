@@ -6,7 +6,7 @@ import { ColumnSettingsType, ApiResponse, DynamicColumnSettings, EditableEmploye
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Settings, Save, Upload } from "lucide-react";
+import { Settings, Save, Upload, Info } from "lucide-react";
 import { updateMonthlyEmployeeData, fetchMonthlyEmployeesData } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useUser } from '@clerk/nextjs';
@@ -355,8 +355,27 @@ export default function MonthlyReport({
         .filter(emp => emp.columns.length > 0);
 
       const success = await updateMonthlyEmployeeData(updateData);
+      const miluimChanged = updateData.some(emp =>
+        emp.columns.some(col => col.name === "מילואים")
+      );
+
       if (success) {
         toast.success('הנתונים נשמרו בהצלחה');
+        if (miluimChanged) {
+          toast(
+            <div className="flex flex-col items-center justify-center text-center">
+              <Info className="w-10 h-10 text-red-600 mb-2" />
+              <span className="text-md font-bold" dir='rtl'>
+                אנא העלה טופס 3010 לאחר שמירת הנתונים דרך האזור "העלאת מסמכים"
+              </span>
+            </div>,
+            {
+              duration: 10000,
+              position: "top-center",
+              style: { minWidth: 400, background: "#fff" },
+            }
+          );
+        }
         if (onRefetchData) {
           onRefetchData();
         }
@@ -542,6 +561,19 @@ export default function MonthlyReport({
           </div>
         </CardContent>
       </Card>
+
+ <br />
+      <div className="flex justify-between items-center mb-4">
+        <Button
+          onClick={handleSave}
+          disabled={isSaving || Object.keys(errors).length > 0}
+          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
+        >
+          <Save className="w-4 h-4" />
+          {isSaving ? 'שומר...' : 'שמור שינויים'}
+        </Button>
+
+      </div>
     </>
   );
 } 
