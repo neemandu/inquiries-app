@@ -3,7 +3,7 @@
 import { SignedIn } from '@clerk/nextjs'
 import Image from 'next/image'
 import Link from 'next/link'
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useCallback, useEffect } from 'react'
 
 export default function UpdateInquiriesPage() {
   const [selectedSupplier, setSelectedSupplier] = useState<string>('הכל')
@@ -17,7 +17,7 @@ export default function UpdateInquiriesPage() {
   const suppliers = ['הכל', 'ספק 1', 'ספק 2']
   
   // Filter rows based on selected supplier
-  const filterTableRows = () => {
+  const filterTableRows = useCallback(() => {
     const rows = document.querySelectorAll('tr.set')
     rows.forEach((row) => {
       const supplierAttr = row.getAttribute('data-supplier')
@@ -27,14 +27,12 @@ export default function UpdateInquiriesPage() {
         ;(row as HTMLElement).style.display = 'none'
       }
     })
-  }
+  }, [selectedSupplier])
 
   // Effect to filter rows when supplier changes
-  React.useEffect(() => {
-    if (!showYearlyForm) {
-      filterTableRows()
-    }
-  }, [selectedSupplier, showYearlyForm])
+  useEffect(() => {
+    filterTableRows()
+  }, [filterTableRows])
 
   const toBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {

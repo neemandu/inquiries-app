@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 interface FileData {
   name: string;
-  file: File; // Store the actual File object instead of URL
+  file: File;
 }
 
 interface RowData {
@@ -20,7 +20,17 @@ interface RowData {
   files: FileData[];
 }
 
-export default function CustomTable({ recordId }: { recordId: string }) {
+interface ApiResponseItem {
+  employeeRecordId?: string;
+  monthlyReportId?: string;
+  firstName?: string;
+  lastName?: string;
+  idNumber?: string;
+  fileType?: string;
+  accountantComments?: string;
+}
+
+export default function Vacations({ recordId }: { recordId: string }) {
   const [rows, setRows] = React.useState<RowData[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -28,7 +38,7 @@ export default function CustomTable({ recordId }: { recordId: string }) {
   const [uploadProgress, setUploadProgress] = React.useState<string>("");
 
   // Fetch data from API
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!recordId) {
       setLoading(false);
       return;
@@ -56,7 +66,7 @@ export default function CustomTable({ recordId }: { recordId: string }) {
       console.log('API response data:', data);
       
       // Transform the API response to match your RowData interface
-      const transformedRows: RowData[] = data.map((item: any) => ({
+      const transformedRows: RowData[] = data.map((item: ApiResponseItem) => ({
         employeeRecordId: item.employeeRecordId || "",
         monthlyReportId: item.monthlyReportId || "",
         firstName: item.firstName || "",
@@ -80,11 +90,11 @@ export default function CustomTable({ recordId }: { recordId: string }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [recordId]);
 
   useEffect(() => {
     fetchData();
-  }, [recordId]);
+  }, [fetchData]);
 
   // Handle file upload for a specific row
   const handleFileUpload = (rowIdx: number, files: FileList | null) => {
@@ -144,7 +154,6 @@ export default function CustomTable({ recordId }: { recordId: string }) {
 
     try {
       let uploadedRows = 0;
-      const totalRows = rows.filter(row => row.files.length > 0).length;
 
       for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
         const row = rows[rowIdx];
@@ -169,7 +178,7 @@ export default function CustomTable({ recordId }: { recordId: string }) {
           
           const payload = {
             fileType: row.fileType,
-            files: filesData, // Send all files for this row
+            files: filesData,
             remarks: row.accountantComments || "",
             employeeId: row.employeeRecordId,
             employerId: recordId,
@@ -193,7 +202,6 @@ export default function CustomTable({ recordId }: { recordId: string }) {
           
         } catch (rowError) {
           console.error(`Error uploading files for ${row.firstName} ${row.lastName}:`, rowError);
-          // Continue with other rows even if one fails
         }
       }
 
@@ -203,7 +211,6 @@ export default function CustomTable({ recordId }: { recordId: string }) {
       setTimeout(() => {
         setRows(prev => prev.map(row => ({ ...row, files: [] })));
         setUploadProgress("");
-        // Refetch the data from API to get updated information
         fetchData();
       }, 3000);
 

@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState } from 'react';
-import { Settings } from 'lucide-react';
 
 interface ColumnSettingsProps {
   isOpen: boolean;

@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import ColumnSettings from './ColumnSettings';
 import { ColumnSettingsType, ApiResponse, DynamicColumnSettings, EditableEmployee, EditableColumn } from '@/lib/types';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Settings, Save, Upload, Info } from "lucide-react";
+import { Settings, Save, Upload } from "lucide-react";
 import { updateMonthlyEmployeeData, fetchMonthlyEmployeesData } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useUser } from '@clerk/nextjs';
@@ -48,7 +48,7 @@ export default function MonthlyReport({
   const [isClosing, setIsClosing] = useState(false);
 
   // Load monthly employees data from the new API
-  const loadMonthlyEmployeesData = async () => {
+  const loadMonthlyEmployeesData = useCallback(async () => {
     if (!user?.emailAddresses?.[0]?.emailAddress) return;
     
     setIsLoading(true);
@@ -85,12 +85,12 @@ export default function MonthlyReport({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user]);
 
   // Load data on component mount
   useEffect(() => {
     loadMonthlyEmployeesData();
-  }, [user]);
+  }, [loadMonthlyEmployeesData]);
 
   // Helper function to get employee name for display
   const getEmployeeName = (employee: EditableEmployee): string => {
@@ -379,7 +379,7 @@ export default function MonthlyReport({
           toast(
             <div className="flex flex-col items-center justify-center text-center">
               <span className="text-lg font-bold text-red-700" dir='rtl'>
-                עבור שינויים ב: מילואים, החזר הוצאות, שווי ארוחות, ימי מחלה ושינוי שכר בסיס אנא העלו מסמכים רלוונטים דרך אזור "העלאת מסמכים"
+                עבור שינויים ב: מילואים, החזר הוצאות, שווי ארוחות, ימי מחלה ושינוי שכר בסיס אנא העלו מסמכים רלוונטים דרך אזור &quot;העלאת מסמכים&quot;
               </span>
             </div>,
             {
@@ -575,7 +575,7 @@ export default function MonthlyReport({
                     } else {
                       toast.error("שגיאה בסגירת התקופה");
                     }
-                  } catch (e) {
+                  } catch {
                     toast.error("שגיאה בחיבור לשרת");
                   } finally {
                     setIsClosing(false);

@@ -2,7 +2,7 @@
 
 import { SignedIn, SignedOut, UserButton, useUser } from '@clerk/nextjs';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import AddEmployee from '@/components/employee/components/AddEmployee';
 import EmployeeRecognition from '@/components/employee/components/EmployeeRecognition';
 import PaySlip from '@/components/employee/components/PaySlip';
@@ -39,7 +39,7 @@ export default function EmployeesPage() {
   const [changeTime, setChangeTime] = useState<string>('');
   const [employeerName, setEmployeerName] = useState<string>('');
 
-  const loadEmployeeData = async () => {
+  const loadEmployeeData = useCallback(async () => {
     if (isLoaded && user?.emailAddresses?.[0]?.emailAddress) {
       setLoading(true);
       try {
@@ -87,11 +87,11 @@ export default function EmployeesPage() {
         setLoading(false);
       }
     }
-  };
+  }, [isLoaded, user]);
 
   useEffect(() => {
     loadEmployeeData();
-  }, [isLoaded, user]);
+  }, [loadEmployeeData]);
 
   useEffect(() => {
     const fetchInquiryData = async () => {
@@ -247,7 +247,7 @@ export default function EmployeesPage() {
       case 'pay-slip':
         return <PaySlip recordId={apiResponse?.recordId} employees={employees} />;
       case 'vacations':
-        return <Vacations recordId={apiResponse?.recordId || ''} link101={apiResponse?.link101 || ''} />;
+        return <Vacations recordId={apiResponse?.recordId || ''} />;
       case 'document-upload':
         return <DocumentUpload employees={employees} recordId={apiResponse?.recordId || ''} />;
       default:

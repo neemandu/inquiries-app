@@ -182,11 +182,22 @@ export default function DocumentUpload({
     try {
       const loadingToast = toast.loading(data.uploadType === "question" ? 'שולח שאלה...' : 'מעלה מסמכים...');
       
-      let payload: any = {
-        recordId: data.documentScope === "general" ? -1 : data.employeeId,
+      const payload: {
+        recordId: number;
+        employerId: string;
+        uploadType: string;
+        remarks: string;
+        fileType?: string;
+        files?: Array<{
+          contentType: string;
+          fileName: string;
+          file: string;
+        }>;
+      } = {
+        recordId: data.documentScope === "general" ? -1 : (data.employeeId ? parseInt(data.employeeId) : -1),
         employerId: recordId,
         uploadType: data.uploadType,
-        remarks: data.remarks,
+        remarks: data.remarks || "",
       };
 
       if (data.uploadType === "document") {

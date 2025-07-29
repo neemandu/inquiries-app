@@ -16,11 +16,11 @@ import {
 } from "@/components/ui/form";
 
 import { Document, Page, pdfjs } from 'react-pdf';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
-import { PDFResponse, Employee } from "@/lib/types";
+import { Employee } from "@/lib/types";
 
 // Set up PDF.js worker - using legacy worker for better Node.js 20 compatibility
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.mjs`;
@@ -167,13 +167,34 @@ export default function PaySlip({ recordId, employees = [] }: PaySlipProps) {
     }
   };
 
+  // Find and display PDF function
+  const findAndDisplayPdf = useCallback((data: PaySlipFormValues) => {
+    const selectedPdf = availablePdfs.find(pdf => pdf.Date === data.selectedMonth);
+    
+    if (!selectedPdf) {
+      setError("לא נמצאו דוחות חודשיים זמינים");
+      return;
+    }
+    
+    const pdfUrl = selectedPdf.Docs[data.employeeName];
+    
+    if (!pdfUrl) {
+      setError(`לא נמצא ${data.employeeName} עבור ${formatDateToHebrew(data.selectedMonth)}`);
+      return;
+    }
+    
+    setPdfUrl(pdfUrl);
+    setShowPdf(true);
+    setError("");
+  }, [availablePdfs]);
+
   // Function to fetch PDFs for the employer
-  const fetchPdfsForEmployer = async (employerRecordId: string) => {
+  const fetchPdfsForEmployer = useCallback(async (employerRecordId: string) => {
     if (!employerRecordId) return;
     
     setLoading(true);
     setError("");
-    setShowPdf(false); // Clear current PDF display
+    setShowPdf(false);
     setPdfUrl("");
     
     try {
@@ -184,55 +205,50 @@ export default function PaySlip({ recordId, employees = [] }: PaySlipProps) {
       }
       
       const pdfData = await response.json();
-      console.log("PDF data received:", pdfData);
+      console.log('PDF data received:', pdfData);
       
-      if (pdfData && Array.isArray(pdfData) && pdfData.length > 0) {
+      if (Array.isArray(pdfData) && pdfData.length > 0) {
         setAvailablePdfs(pdfData);
         
-        // Set default values after setting the state
-        setTimeout(() => {
-          const allTypes = new Set<string>();
-          pdfData.forEach(pdf => {
-            Object.keys(pdf.Docs).forEach(docType => {
-              allTypes.add(docType);
-            });
-          });
-          
-          const documentTypes = Array.from(allTypes);
-          const availableDates = pdfData.map(pdf => pdf.Date);
-          
-          if (documentTypes.length > 0 && availableDates.length > 0) {
-            form.setValue("employeeName", documentTypes[0]);
-            form.setValue("selectedMonth", availableDates[0]);
-          }
-        }, 0);
+        // Set default values for the form
+        const defaultDate = pdfData[0].Date;
+        const defaultDocType = Object.keys(pdfData[0].Docs)[0];
+        
+        form.setValue('selectedMonth', defaultDate);
+        form.setValue('employeeName', defaultDocType);
+        
+        // Don't call findAndDisplayPdf here - let the useEffect handle it
       } else {
         setError("לא נמצאו דוחות חודשיים עבור המעסיק הנבחר");
-        setAvailablePdfs([]);
       }
     } catch (error) {
       console.error("Error fetching PDFs:", error);
       setError("שגיאה בטעינת תלושי השכר");
-      setAvailablePdfs([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [form]);
 
-  // Fetch PDFs when component loads with employer record ID
+  // Load PDFs when component mounts
   useEffect(() => {
     if (recordId) {
       fetchPdfsForEmployer(recordId);
     }
-  }, [recordId]);
+  }, [recordId, fetchPdfsForEmployer]);
 
-  // Auto-display PDF when PDFs are loaded and form values change
+  // Watch form values and update PDF when they change
   useEffect(() => {
-    const currentValues = form.getValues();
-    if (availablePdfs.length > 0 && currentValues.employeeName && currentValues.selectedMonth) {
-      findAndDisplayPdf(currentValues);
-    }
-  }, [availablePdfs, form.watch("employeeName"), form.watch("selectedMonth")]);
+    const subscription = form.watch((value) => {
+      if (value.selectedMonth && value.employeeName && availablePdfs.length > 0) {
+        findAndDisplayPdf({
+          selectedMonth: value.selectedMonth,
+          employeeName: value.employeeName
+        });
+      }
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [form, findAndDisplayPdf, availablePdfs]);
 
   // Cleanup effect to ensure scrolling is restored when component unmounts
   useEffect(() => {
@@ -250,29 +266,6 @@ export default function PaySlip({ recordId, employees = [] }: PaySlipProps) {
     console.log(data);
     // Find matching PDF based on form data
     findAndDisplayPdf(data);
-  }
-
-  function findAndDisplayPdf(data: PaySlipFormValues) {
-    if (!availablePdfs || availablePdfs.length === 0) {
-      setError("לא נמצאו דוחות חודשיים זמינים");
-      return;
-    }
-
-    // Find PDF that matches the selected date
-    const selectedDate = data.selectedMonth;
-    const selectedDocType = data.employeeName;
-    
-    const matchingPdf = availablePdfs.find(pdf => pdf.Date === selectedDate);
-
-    if (matchingPdf && matchingPdf.Docs[selectedDocType]) {
-      setPdfUrl(matchingPdf.Docs[selectedDocType]);
-      setShowPdf(true);
-      setError("");
-      setPageNumber(1); // Reset to first page
-    } else {
-      setError(`לא נמצא ${selectedDocType} עבור ${formatDateToHebrew(selectedDate)}`);
-      setShowPdf(false);
-    }
   }
 
   function downloadPaySlip() {
