@@ -147,6 +147,7 @@ export interface MonthlyInquiry {
   supplier: string;
   isDocMandatory: boolean;
   isTextMandatory: boolean; // Note: typo in original data 'Manadatory'
+  recordId: boolean;
 }
 
 export interface GeneralInquiry {

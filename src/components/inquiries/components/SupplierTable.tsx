@@ -30,7 +30,7 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
     if (filteredData) {
       const initialAnswers: { [key: string]: string } = {};
       filteredData.forEach(item => {
-        const key = `${item.supplier}-${item.asm}`;
+        const key = `${item.recordId}`;
         initialAnswers[key] = item.answer || '';
       });
       // Only initialize if answers is empty (first load or supplier change)
@@ -73,7 +73,7 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
 
     // Filter only modified items
     const modifiedItems = filteredData.filter(item => {
-      const key = `${item.supplier}-${item.asm}`;
+      const key = `${item.recordId}`;
       return modifiedKeys.has(key);
     });
 
@@ -86,7 +86,7 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
 
     const sets = await Promise.all(
       modifiedItems.map(async item => {
-        const key = `${item.supplier}-${item.asm}`;
+        const key = `${item.recordId}`;
         const itemFiles = files[key] || [];
         const encodedFiles = await Promise.all(
           itemFiles.map(async f => ({
@@ -182,7 +182,7 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
           </thead>
           <tbody>
             {filteredData?.map((item, index) => {
-              const key = `${item.supplier}-${item.asm}`;
+              const key = `${item.recordId}`;
               const isModified = modifiedKeys.has(key);
               return (
                 <tr key={key + '-' + index} style={{ backgroundColor: isModified ? '#fff3cd' : 'transparent' }}>
