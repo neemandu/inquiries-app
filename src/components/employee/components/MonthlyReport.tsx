@@ -47,47 +47,44 @@ export default function MonthlyReport({
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
 
-  // Load monthly employees data from the new API
-  const loadMonthlyEmployeesData = useCallback(async () => {
-    if (!user?.emailAddresses?.[0]?.emailAddress) return;
+  // Load monthly employees data from the apiResponse prop instead of making a new API call
+  const loadMonthlyEmployeesData = useCallback(() => {
+    if (!apiResponse?.employees) return;
     
     setIsLoading(true);
     try {
-      const data = await fetchMonthlyEmployeesData(user.emailAddresses[0].emailAddress);
-      if (data?.employees) {
-        // Store columnNames configuration for filtering
-        if (data.columnNames) {
-          setColumnNames(data.columnNames);
-        }
-
-        // Convert API response format to EditableEmployee format
-        const filteredEmployees: EditableEmployee[] = data.employees.map(employee => ({
-          id: employee.id,
-          columns: employee.columns.map(col => ({
-            name: col.name,
-            columnId: col.columnId,
-            oldValue: Array.isArray(col.oldValue) ? col.oldValue.join(', ') : (col.oldValue ?? ''),
-            type: col.type === 'multilineText' ? 'string' : 
-                  col.type === 'autoNumber' ? 'autoNumber' : 
-                  col.type === 'number' ? 'number' : 
-                  col.type === 'multipleRecordLinks' ? 'string' : 
-                  col.type === 'multipleLookupValues' ? 'string' : 'string',
-            isMust: col.isMust,
-            newValue: Array.isArray(col.oldValue) ? col.oldValue.join(', ') : (col.oldValue ?? '')
-          } as EditableColumn))
-        }));
-        setEditableEmployees(filteredEmployees);
-        console.log('filteredEmployees', filteredEmployees);
+      // Store columnNames configuration for filtering
+      if (apiResponse.columnNames) {
+        setColumnNames(apiResponse.columnNames);
       }
+
+      // Convert API response format to EditableEmployee format
+      const filteredEmployees: EditableEmployee[] = apiResponse.employees.map(employee => ({
+        id: employee.id,
+        columns: employee.columns.map(col => ({
+          name: col.name,
+          columnId: col.columnId,
+          oldValue: Array.isArray(col.oldValue) ? col.oldValue.join(', ') : (col.oldValue ?? ''),
+          type: col.type === 'multilineText' ? 'string' : 
+                col.type === 'autoNumber' ? 'autoNumber' : 
+                col.type === 'number' ? 'number' : 
+                col.type === 'multipleRecordLinks' ? 'string' : 
+                col.type === 'multipleLookupValues' ? 'string' : 'string',
+          isMust: col.isMust,
+          newValue: Array.isArray(col.oldValue) ? col.oldValue.join(', ') : (col.oldValue ?? '')
+        } as EditableColumn))
+      }));
+      setEditableEmployees(filteredEmployees);
+      console.log('filteredEmployees', filteredEmployees);
     } catch (error) {
       console.error('Failed to load monthly employees data:', error);
       toast.error('שגיאה בטעינת נתוני העובדים');
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [apiResponse]);
 
-  // Load data on component mount
+  // Load data when apiResponse changes
   useEffect(() => {
     loadMonthlyEmployeesData();
   }, [loadMonthlyEmployeesData]);
@@ -249,7 +246,6 @@ export default function MonthlyReport({
                           column.oldValue !== undefined && column.oldValue !== null && column.oldValue !== '';
           
           if (!hasValue) {
-            newErrors[key] = 'שדה חובה - יש לעדכן ערך';
             isValid = false;
           }
         }
@@ -272,13 +268,6 @@ export default function MonthlyReport({
 
   // Handle save
   const handleSave = async () => {
-    if (!validateForm()) {
-      toast.error('יש שגיאות בטופס', {
-        description: 'אנא תקן את השגיאות לפני השמירה'
-      });
-      return;
-    }
-
     setIsSaving(true);
     try {
       // Filter and convert only employees with changes and only changed columns
@@ -542,7 +531,7 @@ export default function MonthlyReport({
         {/* Green Save Button (leftmost in RTL, separated) */}
         <Button
           onClick={handleSave}
-          disabled={isSaving || Object.keys(errors).length > 0}
+          disabled={isSaving}
           className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white mr-auto"
         >
           <Save className="w-4 h-4" />
@@ -642,7 +631,7 @@ export default function MonthlyReport({
       <div className="flex justify-between items-center mb-4">
         <Button
           onClick={handleSave}
-          disabled={isSaving || Object.keys(errors).length > 0}
+          disabled={isSaving}
           className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
         >
           <Save className="w-4 h-4" />
