@@ -1,199 +1,242 @@
 "use client";
 
-import { useForm, useFieldArray } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import React, { useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Form } from "@/components/ui/form";
-import { useEffect, useState } from "react";
-import Link from "next/link";
 
-// File type for file objects
 interface FileData {
-  name: string | null;
-  url: string | null;
+  name: string;
+  file: File; // Store the actual File object instead of URL
 }
 
-// Employee data structure from API
-interface EmployeeData {
-  recordId: string | null;
-  firstName: string | null;
-  lastName: string | null;
-  "101": FileData;
-  pension: FileData;
-  workFile: FileData;
-  accountantRemark: string | null;
+interface RowData {
+  employeeRecordId: string;
+  monthlyReportId: string;
+  firstName: string;
+  lastName: string;
+  idNumber: string;
+  fileType: string;
+  accountantComments: string;
+  files: FileData[];
 }
 
-// API response structure
-interface ApiResponse {
-  employees: EmployeeData[];
-  link101?: string;
-}
-
-const fileSchema = z.object({
-  name: z.string().nullable(),
-  url: z.string().nullable(),
-});
-
-const employeeRowSchema = z.object({
-  recordId: z.string().nullable(),
-  firstName: z.string().nullable(),
-  lastName: z.string().nullable(),
-  file101: fileSchema,
-  pensionFile: fileSchema,
-  workFile: fileSchema,
-  accountantRemark: z.string().nullable(),
-});
-
-const vacationsSchema = z.object({
-  rows: z.array(employeeRowSchema),
-});
-
-type VacationsFormValues = z.infer<typeof vacationsSchema>;
-type EmployeeRow = z.infer<typeof employeeRowSchema>;
-
-// Utility function to truncate file names
-const truncateFileName = (fileName: string | null, maxLength: number = 15): string => {
-  if (!fileName) return '-';
-  if (fileName.length <= maxLength) return fileName;
-  return fileName.substring(0, maxLength) + '...';
-};
-
-interface VacationsProps {
-  recordId: string;
-  link101: string;
-}
-
-export default function Vacations({ recordId, link101 }: VacationsProps) {
-  console.log('Vacations recordId', recordId);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const form = useForm<VacationsFormValues>({
-    resolver: zodResolver(vacationsSchema),
-    defaultValues: {
-      rows: [],
-    },
-  });
-
-  const { fields, replace } = useFieldArray({
-    control: form.control,
-    name: "rows",
-  });
-
-  // Extract fetchData function so it can be reused
-  const fetchData = async () => {
-    console.log('Fetching data');
-    try {
-      setIsLoading(true);
-            const url = recordId
-        ? `https://hook.eu2.make.com/m0rzm7d63afsoerxyvvpxnl6gkzo67yv?recordId=${encodeURIComponent(recordId)}`
-        : 'https://hook.eu2.make.com/m0rzm7d63afsoerxyvvpxnl6gkzo67yv';
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch data');
-      }
-
-      const data: ApiResponse = await response.json();
-      console.log('Vacations response', data);
-      console.log('Vacations data', data);
-      
-      // Transform API data to match our form structure
-      const transformedRows: EmployeeRow[] = [];
-      
-      if (data && data.employees) {
-        data.employees.forEach((employee) => {
-          transformedRows.push({
-            recordId: employee.recordId,
-            firstName: employee.firstName,
-            lastName: employee.lastName,
-            file101: employee["101"],
-            pensionFile: employee.pension,
-            workFile: employee.workFile,
-            accountantRemark: employee.accountantRemark,
-          });
-        });
-      }
-
-      console.log('transformedRows', transformedRows);
-
-      replace(transformedRows);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      console.error('Error fetching data:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+export default function CustomTable({ recordId }: { recordId: string }) {
+  const [rows, setRows] = React.useState<RowData[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+  const [uploading, setUploading] = React.useState(false);
+  const [uploadProgress, setUploadProgress] = React.useState<string>("");
 
   // Fetch data from API
-  useEffect(() => {
-    fetchData();
-  }, [replace]);
+  const fetchData = async () => {
+    if (!recordId) {
+      setLoading(false);
+      return;
+    }
 
-  // Handle file download
-  const handleFileDownload = (fileData: FileData, fileName: string) => {
-    if (fileData.url) {
-      const link = document.createElement('a');
-      link.href = fileData.url;
-      link.download = fileData.name || fileName;
-      link.target = '_blank';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('Fetching data for recordId:', recordId);
+      const url = `/api/missing-docs?employerRecordId=${recordId}`;
+      console.log('API URL:', url);
+      
+      const response = await fetch(url);
+      
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Response error text:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log('API response data:', data);
+      
+      // Transform the API response to match your RowData interface
+      const transformedRows: RowData[] = data.map((item: any) => ({
+        employeeRecordId: item.employeeRecordId || "",
+        monthlyReportId: item.monthlyReportId || "",
+        firstName: item.firstName || "",
+        lastName: item.lastName || "",
+        idNumber: item.idNumber || "",
+        fileType: item.fileType || "",
+        accountantComments: item.accountantComments || "",
+        files: [],
+      }));
+      
+      console.log('Transformed rows:', transformedRows);
+      setRows(transformedRows);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      console.error('Error details:', {
+        name: err instanceof Error ? err.name : 'Unknown',
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : 'No stack trace'
+      });
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Handle file upload (integrated with new upload URL)
-  const handleFileUpload = (recordId: string | null, fileType: string) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.pdf,.doc,.docx,.jpg,.jpeg,.png';
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file && recordId) {
-        const formData = new FormData();
-        formData.append('recordId', recordId);
-        formData.append('fileType', fileType);
-        formData.append('file', file);
-        try {
-          const response = await fetch('https://hook.eu2.make.com/1rlskau3wk1osy99blebq3n9qppl81pw', {
-            method: 'POST',
-            body: formData,
-          });
-          if (!response.ok) {
-            throw new Error('File upload failed');
-          }
-          console.log('File uploaded successfully');
-          
-          // Refetch the data to update the UI with new file information
-          await fetchData();
-          
-          // Optionally show a success message here
-        } catch (err) {
-          alert('שגיאה בהעלאת הקובץ: ' + (err instanceof Error ? err.message : '')); // Hebrew: Error uploading file
-        }
-      }
-    };
-    input.click();
+  useEffect(() => {
+    fetchData();
+  }, [recordId]);
+
+  // Handle file upload for a specific row
+  const handleFileUpload = (rowIdx: number, files: FileList | null) => {
+    if (!files) return;
+    
+    console.log(`Adding ${files.length} files to row ${rowIdx}`);
+    console.log('Files:', Array.from(files).map(f => f.name));
+    
+    const uploadedFiles: FileData[] = Array.from(files).map((file) => ({
+      name: file.name,
+      file: file, // Store the actual File object
+    }));
+    
+    console.log('Uploaded files:', uploadedFiles);
+    
+    setRows((prev) => {
+      const newRows = prev.map((row, idx) =>
+        idx === rowIdx
+          ? { ...row, files: [...row.files, ...uploadedFiles] }
+          : row
+      );
+      console.log('New rows state:', newRows);
+      return newRows;
+    });
   };
 
-  if (isLoading) {
+  // Remove a file from a row
+  const handleRemoveFile = (rowIdx: number, fileIdx: number) => {
+    setRows((prev) =>
+      prev.map((row, idx) =>
+        idx === rowIdx
+          ? { ...row, files: row.files.filter((_, i) => i !== fileIdx) }
+          : row
+      )
+    );
+  };
+
+  // Convert file to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remove the data URL prefix (e.g., "data:application/pdf;base64,")
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  // Submit all files
+  const handleSubmitAll = async () => {
+    setUploading(true);
+    setUploadProgress("מתחיל העלאה...");
+
+    try {
+      let uploadedRows = 0;
+      const totalRows = rows.filter(row => row.files.length > 0).length;
+
+      for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
+        const row = rows[rowIdx];
+        
+        // Skip rows with no files
+        if (row.files.length === 0) continue;
+        
+        setUploadProgress(`מעלה קבצים עבור ${row.firstName} ${row.lastName} (${row.files.length} קבצים)`);
+        
+        try {
+          // Convert all files for this row to base64
+          const filesData = await Promise.all(
+            row.files.map(async (fileData) => {
+              const base64File = await fileToBase64(fileData.file);
+              return {
+                contentType: fileData.file.type,
+                fileName: fileData.name,
+                file: base64File
+              };
+            })
+          );
+          
+          const payload = {
+            fileType: row.fileType,
+            files: filesData, // Send all files for this row
+            remarks: row.accountantComments || "",
+            employeeId: row.employeeRecordId,
+            employerId: recordId,
+            monthlyReportId: row.monthlyReportId
+          };
+
+          const response = await fetch('https://hook.eu2.make.com/m2ow857a46axrtmhq26yzw84d8ibm8gv', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+          });
+
+          if (!response.ok) {
+            throw new Error(`Upload failed for ${row.firstName} ${row.lastName}: ${response.status}`);
+          }
+
+          uploadedRows++;
+          console.log(`Successfully uploaded ${row.files.length} files for: ${row.firstName} ${row.lastName}`);
+          
+        } catch (rowError) {
+          console.error(`Error uploading files for ${row.firstName} ${row.lastName}:`, rowError);
+          // Continue with other rows even if one fails
+        }
+      }
+
+      setUploadProgress(`העלאה הושלמה! הועלו קבצים עבור ${uploadedRows} עובדים`);
+      
+      // Clear all files and refresh the table data
+      setTimeout(() => {
+        setRows(prev => prev.map(row => ({ ...row, files: [] })));
+        setUploadProgress("");
+        // Refetch the data from API to get updated information
+        fetchData();
+      }, 3000);
+
+    } catch (error) {
+      console.error('Upload error:', error);
+      setUploadProgress(`שגיאה בהעלאה: ${error instanceof Error ? error.message : 'שגיאה לא ידועה'}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  if (loading) {
     return (
-      <div className="flex justify-end items-center p-8">
-        <div className="text-lg" dir="rtl">טוען נתונים...</div>
+      <div className="space-y-6">
+        <Card className="w-full">
+          <CardContent className="p-8">
+            <div className="text-center" dir="rtl">טוען...</div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex justify-center items-center p-8">
-        <div className="text-red-600">שגיאה בטעינת הנתונים: {error}</div>
+      <div className="space-y-6">
+        <Card className="w-full">
+          <CardContent className="p-8">
+            <div className="text-center text-red-500">שגיאה: {error}</div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -202,161 +245,92 @@ export default function Vacations({ recordId, link101 }: VacationsProps) {
     <div className="space-y-6">
       <Card className="w-full">
         <CardContent className="p-8">
-          <Form {...form}>
-            <div className="space-y-8" dir="rtl">
-              {/* Link101 Display Box */}
-              {link101 && (
-                <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 text-center">
-                  <Link href={link101} className="text-sm font-medium text-gray-900" target="_blank">
-                    קישור לטופס 101: <a
-                      href={link101}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 underline hover:text-blue-800"
-                    >
-                      {link101}
-                    </a>
-                  </Link>
-                </div>
-              )}
-              
-              {/* Table */}
-              <div className="overflow-hidden border border-gray-300 rounded-lg">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-gray-50 border-b border-gray-300">
-                      <th className="px-4 py-4 text-center text-sm font-medium text-gray-900 border-l border-gray-300">
-                        מס
-                      </th>
-                      <th className="px-4 py-4 text-center text-sm font-medium text-gray-900 border-l border-gray-300">
-                        שם פרטי
-                      </th>
-                      <th className="px-4 py-4 text-center text-sm font-medium text-gray-900 border-l border-gray-300">
-                        שם משפחה
-                      </th>
-                      <th className="px-4 py-4 text-center text-sm font-medium text-gray-900 border-l border-gray-300">
-                        קובץ פנסיה
-                      </th>
-                      <th className="px-4 py-4 text-center text-sm font-medium text-gray-900 min-w-64">
-                        הסכם העסקה
-                      </th>
-                      <th className="border-r border-gray-200 px-4 py-4 text-center text-sm font-medium text-gray-900 min-w-64">
-                        הערות רואה חשבון
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {fields.map((field, index) => (
-                      <tr key={field.id} className="border-b border-gray-200 hover:bg-gray-50">
-                        <td className="px-4 py-4 border-l border-gray-200 text-center">
-                          {index + 1}
-                        </td>
-                        {/* First Name - Readonly */}
-                        <td className="px-4 py-4 border-l border-gray-200 text-center">
-                          <div className="text-gray-700 p-2">
-                            {field.firstName || '-'}
-                          </div>
-                        </td>
-                        {/* Last Name - Readonly */}
-                        <td className="px-4 py-4 border-l border-gray-200 text-center">
-                          <div className="text-gray-700 p-2">
-                            {field.lastName || '-'}
-                          </div>
-                        </td>
-                        
-                        {/* Pension File */}
-                        <td className="px-4 py-4 border-l border-gray-200 text-center">
-                          <div className="flex flex-col items-center space-y-2">
-                            {field.pensionFile?.name ? (
-                              <>
-                                <span className="text-sm text-gray-700" title={field.pensionFile.name}>{truncateFileName(field.pensionFile.name)}</span>
-                                <div className="flex space-x-2">
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleFileDownload(field.pensionFile, 'pension-file')}
-                                    className="text-xs"
-                                  >
-                                    הורד
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleFileUpload(field.recordId, 'pension')}
-                                    className="text-xs"
-                                  >
-                                    עדכן
-                                  </Button>
-                                </div>
-                              </>
-                            ) : (
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleFileUpload(field.recordId, 'pension')}
-                                className="text-xs"
-                              >
-                                העלה קובץ
-                              </Button>
-                            )}
-                          </div>
-                        </td>
-                        {/* Work File functionality */}
-                        <td className="px-4 py-4 text-center">
-                          <div className="flex flex-col items-center space-y-2">
-                            {field.workFile?.name ? (
-                              <>
-                                <span className="text-sm text-gray-700" title={field.workFile.name}>{truncateFileName(field.workFile.name)}</span>
-                                <div className="flex space-x-2">
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleFileDownload(field.workFile, 'work-file')}
-                                    className="text-xs"
-                                  >
-                                    הורד
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleFileUpload(field.recordId, 'workFile')}
-                                    className="text-xs"
-                                  >
-                                    עדכן
-                                  </Button>
-                                </div>
-                              </>
-                            ) : (
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleFileUpload(field.recordId, 'workFile')}
-                                className="text-xs"
-                              >
-                                העלה קובץ
-                              </Button>
-                            )}
-                          </div>
-                        </td>
-                        {/* Accountant Remark - Readonly */}
-                        <td className="border-r px-4 py-4 border-l border-gray-200 text-center">
-                          <div className="text-gray-700 p-2">
-                            {field.accountantRemark || '-'}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+
+          {/* Submit Button */}
+          <div className="mb-6 flex justify-center">
+            <Button
+              onClick={handleSubmitAll}
+              disabled={uploading || rows.every(row => row.files.length === 0)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
+            >
+              {uploading ? "מעלה קבצים..." : "העלה את כל הקבצים"}
+            </Button>
+          </div>
+
+          {/* Upload Progress */}
+          {uploading && uploadProgress && (
+            <div className="mb-4 text-center text-blue-600">
+              {uploadProgress}
             </div>
-          </Form>
+          )}
+
+          <div className="overflow-x-auto border border-gray-300 rounded-lg" dir="rtl">
+            <table className="w-full" dir="rtl">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-300">
+                  <th className="px-4 py-4 text-center text-sm font-medium text-gray-900 border-l border-gray-300">מס</th>
+                  <th className="px-4 py-4 text-center text-sm font-medium text-gray-900 border-l border-gray-300">שם פרטי</th>
+                  <th className="px-4 py-4 text-center text-sm font-medium text-gray-900 border-l border-gray-300">שם משפחה</th>
+                  <th className="px-4 py-4 text-center text-sm font-medium text-gray-900 border-l border-gray-300">תעודת זהות</th>
+                  <th className="px-4 py-4 text-center text-sm font-medium text-gray-900 border-l border-gray-300">סוג קובץ</th>
+                  <th className="px-4 py-4 text-center text-sm font-medium text-gray-900 border-l border-gray-300">הערות רואה חשבון</th>
+                  <th className="px-4 py-4 text-center text-sm font-medium text-gray-900">קובץ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row, rowIdx) => (
+                  <tr key={row.employeeRecordId} className="border-b border-gray-200 hover:bg-gray-50">
+                    <td className="px-4 py-4 border-l border-gray-200 text-center">{rowIdx + 1}</td>
+                    <td className="px-4 py-4 border-l border-gray-200 text-center">{row.firstName}</td>
+                    <td className="px-4 py-4 border-l border-gray-200 text-center">{row.lastName}</td>
+                    <td className="px-4 py-4 border-l border-gray-200 text-center">{row.idNumber}</td>
+                    <td className="px-4 py-4 border-l border-gray-200 text-center">{row.fileType}</td>
+                    <td className="px-4 py-4 border-l border-gray-200 text-center text-sm">
+                      {row.accountantComments || "-"}
+                    </td>
+                    <td className="px-4 py-4 text-center">
+                      <div className="flex flex-col items-center space-y-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="text-xs"
+                          onClick={() => fileInputRefs.current[rowIdx]?.click()}
+                        >
+                          העלה קבצים ({row.files.length})
+                        </Button>
+                        <input
+                          ref={el => { fileInputRefs.current[rowIdx] = el; }}
+                          type="file"
+                          multiple
+                          className="hidden"
+                          onChange={(e) => handleFileUpload(rowIdx, e.target.files)}
+                        />
+                        {row.files.length > 0 && (
+                          <ul className="text-xs text-right space-y-1">
+                            {row.files.map((file, fileIdx) => (
+                              <li key={fileIdx} className="flex items-center justify-between gap-2">
+                                <span>{file.name}</span>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-red-500"
+                                  onClick={() => handleRemoveFile(rowIdx, fileIdx)}
+                                >
+                                  ×
+                                </Button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </CardContent>
       </Card>
     </div>

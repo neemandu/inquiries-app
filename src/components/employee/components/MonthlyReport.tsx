@@ -44,6 +44,8 @@ export default function MonthlyReport({
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [showConfirmClose, setShowConfirmClose] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
 
   // Load monthly employees data from the new API
   const loadMonthlyEmployeesData = async () => {
@@ -241,10 +243,15 @@ export default function MonthlyReport({
       employee.columns.forEach((column: EditableColumn) => {
         const key = `${employee.id}_${column.columnId}`;
         
-        // Check if isMust fields are filled
-        if (column.isMust && !column.newValue) {
-          newErrors[key] = 'שדה חובה - יש לעדכן ערך';
-          isValid = false;
+        // Check if isMust fields are filled - check both newValue and oldValue
+        if (column.isMust) {
+          const hasValue = column.newValue !== undefined && column.newValue !== null && column.newValue !== '' ||
+                          column.oldValue !== undefined && column.oldValue !== null && column.oldValue !== '';
+          
+          if (!hasValue) {
+            newErrors[key] = 'שדה חובה - יש לעדכן ערך';
+            isValid = false;
+          }
         }
 
         // Check salary validation
@@ -355,18 +362,24 @@ export default function MonthlyReport({
         .filter(emp => emp.columns.length > 0);
 
       const success = await updateMonthlyEmployeeData(updateData);
-      const miluimChanged = updateData.some(emp =>
-        emp.columns.some(col => col.name === "מילואים")
+      const columnsToCheck = [
+        "מילואים",
+        "החזר הוצאות",
+        "שווי ארוחות",
+        "ימי מחלה",
+        "תעריף חודשי / שעתי"
+      ];
+      const specialColumnChanged = updateData.some(emp =>
+        emp.columns.some(col => columnsToCheck.includes(col.name))
       );
 
       if (success) {
         toast.success('הנתונים נשמרו בהצלחה');
-        if (miluimChanged) {
+        if (specialColumnChanged) {
           toast(
             <div className="flex flex-col items-center justify-center text-center">
-              <Info className="w-10 h-10 text-red-600 mb-2" />
-              <span className="text-md font-bold" dir='rtl'>
-                אנא העלה טופס 3010 לאחר שמירת הנתונים דרך האזור "העלאת מסמכים"
+              <span className="text-lg font-bold text-red-700" dir='rtl'>
+                עבור שינויים ב: מילואים, החזר הוצאות, שווי ארוחות, ימי מחלה ושינוי שכר בסיס אנא העלו מסמכים רלוונטים דרך אזור "העלאת מסמכים"
               </span>
             </div>,
             {
@@ -411,7 +424,13 @@ export default function MonthlyReport({
 
     const errorKey = `${employee.id}_${column.key}`;
     const hasError = errors[errorKey];
-    const isMustClass = employeeColumn.isMust ? 'border-red-500 border-2' : '';
+    
+    // Check if mandatory field has a value (either old or new)
+    const hasValue = employeeColumn.newValue !== undefined && employeeColumn.newValue !== null && employeeColumn.newValue !== '' ||
+                    employeeColumn.oldValue !== undefined && employeeColumn.oldValue !== null && employeeColumn.oldValue !== '';
+    
+    // Only show red border if it's mandatory AND has no value
+    const isMustClass = employeeColumn.isMust && !hasValue ? 'border-red-500 border-2' : '';
     const errorClass = hasError ? 'border-red-500' : '';
 
     if (employeeColumn.type === 'doc') {
@@ -487,16 +506,8 @@ export default function MonthlyReport({
   return (
     <>
       {/* Header with Settings and Save buttons */}
-      <div className="flex justify-between items-center mb-4">
-        <Button
-          onClick={handleSave}
-          disabled={isSaving || Object.keys(errors).length > 0}
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
-        >
-          <Save className="w-4 h-4" />
-          {isSaving ? 'שומר...' : 'שמור שינויים'}
-        </Button>
-
+      <div className="flex items-center mb-4 gap-2" dir="rtl">
+        {/* Gear Icon (rightmost in RTL) */}
         <div className="relative">
           <Button
             variant="ghost"
@@ -506,20 +517,85 @@ export default function MonthlyReport({
           >
             <Settings className="w-6 h-6" />
           </Button>
-
-          <ColumnSettings
-            isOpen={showSettingsPopup}
-            onClose={() => setShowSettingsPopup(false)}
-            columnSettings={columnSettings}
-            onColumnToggle={onColumnToggle}
-            dynamicColumnSettings={dynamicColumnSettings}
-            onDynamicColumnToggle={onDynamicColumnToggle}
-            apiResponse={apiResponse}
-            clientRecordId={clientRecordId}
-            onRefetchData={onRefetchData}
-          />
+          {showSettingsPopup && (
+            <ColumnSettings
+              isOpen={showSettingsPopup}
+              onClose={() => setShowSettingsPopup(false)}
+              columnSettings={columnSettings}
+              onColumnToggle={onColumnToggle}
+              dynamicColumnSettings={dynamicColumnSettings}
+              onDynamicColumnToggle={onDynamicColumnToggle}
+              apiResponse={apiResponse}
+              clientRecordId={clientRecordId}
+              onRefetchData={onRefetchData}
+            />
+          )}
         </div>
+        {/* Blue Close Period Button */}
+        <Button
+          onClick={() => setShowConfirmClose(true)}
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+          disabled={isClosing}
+        >
+          אישור מידע וסגירת תקופת דיווח
+        </Button>
+        {/* Green Save Button (leftmost in RTL, separated) */}
+        <Button
+          onClick={handleSave}
+          disabled={isSaving || Object.keys(errors).length > 0}
+          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white mr-auto"
+        >
+          <Save className="w-4 h-4" />
+          {isSaving ? 'שומר...' : 'שמור שינויים'}
+        </Button>
       </div>
+
+      {showConfirmClose && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+          <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md text-center border border-gray-200 pointer-events-auto">
+            <div className="text-lg font-bold text-gray-800 mb-4">
+              לאחר סגירת תקופת הדיווח לא תינתן אפשרות לשינויים נוספים עבור תקופה זו. האם הינך בטוח?
+            </div>
+            <div className="flex justify-center gap-6 mt-6">
+              <Button
+                onClick={async () => {
+                  setIsClosing(true);
+                  try {
+                    const res = await fetch(
+                      "https://bai0obs5qh.execute-api.eu-west-2.amazonaws.com/default/createNewReportingPeriod",
+                      {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ recordId: clientRecordId }),
+                      }
+                    );
+                    if (res.ok) {
+                      setShowConfirmClose(false);
+                      window.location.reload();
+                    } else {
+                      toast.error("שגיאה בסגירת התקופה");
+                    }
+                  } catch (e) {
+                    toast.error("שגיאה בחיבור לשרת");
+                  } finally {
+                    setIsClosing(false);
+                  }
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6"
+                disabled={isClosing}
+              >
+                כן
+              </Button>
+              <Button
+                onClick={() => setShowConfirmClose(false)}
+                className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6"
+              >
+                לא
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Table */}
       <Card className="bg-gray-50">

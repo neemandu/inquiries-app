@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState } from 'react';
+import { Settings } from 'lucide-react';
 
 interface ColumnSettingsProps {
   isOpen: boolean;
@@ -94,90 +95,81 @@ export default function ColumnSettings({
   };
 
   return (
-    <>
-      {/* Overlay */}
-      <div 
-        className="fixed inset-0 bg-black/40 bg-opacity-50 z-20"
-        onClick={onClose}
-      />
-      
-      {/* Popup */}
-      <Card className="absolute top-12 right-0 z-30 w-96 max-h-[80vh] overflow-hidden" dir="rtl">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg font-medium text-gray-900 text-right">
-            ניהול עמודות ({allColumns.length} עמודות)
-          </CardTitle>
+    <Card className="absolute top-full right-0 z-30 w-96 max-h-[80vh] overflow-hidden" dir="rtl">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-lg font-medium text-gray-900 text-right">
+          ניהול עמודות ({allColumns.length} עמודות)
+        </CardTitle>
 
-          {/* Bulk Actions */}
-          <div className="flex gap-2 mt-3">
-            <Button 
-              type="button"
-              variant="outline" 
-              size="sm" 
-              onClick={handleSelectAll}
-              className="flex-1 text-xs"
-            >
-              בחר הכל
-            </Button>
-            <Button 
-              type="button"
-              variant="outline" 
-              size="sm" 
-              onClick={handleDeselectAll}
-              className="flex-1 text-xs"
-            >
-              בטל בחירה
-            </Button>
-          </div>
-        </CardHeader>
-
-        <CardContent className="space-y-4 max-h-[50vh] overflow-y-auto">
-          {/* Dynamic Columns */}
-          <div className="space-y-3">
-            <h4 className="text-sm font-medium text-gray-900 border-b pb-2">
-              כל העמודות ({allColumns.length})
-            </h4>
-            
-            {allColumns.length === 0 ? (
-              <div className="text-sm text-gray-500 text-center py-4">
-                אין עמודות זמינות
-              </div>
-            ) : (
-              allColumns.map((col) => (
-                <div key={col.columnNameRecordId} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-gray-900 truncate">
-                      {col.columnName || 'ללא שם'}
-                    </div>
-                  </div>
-                  <Switch
-                    checked={dynamicColumnSettings[col.columnNameRecordId] || false}
-                    onCheckedChange={() => onDynamicColumnToggle(col.columnNameRecordId)}
-                    className="data-[state=checked]:bg-purple-600 mr-3 "
-                  />
-                </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-
-        <div className="p-4 border-t bg-gray-50">
-          <div className="flex justify-between items-center">
-            <div className="text-xs text-gray-500">
-              {Object.values(dynamicColumnSettings).filter(Boolean).length} מתוך {Object.keys(dynamicColumnSettings).length} עמודות
-            </div>
-            <Button 
-              type="button"
-              onClick={handleSave}
-              disabled={isSaving}
-              className="px-8 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors disabled:opacity-50"
-              variant="secondary"
-            >
-              {isSaving ? 'שומר...' : 'שמור'}
-            </Button>
-          </div>
+        {/* Bulk Actions */}
+        <div className="flex gap-2 mt-3">
+          <Button 
+            type="button"
+            variant="outline" 
+            size="sm" 
+            onClick={handleSelectAll}
+            className="flex-1 text-xs"
+          >
+            בחר הכל
+          </Button>
+          <Button 
+            type="button"
+            variant="outline" 
+            size="sm" 
+            onClick={handleDeselectAll}
+            className="flex-1 text-xs"
+          >
+            בטל בחירה
+          </Button>
         </div>
-      </Card>
-    </>
+      </CardHeader>
+
+      <CardContent className="space-y-4 max-h-[50vh] overflow-y-auto">
+        {/* Dynamic Columns */}
+        <div className="space-y-3">
+          <h4 className="text-sm font-medium text-gray-900 border-b pb-2">
+            כל העמודות ({allColumns.length})
+          </h4>
+          
+          {allColumns.length === 0 ? (
+            <div className="text-sm text-gray-500 text-center py-4">
+              אין עמודות זמינות
+            </div>
+          ) : (
+            allColumns.map((col) => (
+              <div key={col.columnNameRecordId} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-gray-900 truncate">
+                    {col.columnName || 'ללא שם'}
+                  </div>
+                </div>
+                <Switch
+                  checked={dynamicColumnSettings[col.columnNameRecordId] || false}
+                  onCheckedChange={() => onDynamicColumnToggle(col.columnNameRecordId)}
+                  className="data-[state=checked]:bg-purple-600 mr-3 "
+                />
+              </div>
+            ))
+          )}
+        </div>
+      </CardContent>
+
+      <div className="p-4 border-t bg-gray-50">
+        <div className="flex justify-between items-center">
+          <div className="text-xs text-gray-500">
+            {Object.values(dynamicColumnSettings).filter(Boolean).length} מתוך {Object.keys(dynamicColumnSettings).length} עמודות
+          </div>
+          <Button 
+            type="button"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="px-8 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors disabled:opacity-50"
+            variant="secondary"
+          >
+            {isSaving ? 'שומר...' : 'שמור'}
+          </Button>
+        </div>
+      </div>
+    </Card>
   );
 } 
