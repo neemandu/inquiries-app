@@ -7,9 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Settings, Save, Upload } from "lucide-react";
-import { updateMonthlyEmployeeData, fetchMonthlyEmployeesData } from '@/lib/utils';
+import { updateMonthlyEmployeeData } from '@/lib/utils';
 import { toast } from 'sonner';
-import { useUser } from '@clerk/nextjs';
 
 interface ColumnNameConfig {
   isOn: boolean;
@@ -37,7 +36,6 @@ export default function MonthlyReport({
   clientRecordId, 
   onRefetchData 
 }: MonthlyReportProps) {
-  const { user } = useUser();
   const [showSettingsPopup, setShowSettingsPopup] = useState(false);
   const [editableEmployees, setEditableEmployees] = useState<EditableEmployee[]>([]);
   const [columnNames, setColumnNames] = useState<ColumnNameConfig[]>([]);
@@ -231,40 +229,7 @@ export default function MonthlyReport({
     reader.readAsDataURL(file);
   };
 
-  // Validate form before submission
-  const validateForm = (): boolean => {
-    const newErrors: { [key: string]: string } = {};
-    let isValid = true;
 
-    editableEmployees.forEach(employee => {
-      employee.columns.forEach((column: EditableColumn) => {
-        const key = `${employee.id}_${column.columnId}`;
-        
-        // Check if isMust fields are filled - check both newValue and oldValue
-        if (column.isMust) {
-          const hasValue = column.newValue !== undefined && column.newValue !== null && column.newValue !== '' ||
-                          column.oldValue !== undefined && column.oldValue !== null && column.oldValue !== '';
-          
-          if (!hasValue) {
-            isValid = false;
-          }
-        }
-
-        // Check salary validation
-        if (column.name.includes('שכר') && (column.type === 'number' || column.type === 'autoNumber') && column.newValue !== undefined) {
-          const numValue = typeof column.newValue === 'string' ? parseFloat(column.newValue) : column.newValue as number;
-          const oldValue = typeof column.oldValue === 'number' ? column.oldValue : parseFloat(String(column.oldValue));
-          if (numValue < oldValue) {
-            newErrors[key] = 'לא ניתן לעדכן שכר נמוך יותר מחודש קודם';
-            isValid = false;
-          }
-        }
-      });
-    });
-
-    setErrors(newErrors);
-    return isValid;
-  };
 
   // Handle save
   const handleSave = async () => {
