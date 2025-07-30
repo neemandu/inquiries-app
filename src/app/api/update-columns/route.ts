@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     try {
       const data = JSON.parse(responseText);
       return NextResponse.json(data);
-    } catch (parseError) {
+    } catch {
       // If JSON parsing fails, still treat as success for this API
       return NextResponse.json({ success: true });
     }
