@@ -229,8 +229,6 @@ export default function MonthlyReport({
     reader.readAsDataURL(file);
   };
 
-
-
   // Handle save
   const handleSave = async () => {
     setIsSaving(true);
@@ -383,8 +381,8 @@ export default function MonthlyReport({
     const hasValue = employeeColumn.newValue !== undefined && employeeColumn.newValue !== null && employeeColumn.newValue !== '' ||
                     employeeColumn.oldValue !== undefined && employeeColumn.oldValue !== null && employeeColumn.oldValue !== '';
     
-    // Only show red border if it's mandatory AND has no value
-    const isMustClass = employeeColumn.isMust && !hasValue ? 'border-red-500 border-2' : '';
+    // Only show red border if it's mandatory AND has no value AND is not a "הערות" column
+    const isMustClass = employeeColumn.isMust && !hasValue && !employeeColumn.name.includes('הערות') ? 'border-red-500 border-2' : '';
     const errorClass = hasError ? 'border-red-500' : '';
 
     if (employeeColumn.type === 'doc') {
@@ -498,8 +496,9 @@ export default function MonthlyReport({
           onClick={handleSave}
           disabled={isSaving}
           className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white mr-auto"
+          dir="rtl"
         >
-          <Save className="w-4 h-4" />
+          <Save className="w-4 h-4"  />
           {isSaving ? 'שומר...' : 'שמור שינויים'}
         </Button>
       </div>
