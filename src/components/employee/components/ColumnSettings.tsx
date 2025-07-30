@@ -54,19 +54,25 @@ export default function ColumnSettings({
     setIsSaving(true);
     
     try {
-      // Prepare the payload according to the API specification
-      const columns = allColumns.map(col => ({
-        recordId: col.recordId,
-        columnNameRecordId: col.columnNameRecordId,
-        isOn: dynamicColumnSettings[col.columnNameRecordId] || false
-      }));
+      // Only include columns that have been changed
+      const changedColumns = allColumns
+        .filter(col => {
+          const currentSetting = dynamicColumnSettings[col.columnNameRecordId] || false;
+          const originalSetting = col.isOn;
+          return currentSetting !== originalSetting;
+        })
+        .map(col => ({
+          recordId: col.recordId,
+          columnNameRecordId: col.columnNameRecordId,
+          isOn: dynamicColumnSettings[col.columnNameRecordId] || false
+        }));
 
       const payload = {
         clientRecordId,
-        columns
+        columns: changedColumns
       };
 
-      const response = await fetch('https://hook.eu2.make.com/6znp5rhy3zuquqnax180kq30cdlvp0b9', {
+      const response = await fetch('/api/update-columns', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
