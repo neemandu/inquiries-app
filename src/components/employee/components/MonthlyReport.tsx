@@ -25,6 +25,10 @@ interface MonthlyReportProps {
   apiResponse: ApiResponse | null;
   clientRecordId: string;
   onRefetchData?: () => void;
+  onSaveAndNavigate?: () => void;
+  onDiscardAndNavigate?: () => void;
+  onHasChangesChange?: (hasChanges: boolean) => void;
+  onSaveRefSet?: (saveRef: () => Promise<void>) => void;
 }
 
 export default function MonthlyReport({ 
@@ -34,7 +38,11 @@ export default function MonthlyReport({
   onDynamicColumnToggle, 
   apiResponse, 
   clientRecordId, 
-  onRefetchData 
+  onRefetchData,
+  onSaveAndNavigate,
+  onDiscardAndNavigate,
+  onHasChangesChange,
+  onSaveRefSet
 }: MonthlyReportProps) {
   const [showSettingsPopup, setShowSettingsPopup] = useState(false);
   const [editableEmployees, setEditableEmployees] = useState<EditableEmployee[]>([]);
@@ -44,6 +52,13 @@ export default function MonthlyReport({
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const [showMiluimPopup, setShowMiluimPopup] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
+  const [selectedColumnName, setSelectedColumnName] = useState<string>('');
+  const [showUnsavedChangesPopup, setShowUnsavedChangesPopup] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
 
   // Load monthly employees data from the apiResponse prop instead of making a new API call
   const loadMonthlyEmployeesData = useCallback(() => {
@@ -51,29 +66,29 @@ export default function MonthlyReport({
     
     setIsLoading(true);
     try {
-      // Store columnNames configuration for filtering
+        // Store columnNames configuration for filtering
       if (apiResponse.columnNames) {
         setColumnNames(apiResponse.columnNames);
-      }
+        }
 
-      // Convert API response format to EditableEmployee format
+        // Convert API response format to EditableEmployee format
       const filteredEmployees: EditableEmployee[] = apiResponse.employees.map(employee => ({
-        id: employee.id,
-        columns: employee.columns.map(col => ({
-          name: col.name,
-          columnId: col.columnId,
-          oldValue: Array.isArray(col.oldValue) ? col.oldValue.join(', ') : (col.oldValue ?? ''),
-          type: col.type === 'multilineText' ? 'string' : 
-                col.type === 'autoNumber' ? 'autoNumber' : 
+          id: employee.id,
+          columns: employee.columns.map(col => ({
+            name: col.name,
+            columnId: col.columnId,
+            oldValue: Array.isArray(col.oldValue) ? col.oldValue.join(', ') : (col.oldValue ?? ''),
+            type: col.type === 'multilineText' ? 'string' : 
+                  col.type === 'autoNumber' ? 'autoNumber' : 
                 col.type === 'number' ? 'number' : 
-                col.type === 'multipleRecordLinks' ? 'string' : 
-                col.type === 'multipleLookupValues' ? 'string' : 'string',
-          isMust: col.isMust,
-          newValue: Array.isArray(col.oldValue) ? col.oldValue.join(', ') : (col.oldValue ?? '')
-        } as EditableColumn))
-      }));
-      setEditableEmployees(filteredEmployees);
-      console.log('filteredEmployees', filteredEmployees);
+                  col.type === 'multipleRecordLinks' ? 'string' : 
+                  col.type === 'multipleLookupValues' ? 'string' : 'string',
+            isMust: col.isMust,
+            newValue: Array.isArray(col.oldValue) ? col.oldValue.join(', ') : (col.oldValue ?? '')
+          } as EditableColumn))
+        }));
+        setEditableEmployees(filteredEmployees);
+        console.log('filteredEmployees', filteredEmployees);
     } catch (error) {
       console.error('Failed to load monthly employees data:', error);
       toast.error('שגיאה בטעינת נתוני העובדים');
@@ -86,6 +101,13 @@ export default function MonthlyReport({
   useEffect(() => {
     loadMonthlyEmployeesData();
   }, [loadMonthlyEmployeesData]);
+
+  // Provide save function reference to parent
+  useEffect(() => {
+    if (onSaveRefSet) {
+      onSaveRefSet(handleSave);
+    }
+  }, [onSaveRefSet]);
 
   // Helper function to get employee name for display
   const getEmployeeName = (employee: EditableEmployee): string => {
@@ -171,6 +193,22 @@ export default function MonthlyReport({
           ...emp,
           columns: emp.columns.map((col: EditableColumn) => {
             if (col.columnId === columnId) {
+              // Check for columns that need document upload popup
+              const columnsNeedingDocs = [
+                "מילואים",
+                "החזר הוצאות", 
+                "שווי ארוחות", 
+                "ימי מחלה", 
+                "תעריף חודשי / שעתי"
+              ];
+              
+              if (columnsNeedingDocs.includes(col.name)) {
+                // Store the employee ID and column name, then show popup
+                setSelectedEmployeeId(employeeId);
+                setSelectedColumnName(col.name);
+                setTimeout(() => setShowMiluimPopup(true), 100);
+              }
+              
               // Validate salary cannot be lower than oldValue
               if (col.name === "תעריף חודשי / שעתי" ||
                 col.name === "נסיעות חודשי" ||
@@ -229,6 +267,91 @@ export default function MonthlyReport({
     reader.readAsDataURL(file);
   };
 
+  // Convert file to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Get file type based on column name
+  const getFileTypeForColumn = (columnName: string): string => {
+    switch (columnName) {
+      case "מילואים":
+        return "3010";
+      case "החזר הוצאות":
+        return "הוצאות";
+      case "שווי ארוחות":
+        return "שווי ארוחות";
+      case "ימי מחלה":
+        return "אישור מחלה";
+      case "תעריף חודשי / שעתי":
+        return "הסכם העסקה";
+      default:
+        return columnName;
+    }
+  };
+
+  // Handle file upload for document popup
+  const handleMiluimFileUpload = async () => {
+    if (!selectedFile) {
+      toast.error('יש לבחור קובץ');
+      return;
+    }
+
+    setUploadingFile(true);
+    try {
+      const base64 = await fileToBase64(selectedFile);
+      const base64Data = base64.split(',')[1];
+
+      const fileType = getFileTypeForColumn(selectedColumnName);
+
+      const payload = {
+        recordId: selectedEmployeeId,
+        employerId: clientRecordId,
+        uploadType: "document",
+        remarks: `מסמך עבור ${selectedColumnName}`,
+        fileType: fileType,
+        files: [{
+          contentType: selectedFile.type,
+          fileName: selectedFile.name,
+          file: base64Data,
+        }]
+      };
+
+      const response = await fetch('https://hook.eu2.make.com/m2ow857a46axrtmhq26yzw84d8ibm8gv', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        toast.success('הקובץ הועלה בהצלחה');
+        setShowMiluimPopup(false);
+        setSelectedFile(null);
+        setSelectedEmployeeId('');
+        setSelectedColumnName('');
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        toast.error('שגיאה בהעלאת הקובץ', {
+          description: errorData.message || `קוד שגיאה: ${response.status}`,
+        });
+      }
+    } catch (error) {
+      toast.error('שגיאה בחיבור לשרת', {
+        description: 'אנא בדוק את החיבור לאינטרנט ונסה שוב',
+      });
+      console.error('Upload error:', error);
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
   // Handle save
   const handleSave = async () => {
     setIsSaving(true);
@@ -263,14 +386,14 @@ export default function MonthlyReport({
             .map(col => {
               let newValue = col.newValue;
               let oldValue = col.oldValue;
-
+              
               if (typeof newValue === 'object' && newValue !== null && 'fileName' in newValue) {
                 newValue = (newValue as { fileName: string }).fileName;
               }
               if (typeof oldValue === 'object' && oldValue !== null && 'fileName' in oldValue) {
                 oldValue = (oldValue as { fileName: string }).fileName;
               }
-
+              
               // Convert to number if type is number or autoNumber
               if (
                 (col.type === 'number' || col.type === 'autoNumber' || col.type === 'int') &&
@@ -355,6 +478,55 @@ export default function MonthlyReport({
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // Check if there are unsaved changes
+  const hasUnsavedChanges = () => {
+    return editableEmployees.some(emp => 
+      emp.columns.some(col => {
+        if (col.newValue === undefined || col.newValue === null) {
+          return false;
+        }
+        
+        // Convert file objects to strings for comparison
+        let newValue = col.newValue;
+        let oldValue = col.oldValue;
+        
+        if (typeof newValue === 'object' && newValue !== null && 'fileName' in newValue) {
+          newValue = (newValue as { fileName: string }).fileName;
+        }
+        
+        if (typeof oldValue === 'object' && oldValue !== null && 'fileName' in oldValue) {
+          oldValue = (oldValue as { fileName: string }).fileName;
+        }
+        
+        return newValue !== oldValue;
+      })
+    );
+  };
+
+  // Notify parent of changes
+  useEffect(() => {
+    if (onHasChangesChange) {
+      onHasChangesChange(hasUnsavedChanges());
+    }
+  }, [editableEmployees, onHasChangesChange]);
+
+  // Handle save and continue navigation
+  const handleSaveAndNavigate = async () => {
+    await handleSave();
+    if (onSaveAndNavigate) {
+      onSaveAndNavigate();
+    }
+  };
+
+  // Handle discard changes and navigate
+  const handleDiscardAndNavigate = () => {
+    if (onDiscardAndNavigate) {
+      onDiscardAndNavigate();
+    }
+    // Reset all changes
+    loadMonthlyEmployeesData();
   };
 
   // Render editable cell
@@ -470,17 +642,17 @@ export default function MonthlyReport({
             <Settings className="w-6 h-6" />
           </Button>
           {showSettingsPopup && (
-            <ColumnSettings
-              isOpen={showSettingsPopup}
-              onClose={() => setShowSettingsPopup(false)}
-              columnSettings={columnSettings}
-              onColumnToggle={onColumnToggle}
-              dynamicColumnSettings={dynamicColumnSettings}
-              onDynamicColumnToggle={onDynamicColumnToggle}
-              apiResponse={apiResponse}
-              clientRecordId={clientRecordId}
-              onRefetchData={onRefetchData}
-            />
+          <ColumnSettings
+            isOpen={showSettingsPopup}
+            onClose={() => setShowSettingsPopup(false)}
+            columnSettings={columnSettings}
+            onColumnToggle={onColumnToggle}
+            dynamicColumnSettings={dynamicColumnSettings}
+            onDynamicColumnToggle={onDynamicColumnToggle}
+            apiResponse={apiResponse}
+            clientRecordId={clientRecordId}
+            onRefetchData={onRefetchData}
+          />
           )}
         </div>
         {/* Blue Close Period Button */}
@@ -502,6 +674,131 @@ export default function MonthlyReport({
           {isSaving ? 'שומר...' : 'שמור שינויים'}
         </Button>
       </div>
+
+      {/* Unsaved Changes Popup */}
+      {showUnsavedChangesPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+          <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md text-center border border-gray-200 pointer-events-auto">
+            <div className="text-lg font-bold text-gray-800 mb-4">
+              יש שינויים שלא נשמרו
+            </div>
+            <div className="text-sm text-gray-600 mb-6">
+              האם תרצה לשמור את השינויים לפני המעבר?
+            </div>
+            <div className="flex justify-center gap-4">
+              <Button
+                onClick={handleSaveAndNavigate}
+                disabled={isSaving}
+                className="bg-green-600 hover:bg-green-700 text-white px-6"
+              >
+                {isSaving ? 'שומר...' : 'שמור ומעבר'}
+              </Button>
+              <Button
+                onClick={handleDiscardAndNavigate}
+                className="bg-red-600 hover:bg-red-700 text-white px-6"
+              >
+                בטל שינויים
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowUnsavedChangesPopup(false);
+                  setPendingNavigation(null);
+                }}
+                className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6"
+              >
+                המשך עריכה
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* מילואים Popup */}
+      {showMiluimPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+          <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md text-center border border-gray-200 pointer-events-auto">
+            <div className="text-lg font-bold text-gray-800 mb-4">
+              אנא העלה טופס 3010
+            </div>
+            <div className="mb-6">
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              />
+              {selectedFile && (
+                <div className="mt-2 text-sm text-gray-600">
+                  נבחר: {selectedFile.name}
+                </div>
+              )}
+            </div>
+            <div className="flex justify-center gap-4">
+              <Button
+                onClick={handleMiluimFileUpload}
+                disabled={!selectedFile || uploadingFile}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6"
+              >
+                {uploadingFile ? 'מעלה...' : 'העלה קובץ'}
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowMiluimPopup(false);
+                  setSelectedFile(null);
+                  setSelectedEmployeeId('');
+                }}
+                className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6"
+              >
+                ביטול
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Document Upload Popup */}
+      {showMiluimPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+          <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md text-center border border-gray-200 pointer-events-auto">
+            <div className="text-lg font-bold text-gray-800 mb-4">
+              אנא העלה מסמך עבור: {selectedColumnName}
+            </div>
+            <div className="mb-6">
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              />
+              {selectedFile && (
+                <div className="mt-2 text-sm text-gray-600">
+                  נבחר: {selectedFile.name}
+                </div>
+              )}
+            </div>
+            <div className="flex justify-center gap-4">
+              <Button
+                onClick={handleMiluimFileUpload}
+                disabled={!selectedFile || uploadingFile}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6"
+              >
+                {uploadingFile ? 'מעלה...' : 'העלה קובץ'}
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowMiluimPopup(false);
+                  setSelectedFile(null);
+                  setSelectedEmployeeId('');
+                  setSelectedColumnName('');
+                }}
+                className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6"
+              >
+                ביטול
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showConfirmClose && (
         <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">

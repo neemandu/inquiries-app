@@ -205,7 +205,7 @@ export default function AddEmployee( {recordId, changeTime, link101}: {recordId:
       }
       
       // Show success toast
-      toast.success("העובד נוסף בהצלחה!", {
+      toast.success("העובד נוסף בהצלחה", {
         description: `${data.firstName} ${data.lastName} נוסף למערכת`,
         duration: 5000,
       });
