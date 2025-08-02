@@ -454,7 +454,7 @@ export default function MonthlyReport({
           toast(
             <div className="flex flex-col items-center justify-center text-center">
               <span className="text-lg font-bold text-red-700" dir='rtl'>
-                עבור שינויים ב: מילואים, החזר הוצאות, שווי ארוחות, ימי מחלה ושינוי שכר בסיס אנא העלו מסמכים רלוונטים דרך אזור &quot;העלאת מסמכים&quot;
+                עבור שינויים ב: מילואים, החזר הוצאות, שווי ארוחות, ימי מחלה ושינוי שכר בסיס אנא העלו מסמכים רלוונטים דרך אזור &quot;מסמכים חסרים&quot;
               </span>
             </div>,
             {
