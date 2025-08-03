@@ -811,14 +811,11 @@ export default function MonthlyReport({
                 onClick={async () => {
                   setIsClosing(true);
                   try {
-                    const res = await fetch(
-                      "https://bai0obs5qh.execute-api.eu-west-2.amazonaws.com/default/createNewReportingPeriod",
-                      {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ recordId: clientRecordId }),
-                      }
-                    );
+                    const res = await fetch("/api/create-reporting-period", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ recordId: clientRecordId }),
+                    });
                     if (res.ok) {
                       setShowConfirmClose(false);
                       window.location.reload();

@@ -39,6 +39,11 @@ const addEmployeeSchema = z.object({
   lastName: z.string().min(2, {
     message: "שם משפחה חייב להכיל לפחות 2 תווים.",
   }),
+  tz: z.string().min(1, {
+    message: "תעודת זהות היא שדה חובה.",
+  }).regex(/^\d+$/, {
+    message: "תעודת זהות יכולה להכיל רק מספרים.",
+  }),
   startDate: z.string().min(1, {
     message: "תאריך תחילת עבודה הוא שדה חובה.",
   }),
@@ -149,6 +154,7 @@ export default function AddEmployee( {recordId, changeTime, link101}: {recordId:
     defaultValues: {
       firstName: "",
       lastName: "",
+      tz: "",
       startDate: "",
       form101: "",
       hasActivePension: "",
@@ -180,6 +186,7 @@ export default function AddEmployee( {recordId, changeTime, link101}: {recordId:
         record_id: recordId,
         firstName: data.firstName,
         lastName: data.lastName,
+        tz: data.tz,
         startDate: formatDateToAPI(data.startDate),
         is101Full: data.form101 === "כן",
         pension: {
@@ -305,6 +312,32 @@ export default function AddEmployee( {recordId, changeTime, link101}: {recordId:
                       dir="rtl"
                     />
                   </FormControl>
+                  </div>
+                  <FormMessage className="text-right" />
+                </FormItem>
+              )}
+            />
+
+            {/* תעודת זהות */}
+            <FormField
+              control={form.control}
+              name="tz"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex items-center justify-start gap-4">
+                    <FormLabel className="text-lg font-medium text-gray-900 text-right">
+                      תעודת זהות:
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        className="text-right text-lg h-10 max-w-sm"
+                        dir="rtl"
+                        placeholder="הזן מספר תעודת זהות"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                      />
+                    </FormControl>
                   </div>
                   <FormMessage className="text-right" />
                 </FormItem>
