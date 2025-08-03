@@ -46,6 +46,14 @@ export default function YearlyForm({
     }
   }, [yearlyData]);
 
+  useEffect(() => {
+    if (answers) {
+      // This useEffect is no longer needed as answers are now managed by the parent
+      // and the initial population is handled by the yearlyData prop.
+      // Keeping it for now as it might be re-introduced or removed later.
+    }
+  }, [answers]);
+
   const handleAnswerChange = (questionKey: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionKey]: value }));
   };

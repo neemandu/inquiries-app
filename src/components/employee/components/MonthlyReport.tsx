@@ -58,7 +58,6 @@ export default function MonthlyReport({
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
   const [selectedColumnName, setSelectedColumnName] = useState<string>('');
   const [showUnsavedChangesPopup, setShowUnsavedChangesPopup] = useState(false);
-  const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
 
   // Load monthly employees data from the apiResponse prop instead of making a new API call
   const loadMonthlyEmployeesData = useCallback(() => {
@@ -702,7 +701,6 @@ export default function MonthlyReport({
               <Button
                 onClick={() => {
                   setShowUnsavedChangesPopup(false);
-                  setPendingNavigation(null);
                 }}
                 className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6"
               >
