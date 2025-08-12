@@ -120,3 +120,11 @@
     @apply bg-background text-foreground;
   }
 }
+
+.max-w-7xl {
+  max-width: var(--container-7xl) /* 80rem = 1280px */;
+}
+
+.max-w-9xl {
+  max-width: 97rem;
+}

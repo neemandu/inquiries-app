@@ -58,6 +58,8 @@ export default function MonthlyReport({
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
   const [selectedColumnName, setSelectedColumnName] = useState<string>('');
   const [showUnsavedChangesPopup, setShowUnsavedChangesPopup] = useState(false);
+  const [showValidationPopup, setShowValidationPopup] = useState(false);
+  const [missingDocs, setMissingDocs] = useState<unknown[]>([]);
 
   // Load monthly employees data from the apiResponse prop instead of making a new API call
   const loadMonthlyEmployeesData = useCallback(() => {
@@ -100,6 +102,30 @@ export default function MonthlyReport({
   useEffect(() => {
     loadMonthlyEmployeesData();
   }, [loadMonthlyEmployeesData]);
+
+  // Fetch missing documents data
+  const fetchMissingDocs = useCallback(async () => {
+    if (!clientRecordId) return;
+    
+    try {
+      const response = await fetch(`/api/missing-docs?employerRecordId=${clientRecordId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setMissingDocs(data || []);
+      } else {
+        console.error('Failed to fetch missing documents');
+        setMissingDocs([]);
+      }
+    } catch (error) {
+      console.error('Error fetching missing documents:', error);
+      setMissingDocs([]);
+    }
+  }, [clientRecordId]);
+
+  // Fetch missing docs when component mounts
+  useEffect(() => {
+    fetchMissingDocs();
+  }, [fetchMissingDocs]);
 
   // Provide save function reference to parent
   useEffect(() => {
@@ -511,6 +537,31 @@ export default function MonthlyReport({
     }
   }, [editableEmployees, onHasChangesChange]);
 
+  // Validate all required fields and missing documents
+  const validateAllRequiredFieldsAndDocs = () => {
+    // Check if there are any missing documents
+    if (missingDocs.length > 0) {
+      return false;
+    }
+
+    // Check if all required (isMust) fields are filled
+    for (const employee of editableEmployees) {
+      for (const column of employee.columns) {
+        if (column.isMust) {
+          // Check if field has a value (either old or new)
+          const hasOldValue = column.oldValue !== undefined && column.oldValue !== null && column.oldValue !== '';
+          const hasNewValue = column.newValue !== undefined && column.newValue !== null && column.newValue !== '';
+          
+          if (!hasOldValue && !hasNewValue) {
+            return false;
+          }
+        }
+      }
+    }
+
+    return true;
+  };
+
   // Handle save and continue navigation
   const handleSaveAndNavigate = async () => {
     await handleSave();
@@ -656,7 +707,13 @@ export default function MonthlyReport({
         </div>
         {/* Blue Close Period Button */}
         <Button
-          onClick={() => setShowConfirmClose(true)}
+          onClick={() => {
+            if (validateAllRequiredFieldsAndDocs()) {
+              setShowConfirmClose(true);
+            } else {
+              setShowValidationPopup(true);
+            }
+          }}
           className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
           disabled={isClosing}
         >
@@ -798,6 +855,25 @@ export default function MonthlyReport({
         </div>
       )}
 
+      {/* Validation Popup */}
+      {showValidationPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+          <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md text-center border border-gray-200 pointer-events-auto">
+            <div className="text-lg font-bold text-red-600 mb-4" dir="rtl">
+              אנא השלימו את כל הדיווחים החודשיים והמסמכים החסרים
+            </div>
+            <div className="flex justify-center gap-4 mt-6">
+              <Button
+                onClick={() => setShowValidationPopup(false)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6"
+              >
+                הבנתי
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showConfirmClose && (
         <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
           <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md text-center border border-gray-200 pointer-events-auto">
@@ -845,14 +921,14 @@ export default function MonthlyReport({
       {/* Table */}
       <Card className="bg-gray-50">
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto w-full">
             <table className="w-full" dir="rtl">
               <thead>
                 <tr className="bg-gray-50">
                   {visibleColumns.map((column) => (
                     <th
                       key={column.key}
-                      className={`px-4 py-3 text-right text-sm font-medium text-gray-900 border-r border-gray-300`}
+                      className={`px-6 py-4 text-right font-medium text-gray-900 border-r border-gray-300 min-w-[200px]`}
                     >
                       {column.label}
                     </th>
@@ -870,7 +946,7 @@ export default function MonthlyReport({
                     {visibleColumns.map((column) => (
                       <td
                         key={column.key}
-                        className={`px-4 py-4 text-right text-sm border-r border-gray-200`}
+                        className={`px-6 py-6 text-right border-r border-gray-200 min-w-[200px]`}
                       >
                         {renderEditableCell(employee, column)}
                       </td>
@@ -883,7 +959,7 @@ export default function MonthlyReport({
         </CardContent>
       </Card>
 
- <br />
+      <br />
       <div className="flex justify-between items-center mb-4">
         <Button
           onClick={handleSave}

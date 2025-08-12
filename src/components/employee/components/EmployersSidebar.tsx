@@ -35,7 +35,7 @@ const navigationItems = [
   },
   {
     id: 'vacations' as ViewType,
-    label: 'מסמכים חסרים',
+    label: 'בירורים פתוחים ',
     icon: '/icons/alarm.png',
   },
   {
