@@ -10,6 +10,10 @@ interface EmployersSidebarProps {
   selectedSupplier: string | null;
   onSupplierSelect: (supplier: string) => void;
   onShowYearlyForm: () => void;
+  notificationCounts?: {
+    'monthly-report'?: number;
+    'vacations'?: number;
+  };
 }
 
 const navigationItems = [
@@ -52,6 +56,7 @@ export default function EmployersSidebar({
   selectedSupplier,
   onSupplierSelect,
   onShowYearlyForm,
+  notificationCounts,
 }: EmployersSidebarProps) {
   return (
     <div className="w-60 space-y-6">
@@ -109,13 +114,22 @@ export default function EmployersSidebar({
                 }`}
               dir="rtl"
             >
-              <Image
-                src={item.icon}
-                alt={item.id}
-                width={20}
-                height={20}
-                className="flex-shrink-0"
-              />
+              <div className="relative flex-shrink-0">
+                <Image
+                  src={item.icon}
+                  alt={item.id}
+                  width={20}
+                  height={20}
+                  className="flex-shrink-0"
+                />
+                {notificationCounts && 
+                 notificationCounts[item.id as keyof typeof notificationCounts] && 
+                 notificationCounts[item.id as keyof typeof notificationCounts]! > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                    {notificationCounts[item.id as keyof typeof notificationCounts]}
+                  </span>
+                )}
+              </div>
               <span className="font-medium text-base">{item.label}</span>
             </Button>
           ))}

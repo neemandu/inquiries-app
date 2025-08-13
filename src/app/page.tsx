@@ -38,6 +38,10 @@ export default function EmployeesPage() {
   const [inquiryData, setInquiryData] = useState<InquiryData | null>(null);
   const [changeTime, setChangeTime] = useState<string>('');
   const [employeerName, setEmployeerName] = useState<string>('');
+  const [notificationCounts, setNotificationCounts] = useState<{
+    'monthly-report'?: number;
+    'vacations'?: number;
+  }>({});
 
   const loadEmployeeData = useCallback(async () => {
     if (isLoaded && user?.emailAddresses?.[0]?.emailAddress) {
@@ -221,6 +225,79 @@ export default function EmployeesPage() {
     setActiveView(null);
   };
 
+  // Calculate missing items count for monthly-report
+  const calculateMonthlyReportMissing = useCallback(async () => {
+    if (!apiResponse?.recordId) return 0;
+    
+    try {
+      // Fetch missing docs from the same API used by Vacations component
+      const response = await fetch(`/api/missing-docs?employerRecordId=${apiResponse.recordId}`);
+      if (!response.ok) return 0;
+      
+      const missingDocs = await response.json();
+      let missingCount = missingDocs?.length || 0;
+      
+      // Add count of missing required fields from employees data
+      if (apiResponse.employees) {
+        for (const employee of apiResponse.employees) {
+          for (const column of employee.columns) {
+            if (column.isMust) {
+              const hasValue = column.oldValue !== undefined && 
+                              column.oldValue !== null && 
+                              column.oldValue !== '';
+              if (!hasValue) {
+                missingCount++;
+              }
+            }
+          }
+        }
+      }
+      
+      return missingCount;
+    } catch (error) {
+      console.error('Error calculating monthly report missing items:', error);
+      return 0;
+    }
+  }, [apiResponse]);
+
+  // Calculate vacations count (missing docs count)
+  const calculateVacationsCount = useCallback(async () => {
+    if (!apiResponse?.recordId) return 0;
+    
+    try {
+      const response = await fetch(`/api/missing-docs?employerRecordId=${apiResponse.recordId}`);
+      if (!response.ok) return 0;
+      
+      const data = await response.json();
+      return data?.length || 0;
+    } catch (error) {
+      console.error('Error calculating vacations count:', error);
+      return 0;
+    }
+  }, [apiResponse]);
+
+  // Update notification counts when API response changes
+  useEffect(() => {
+    const updateNotificationCounts = async () => {
+      if (!apiResponse?.recordId) {
+        setNotificationCounts({});
+        return;
+      }
+
+      const [monthlyReportCount, vacationsCount] = await Promise.all([
+        calculateMonthlyReportMissing(),
+        calculateVacationsCount()
+      ]);
+
+      setNotificationCounts({
+        'monthly-report': monthlyReportCount,
+        'vacations': vacationsCount
+      });
+    };
+
+    updateNotificationCounts();
+  }, [apiResponse, calculateMonthlyReportMissing, calculateVacationsCount]);
+
   const renderMainContent = () => {
     if (loading) {
       return <div dir="rtl" className="flex items-center justify-center h-64"><div className="text-lg text-gray-600">טוען נתונים...</div></div>;
@@ -311,6 +388,7 @@ export default function EmployeesPage() {
                 selectedSupplier={loading ? null : selectedSupplier}
                 onSupplierSelect={handleSupplierSelect}
                 onShowYearlyForm={handleShowYearlyForm}
+                notificationCounts={notificationCounts}
               />
             </div>
           </div>
