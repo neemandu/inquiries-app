@@ -36,6 +36,7 @@ export default function Vacations({ recordId }: { recordId: string }) {
   const [error, setError] = React.useState<string | null>(null);
   const [uploading, setUploading] = React.useState(false);
   const [uploadProgress, setUploadProgress] = React.useState<string>("");
+  const tableContainerRef = useRef<HTMLDivElement>(null);
 
   // Fetch data from API
   const fetchData = useCallback(async () => {
@@ -95,6 +96,13 @@ export default function Vacations({ recordId }: { recordId: string }) {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Scroll table to the right on initial load
+  useEffect(() => {
+    if (tableContainerRef.current) {
+      tableContainerRef.current.scrollLeft = tableContainerRef.current.scrollWidth;
+    }
+  }, [rows]);
 
   // Handle file upload for a specific row
   const handleFileUpload = (rowIdx: number, files: FileList | null) => {
@@ -271,7 +279,7 @@ export default function Vacations({ recordId }: { recordId: string }) {
             </div>
           )}
 
-          <div className="overflow-x-auto border border-gray-300 rounded-lg" dir="rtl">
+          <div ref={tableContainerRef} className="overflow-x-auto border border-gray-300 rounded-lg" dir="rtl">
             <table className="w-full" dir="rtl">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-300">

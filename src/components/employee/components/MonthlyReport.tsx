@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import ColumnSettings from './ColumnSettings';
 import { ColumnSettingsType, ApiResponse, DynamicColumnSettings, EditableEmployee, EditableColumn } from '@/lib/types';
 import { Button } from "@/components/ui/button";
@@ -60,6 +60,7 @@ export default function MonthlyReport({
   const [showUnsavedChangesPopup, setShowUnsavedChangesPopup] = useState(false);
   const [showValidationPopup, setShowValidationPopup] = useState(false);
   const [missingDocs, setMissingDocs] = useState<unknown[]>([]);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
 
   // Load monthly employees data from the apiResponse prop instead of making a new API call
   const loadMonthlyEmployeesData = useCallback(() => {
@@ -133,6 +134,13 @@ export default function MonthlyReport({
       onSaveRefSet(handleSave);
     }
   }, [onSaveRefSet]);
+
+  // Scroll table to the right on initial load
+  useEffect(() => {
+    if (tableContainerRef.current) {
+      tableContainerRef.current.scrollLeft = tableContainerRef.current.scrollWidth;
+    }
+  }, [editableEmployees]);
 
   // Helper function to get employee name for display
   const getEmployeeName = (employee: EditableEmployee): string => {
@@ -539,12 +547,16 @@ export default function MonthlyReport({
 
   // Validate all required fields and missing documents
   const validateAllRequiredFieldsAndDocs = () => {
-    // Check if there are any missing documents
+    // Check if there are any missing documents with fileType="טופס 101"
     if (missingDocs.length > 0) {
-      return false;
+      const hasForm101 = missingDocs.some((doc: any) => doc.fileType === "טופס 101");
+      if (hasForm101) {
+        return false;
+      }
     }
 
-    // Check if all required (isMust) fields are filled
+    // Check if all required (isMust) fields are filled\
+    /*
     for (const employee of editableEmployees) {
       for (const column of employee.columns) {
         if (column.isMust) {
@@ -557,7 +569,7 @@ export default function MonthlyReport({
           }
         }
       }
-    }
+    }*/
 
     return true;
   };
@@ -921,7 +933,7 @@ export default function MonthlyReport({
       {/* Table */}
       <Card className="bg-gray-50">
         <CardContent className="p-0">
-          <div className="overflow-x-auto w-full">
+          <div ref={tableContainerRef} className="overflow-x-auto w-full">
             <table className="w-full" dir="rtl">
               <thead>
                 <tr className="bg-gray-50">
