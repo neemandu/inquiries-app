@@ -44,7 +44,7 @@ export default function YearlyForm({
         setAnswers(initialAnswers);
       }
     }
-  }, [yearlyData]);
+  }, [yearlyData, answers]);
 
   useEffect(() => {
     if (answers) {

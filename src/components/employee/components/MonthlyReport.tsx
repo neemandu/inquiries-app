@@ -386,7 +386,7 @@ export default function MonthlyReport({
   };
 
   // Handle save
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
       // Filter and convert only employees with changes and only changed columns
@@ -511,10 +511,10 @@ export default function MonthlyReport({
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [editableEmployees, loadMonthlyEmployeesData, onRefetchData]);
 
   // Check if there are unsaved changes
-  const hasUnsavedChanges = () => {
+  const hasUnsavedChanges = useCallback(() => {
     return editableEmployees.some(emp => 
       emp.columns.some(col => {
         if (col.newValue === undefined || col.newValue === null) {
@@ -536,7 +536,7 @@ export default function MonthlyReport({
         return newValue !== oldValue;
       })
     );
-  };
+  }, [editableEmployees]);
 
   // Notify parent of changes
   useEffect(() => {
@@ -549,7 +549,7 @@ export default function MonthlyReport({
   const validateAllRequiredFieldsAndDocs = () => {
     // Check if there are any missing documents with fileType="טופס 101"
     if (missingDocs.length > 0) {
-      const hasForm101 = missingDocs.some((doc: any) => doc.fileType === "טופס 101");
+      const hasForm101 = missingDocs.some((doc: unknown) => (doc as { fileType?: string }).fileType === "טופס 101");
       if (hasForm101) {
         return false;
       }
