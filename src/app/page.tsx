@@ -372,7 +372,7 @@ export default function EmployeesPage() {
                   </span>
                 </div>
               )}
-              <div className="flex-1 bg-white rounded-lg border border-gray-200 p-6 shadow-sm max-w-9xl">
+              <div className="flex-1 bg-white rounded-lg border border-gray-200 p-6 shadow-sm max-w-[calc(100vw-320px)]">
                 {renderMainContent()}
               </div>
             </div>

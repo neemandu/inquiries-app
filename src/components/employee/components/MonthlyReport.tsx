@@ -138,6 +138,7 @@ export default function MonthlyReport({
   // Scroll table to the right on initial load
   useEffect(() => {
     if (tableContainerRef.current) {
+      // Scroll to the right to show the rightmost columns
       tableContainerRef.current.scrollLeft = tableContainerRef.current.scrollWidth;
     }
   }, [editableEmployees]);
@@ -178,8 +179,7 @@ export default function MonthlyReport({
 
     // Base columns that are always shown
     const baseColumns = [
-      { key: 'id', label: 'מס', show: true, isEditable: false },
-      { key: 'name', label: 'שם העובד', show: true, isEditable: false },
+      { key: 'name', label: 'שם העובד', show: true, isEditable: false, isFrozen: true },
     ];
 
     // Convert map to array and create column objects, filtering by isOn property
@@ -197,7 +197,8 @@ export default function MonthlyReport({
         label: col.name,
         show: true,
         isEditable: col.type !== 'autoNumber', // Don't allow editing auto-generated fields
-        type: col.type
+        type: col.type,
+        isFrozen: false
       }));
 
     // Find and separate "הערות רואה חשבון" column
@@ -592,13 +593,9 @@ export default function MonthlyReport({
   };
 
   // Render editable cell
-  const renderEditableCell = (employee: EditableEmployee, column: { key: string; label: string; show: boolean; isEditable: boolean; type?: string }) => {
+  const renderEditableCell = (employee: EditableEmployee, column: { key: string; label: string; show: boolean; isEditable: boolean; type?: string; isFrozen?: boolean }, rowIndex?: number) => {
     if (!column.isEditable) {
-      // Non-editable cells (ID, Name)
-      if (column.key === 'id') {
-        const _index = editableEmployees.findIndex(emp => emp.id === employee.id);
-        return _index + 1;
-      }
+      // Non-editable cells (Name)
       if (column.key === 'name') {
         return getEmployeeName(employee);
       }
@@ -692,7 +689,7 @@ export default function MonthlyReport({
   return (
     <>
       {/* Header with Settings and Save buttons */}
-      <div className="flex items-center mb-4 gap-2" dir="rtl">
+      <div className="flex items-center mb-4 gap-2 w-full max-w-none" dir="rtl">
         {/* Gear Icon (rightmost in RTL) */}
         <div className="relative">
           <Button
@@ -931,16 +928,18 @@ export default function MonthlyReport({
       )}
 
       {/* Table */}
-      <Card className="bg-gray-50">
+      <Card className="bg-gray-50 w-full max-w-none">
         <CardContent className="p-0">
-          <div ref={tableContainerRef} className="overflow-x-auto w-full">
-            <table className="w-full" dir="rtl">
+          <div ref={tableContainerRef} className="overflow-auto w-full h-[calc(100vh-300px)]">
+            <table className="w-full min-w-max" dir="rtl">
               <thead>
                 <tr className="bg-gray-50">
                   {visibleColumns.map((column) => (
                     <th
                       key={column.key}
-                      className={`px-6 py-4 text-right font-medium text-gray-900 border-r border-gray-300 min-w-[200px]`}
+                      className={`px-6 py-4 text-right font-medium text-gray-900 border-r border-gray-300 min-w-[200px] ${
+                        column.isFrozen ? 'sticky right-0 bg-gray-50 z-20 border-l-2 border-gray-300 shadow-[4px_0_4px_-2px_rgba(0,0,0,0.1)]' : ''
+                      }`}
                     >
                       {column.label}
                     </th>
@@ -958,9 +957,11 @@ export default function MonthlyReport({
                     {visibleColumns.map((column) => (
                       <td
                         key={column.key}
-                        className={`px-6 py-6 text-right border-r border-gray-200 min-w-[200px]`}
+                        className={`px-6 py-6 text-right border-r border-gray-200 min-w-[250px] ${
+                          column.isFrozen ? `sticky right-0 z-20 border-l-2 border-gray-300 ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-100'} shadow-[4px_0_4px_-2px_rgba(0,0,0,0.1)]` : ''
+                        }`}
                       >
-                        {renderEditableCell(employee, column)}
+                        {renderEditableCell(employee, column, rowIndex)}
                       </td>
                     ))}
                   </tr>
