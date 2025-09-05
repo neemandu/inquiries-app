@@ -305,36 +305,42 @@ export default function Vacations({ recordId }: { recordId: string }) {
                     </td>
                     <td className="px-4 py-4 text-center">
                       <div className="flex flex-col items-center space-y-2">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          className="text-xs"
-                          onClick={() => fileInputRefs.current[rowIdx]?.click()}
-                        >
-                          העלה קבצים ({row.files.length})
-                        </Button>
-                        <input
-                          ref={el => { fileInputRefs.current[rowIdx] = el; }}
-                          type="file"
-                          multiple
-                          className="hidden"
-                          onChange={(e) => handleFileUpload(rowIdx, e.target.files)}
-                        />
+                        {!row.fileType.includes('101') && (
+                          <>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="text-xs"
+                              onClick={() => fileInputRefs.current[rowIdx]?.click()}
+                            >
+                              העלה קבצים ({row.files.length})
+                            </Button>
+                            <input
+                              ref={el => { fileInputRefs.current[rowIdx] = el; }}
+                              type="file"
+                              multiple
+                              className="hidden"
+                              onChange={(e) => handleFileUpload(rowIdx, e.target.files)}
+                            />
+                          </>
+                        )}
                         {row.files.length > 0 && (
                           <ul className="text-xs text-right space-y-1">
                             {row.files.map((file, fileIdx) => (
                               <li key={fileIdx} className="flex items-center justify-between gap-2">
                                 <span>{file.name}</span>
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="ghost"
-                                  className="text-red-500"
-                                  onClick={() => handleRemoveFile(rowIdx, fileIdx)}
-                                >
-                                  ×
-                                </Button>
+                                {!row.fileType.includes('101') && (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-red-500"
+                                    onClick={() => handleRemoveFile(rowIdx, fileIdx)}
+                                  >
+                                    ×
+                                  </Button>
+                                )}
                               </li>
                             ))}
                           </ul>

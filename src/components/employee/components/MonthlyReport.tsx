@@ -60,6 +60,7 @@ export default function MonthlyReport({
   const [showUnsavedChangesPopup, setShowUnsavedChangesPopup] = useState(false);
   const [showValidationPopup, setShowValidationPopup] = useState(false);
   const [missingDocs, setMissingDocs] = useState<unknown[]>([]);
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
   // Load monthly employees data from the apiResponse prop instead of making a new API call
@@ -592,6 +593,53 @@ export default function MonthlyReport({
     loadMonthlyEmployeesData();
   };
 
+  // Handle column sorting
+  const handleSort = (columnKey: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === columnKey && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key: columnKey, direction });
+  };
+
+  // Sort employees based on sort configuration
+  const getSortedEmployees = () => {
+    if (!sortConfig) return editableEmployees;
+
+    return [...editableEmployees].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      if (sortConfig.key === 'name') {
+        aValue = getEmployeeName(a);
+        bValue = getEmployeeName(b);
+      } else {
+        const aColumn = a.columns.find(col => col.columnId === sortConfig.key);
+        const bColumn = b.columns.find(col => col.columnId === sortConfig.key);
+        
+        aValue = aColumn?.newValue ?? aColumn?.oldValue ?? '';
+        bValue = bColumn?.newValue ?? bColumn?.oldValue ?? '';
+      }
+
+      // Handle different data types
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
+      }
+
+      // Convert to strings for comparison
+      const aStr = String(aValue).toLowerCase();
+      const bStr = String(bValue).toLowerCase();
+
+      if (aStr < bStr) {
+        return sortConfig.direction === 'asc' ? -1 : 1;
+      }
+      if (aStr > bStr) {
+        return sortConfig.direction === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+  };
+
   // Render editable cell
   const renderEditableCell = (employee: EditableEmployee, column: { key: string; label: string; show: boolean; isEditable: boolean; type?: string; isFrozen?: boolean }, rowIndex?: number) => {
     if (!column.isEditable) {
@@ -937,17 +985,25 @@ export default function MonthlyReport({
                   {visibleColumns.map((column) => (
                     <th
                       key={column.key}
-                      className={`px-6 py-4 text-right font-medium text-gray-900 border-r border-gray-300 min-w-[200px] ${
+                      className={`px-6 py-4 text-right font-medium text-gray-900 border-r border-gray-300 min-w-[200px] cursor-pointer hover:bg-gray-100 transition-colors select-none ${
                         column.isFrozen ? 'sticky right-0 bg-gray-50 z-20 border-l-2 border-gray-300 shadow-[4px_0_4px_-2px_rgba(0,0,0,0.1)]' : ''
                       }`}
+                      onClick={() => handleSort(column.key)}
                     >
-                      {column.label}
+                      <div className="flex items-center justify-end gap-2">
+                        <span>{column.label}</span>
+                        {sortConfig?.key === column.key && (
+                          <span className="text-sm">
+                            {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                          </span>
+                        )}
+                      </div>
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {editableEmployees.map((employee, rowIndex) => (
+                {getSortedEmployees().map((employee, rowIndex) => (
                   <tr
                     key={employee.id}
                     className={`border-t border-gray-200 hover:bg-gray-50 transition-colors ${
