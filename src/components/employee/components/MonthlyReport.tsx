@@ -485,6 +485,8 @@ export default function MonthlyReport({
 
       if (success) {
         toast.success('הנתונים נשמרו בהצלחה');
+        // Download CSV file after successful save
+        downloadCSV();
         if (specialColumnChanged) {
           toast(
             <div className="flex flex-col items-center justify-center text-center">
@@ -638,6 +640,63 @@ export default function MonthlyReport({
       }
       return 0;
     });
+  };
+
+  // Generate and download CSV file
+  const downloadCSV = () => {
+    const columns = getDisplayColumns();
+    const visibleColumns = columns.filter(col => col.show);
+    const sortedEmployees = getSortedEmployees();
+
+    // Create CSV headers
+    const headers = visibleColumns.map(col => col.label);
+    const csvHeaders = headers.join(',');
+
+    // Create CSV rows
+    const csvRows = sortedEmployees.map(employee => {
+      const rowData = visibleColumns.map(column => {
+        let cellValue = '';
+        
+        if (column.key === 'name') {
+          cellValue = getEmployeeName(employee);
+        } else {
+          const employeeColumn = employee.columns.find(col => col.columnId === column.key);
+          if (employeeColumn) {
+            // Use new value if available, otherwise use old value
+            const value = employeeColumn.newValue ?? employeeColumn.oldValue ?? '';
+            cellValue = String(value);
+          }
+        }
+        
+        // Escape CSV values (handle commas, quotes, newlines)
+        if (cellValue.includes(',') || cellValue.includes('"') || cellValue.includes('\n')) {
+          cellValue = `"${cellValue.replace(/"/g, '""')}"`;
+        }
+        
+        return cellValue;
+      });
+      
+      return rowData.join(',');
+    });
+
+    // Combine headers and rows
+    const csvContent = [csvHeaders, ...csvRows].join('\n');
+
+    // Create and download file
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    
+    // Generate filename with current date
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+    link.setAttribute('download', `monthly-report-${dateStr}.csv`);
+    
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   // Render editable cell
@@ -949,7 +1008,13 @@ export default function MonthlyReport({
                     });
                     if (res.ok) {
                       setShowConfirmClose(false);
-                      window.location.reload();
+                      // Download CSV file before reloading
+                      downloadCSV();
+                      toast.success("התקופה נסגרה בהצלחה והקובץ הורד");
+                      // Small delay to allow download to start before reload
+                      setTimeout(() => {
+                        window.location.reload();
+                      }, 1000);
                     } else {
                       toast.error("שגיאה בסגירת התקופה");
                     }
