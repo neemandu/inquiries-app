@@ -609,8 +609,8 @@ export default function MonthlyReport({
     if (!sortConfig) return editableEmployees;
 
     return [...editableEmployees].sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
+      let aValue: string | number;
+      let bValue: string | number;
 
       if (sortConfig.key === 'name') {
         aValue = getEmployeeName(a);
@@ -619,8 +619,17 @@ export default function MonthlyReport({
         const aColumn = a.columns.find(col => col.columnId === sortConfig.key);
         const bColumn = b.columns.find(col => col.columnId === sortConfig.key);
         
-        aValue = aColumn?.newValue ?? aColumn?.oldValue ?? '';
-        bValue = bColumn?.newValue ?? bColumn?.oldValue ?? '';
+        // Handle different value types, including file objects
+        const aRawValue = aColumn?.newValue ?? aColumn?.oldValue ?? '';
+        const bRawValue = bColumn?.newValue ?? bColumn?.oldValue ?? '';
+        
+        // Convert file objects to strings for sorting
+        aValue = typeof aRawValue === 'object' && aRawValue !== null && 'fileName' in aRawValue 
+          ? (aRawValue as { fileName: string }).fileName 
+          : aRawValue;
+        bValue = typeof bRawValue === 'object' && bRawValue !== null && 'fileName' in bRawValue 
+          ? (bRawValue as { fileName: string }).fileName 
+          : bRawValue;
       }
 
       // Handle different data types
@@ -700,7 +709,7 @@ export default function MonthlyReport({
   };
 
   // Render editable cell
-  const renderEditableCell = (employee: EditableEmployee, column: { key: string; label: string; show: boolean; isEditable: boolean; type?: string; isFrozen?: boolean }, rowIndex?: number) => {
+  const renderEditableCell = (employee: EditableEmployee, column: { key: string; label: string; show: boolean; isEditable: boolean; type?: string; isFrozen?: boolean }) => {
     if (!column.isEditable) {
       // Non-editable cells (Name)
       if (column.key === 'name') {
@@ -1082,7 +1091,7 @@ export default function MonthlyReport({
                           column.isFrozen ? `sticky right-0 z-20 border-l-2 border-gray-300 ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-100'} shadow-[4px_0_4px_-2px_rgba(0,0,0,0.1)]` : ''
                         }`}
                       >
-                        {renderEditableCell(employee, column, rowIndex)}
+                        {renderEditableCell(employee, column)}
                       </td>
                     ))}
                   </tr>
