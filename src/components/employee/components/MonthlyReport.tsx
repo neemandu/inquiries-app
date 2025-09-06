@@ -263,7 +263,7 @@ export default function MonthlyReport({
                   });
                 }
               }
-              return { ...col, newValue: value };
+              return { ...col, newValue: value };   
             }
             return col;
           })
