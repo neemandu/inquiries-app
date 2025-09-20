@@ -1,4 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
 // Define public routes that don't require authentication
 const isPublicRoute = createRouteMatcher([
@@ -9,6 +10,18 @@ const isPublicRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
+  // Check domain and redirect if needed BEFORE any other processing
+  const hostname = req.headers.get("host") || "";
+
+  // If the current domain is inquiries-app.vercel.app, redirect to cpateam.vercel.app
+  if (hostname === "inquiries-app.vercel.app") {
+    const redirectUrl = new URL(req.url);
+    redirectUrl.hostname = "cpateam.vercel.app";
+    redirectUrl.host = "cpateam.vercel.app";
+
+    return NextResponse.redirect(redirectUrl.toString());
+  }
+
   // Protect all routes except public ones
   if (!isPublicRoute(req)) {
     await auth.protect();
