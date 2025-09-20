@@ -29,6 +29,7 @@ interface MonthlyReportProps {
   onDiscardAndNavigate?: () => void;
   onHasChangesChange?: (hasChanges: boolean) => void;
   onSaveRefSet?: (saveRef: () => Promise<void>) => void;
+  selectedPeriodStatus?: string;
 }
 
 export default function MonthlyReport({ 
@@ -42,7 +43,8 @@ export default function MonthlyReport({
   onSaveAndNavigate,
   onDiscardAndNavigate,
   onHasChangesChange,
-  onSaveRefSet
+  onSaveRefSet,
+  selectedPeriodStatus
 }: MonthlyReportProps) {
   const [showSettingsPopup, setShowSettingsPopup] = useState(false);
   const [editableEmployees, setEditableEmployees] = useState<EditableEmployee[]>([]);
@@ -840,7 +842,7 @@ export default function MonthlyReport({
             }
           }}
           className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-          disabled={isClosing}
+          disabled={isClosing || selectedPeriodStatus === 'סגורה'}
         >
           אישור מידע וסגירת תקופת דיווח
         </Button>
@@ -1064,7 +1066,7 @@ export default function MonthlyReport({
                       }`}
                       onClick={() => handleSort(column.key)}
                     >
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-center gap-2">
                         <span>{column.label}</span>
                         {sortConfig?.key === column.key && (
                           <span className="text-sm">

@@ -168,8 +168,8 @@ export default function EmployeeRecognition(
         });
         form.reset();
         setFile161(null);
-        setDate(targetMonth);
-        setMonth(targetMonth);
+        setDate(new Date());
+        setMonth(new Date());
       } else {
         const errorData = await response.json().catch(() => ({}));
         toast.error('שגיאה בשמירת הנתונים', {
@@ -193,14 +193,27 @@ export default function EmployeeRecognition(
     return !isNaN(date.getTime());
   }
 
-  // Function to check if a date is within the allowed month/year
+  // Function to check if a date is within the allowed month/year (current month and previous month)
   function isDateInAllowedMonth(date: Date): boolean {
-    return date.getFullYear() === targetYear && date.getMonth() === targetMonthIndex;
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth();
+    
+    // Calculate previous month
+    const previousMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+    const previousYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+    
+    const dateYear = date.getFullYear();
+    const dateMonth = date.getMonth();
+    
+    // Allow current month or previous month
+    return (dateYear === currentYear && dateMonth === currentMonth) ||
+           (dateYear === previousYear && dateMonth === previousMonth);
   }
 
   const [open, setOpen] = React.useState(false);
-  const [date, setDate] = React.useState<Date | undefined>(targetMonth);
-  const [month, setMonth] = React.useState<Date | undefined>(targetMonth);
+  const [date, setDate] = React.useState<Date | undefined>(new Date());
+  const [month, setMonth] = React.useState<Date | undefined>(new Date());
 
   function formatDate(date: Date | undefined) {
     if (!date) {
@@ -273,7 +286,7 @@ export default function EmployeeRecognition(
                           <Input
                             id="date"
                             value={field.value}
-                            placeholder={`${targetMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}`}
+                            placeholder={`${new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}`}
                             className="w-sm bg-background pl-10 text-right text-base"
                             onChange={(e) => {
                               const date = new Date(e.target.value);
@@ -313,8 +326,7 @@ export default function EmployeeRecognition(
                                 captionLayout="dropdown"
                                 month={month}
                                 onMonthChange={(newMonth) => {
-                                  // Only allow navigation within the target month/year
-                                  if (newMonth && isDateInAllowedMonth(newMonth)) {
+                                  if (newMonth) {
                                     setMonth(newMonth);
                                   }
                                 }}
@@ -326,9 +338,9 @@ export default function EmployeeRecognition(
                                   }
                                 }}
                                 disabled={(date) => !isDateInAllowedMonth(date)}
-                                defaultMonth={targetMonth}
-                                fromMonth={targetMonth}
-                                toMonth={new Date(targetYear, targetMonthIndex, 31)}
+                                defaultMonth={new Date()}
+                                fromMonth={new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1)}
+                                toMonth={new Date()}
                               />
                             </PopoverContent>
                           </Popover>

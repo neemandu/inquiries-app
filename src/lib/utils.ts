@@ -6,6 +6,7 @@ import {
   PDFResponse,
   EmployeeResponse,
   UpdateMonthlyEmployeesPayload,
+  AdminClientsResponse,
 } from "@/lib/types";
 
 export function cn(...inputs: ClassValue[]) {
@@ -33,12 +34,16 @@ export async function fetchEmployeeData(
 }
 
 export async function fetchMonthlyEmployeesData(
-  email: string
+  email: string,
+  periodId?: string
 ): Promise<EmployeeResponse | null> {
   try {
-    const response = await fetch(
-      `/api/monthly-employees?email=${encodeURIComponent(email)}`
-    );
+    let url = `/api/monthly-employees?email=${encodeURIComponent(email)}`;
+    if (periodId) {
+      url += `&periodId=${encodeURIComponent(periodId)}`;
+    }
+
+    const response = await fetch(url);
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -180,5 +185,26 @@ export async function updateMonthlyEmployeeData(
   } catch (error) {
     console.error("Error updating monthly employee data:", error);
     return false;
+  }
+}
+
+export async function fetchAdminClients(): Promise<AdminClientsResponse | null> {
+  try {
+    const response = await fetch("/api/admin-clients", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data: AdminClientsResponse = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching admin clients:", error);
+    return null;
   }
 }

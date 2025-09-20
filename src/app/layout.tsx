@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Inquiries App",
-  description: "Next.js app with Clerk authentication",
+  title: "Connect",
+  description: "Connect - Next.js app with Clerk authentication",
 };
 
 export default function RootLayout({

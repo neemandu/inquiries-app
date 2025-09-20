@@ -8,11 +8,13 @@ import EmployeeRecognition from '@/components/employee/components/EmployeeRecogn
 import PaySlip from '@/components/employee/components/PaySlip';
 import Vacations from '@/components/employee/components/Vacations';
 import EmployersSidebar from '@/components/employee/components/EmployersSidebar';
-import { ColumnSettingsType, ViewType, Employee, ApiResponse, LeavingReason, DynamicColumnSettings, InquiryData } from '@/lib/types';
+import { ColumnSettingsType, ViewType, Employee, ApiResponse, LeavingReason, DynamicColumnSettings, InquiryData, Period } from '@/lib/types';
 import { fetchMonthlyEmployeesData, updateColumnSetting } from '@/lib/utils';
 import Image from 'next/image';
 import MonthlyReport from '@/components/employee/components/MonthlyReport';
 import YearlyForm from '@/components/inquiries/components/YearlyForm';
+import AdminDropdown from '@/components/employee/components/AdminDropdown';
+import PeriodDropdown from '@/components/employee/components/PeriodDropdown';
 import SupplierTable from '@/components/inquiries/components/SupplierTable';
 import DocumentUpload from '@/components/employee/components/DocumentUpload';
 
@@ -38,6 +40,11 @@ export default function EmployeesPage() {
   const [inquiryData, setInquiryData] = useState<InquiryData | null>(null);
   const [changeTime, setChangeTime] = useState<string>('');
   const [employeerName, setEmployeerName] = useState<string>('');
+  const [selectedEmployerEmail, setSelectedEmployerEmail] = useState<string | null>(null);
+  const [selectedEmployerRecordId, setSelectedEmployerRecordId] = useState<string | null>(null);
+  const [selectedEmployerName, setSelectedEmployerName] = useState<string>('');
+  const [periods, setPeriods] = useState<Period[]>([]);
+  const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
   const [notificationCounts, setNotificationCounts] = useState<{
     'monthly-report'?: number;
     'vacations'?: number;
@@ -47,8 +54,16 @@ export default function EmployeesPage() {
     if (isLoaded && user?.emailAddresses?.[0]?.emailAddress) {
       setLoading(true);
       try {
-        const data = await fetchMonthlyEmployeesData(user?.emailAddresses?.[0]?.emailAddress);
-        console.log('Employee data', data);
+        // Check if user is admin (@cpateam.co.il or neemandu@gmail.com)
+        const userEmail = user.emailAddresses[0].emailAddress;
+        const isAdmin = userEmail.endsWith('@cpateam.co.il') || userEmail === 'neemandu@gmail.com';
+        
+        // For admin users, use selected employer email if available
+        // For regular users, use their email
+        const identifier = isAdmin && selectedEmployerEmail ? selectedEmployerEmail : user.emailAddresses[0].emailAddress;
+        
+        const data = await fetchMonthlyEmployeesData(identifier, selectedPeriodId || undefined);
+        console.log('Employee data for period:', selectedPeriodId, data);
         if (data) {
           // Create a compatible ApiResponse for backward compatibility
           const compatibleApiResponse: ApiResponse = {
@@ -73,6 +88,7 @@ export default function EmployeesPage() {
           setApiResponse(compatibleApiResponse);
           setEmployees(employees);
           setChangeTime(data.changeTime);
+          console.log('Updated apiResponse with new data for period:', selectedPeriodId);
           
           if (data.columnNames) {
             const newDynamicSettings: DynamicColumnSettings = {};
@@ -84,6 +100,9 @@ export default function EmployeesPage() {
           if (data.leavingReasons) {
             setLeavingReasons(data.leavingReasons);
           }
+          if (data.periods) {
+            setPeriods(data.periods);
+          }
         }
       } catch (error) {
         console.error('Failed to load employee data:', error);
@@ -91,7 +110,7 @@ export default function EmployeesPage() {
         setLoading(false);
       }
     }
-  }, [isLoaded, user]);
+  }, [isLoaded, user, selectedEmployerEmail, selectedEmployerRecordId, selectedPeriodId]);
 
   useEffect(() => {
     loadEmployeeData();
@@ -99,10 +118,15 @@ export default function EmployeesPage() {
 
   useEffect(() => {
     const fetchInquiryData = async () => {
-      if (apiResponse?.recordId) {
+      // For admin users, use selected employer record ID if available, otherwise use apiResponse recordId
+      const userEmail = user?.emailAddresses?.[0]?.emailAddress;
+      const isAdmin = userEmail?.endsWith('@cpateam.co.il') || userEmail === 'neemandu@gmail.com';
+      const recordIdToUse = isAdmin && selectedEmployerRecordId ? selectedEmployerRecordId : apiResponse?.recordId;
+      
+      if (recordIdToUse) {
         setLoading(true);
         try {
-          const res = await fetch(`/api/inquiries/data?recordId=${apiResponse.recordId}`);
+          const res = await fetch(`/api/inquiries/data?recordId=${recordIdToUse}`);
           if (res.ok) {
             const data: InquiryData = await res.json();
             console.log('Inquiry data', data);
@@ -123,7 +147,7 @@ export default function EmployeesPage() {
       }
     };
     fetchInquiryData();
-  }, [apiResponse]);
+  }, [apiResponse, selectedEmployerRecordId, user]);
 
   const toggleDynamicColumn = async (columnNameRecordId: string) => {
     if (!apiResponse) return;
@@ -225,6 +249,12 @@ export default function EmployeesPage() {
     setActiveView(null);
   };
 
+  const handlePeriodSelect = (periodId: string) => {
+    setSelectedPeriodId(periodId);
+    // Reset any existing view state to ensure fresh data display
+    setActiveView('monthly-report');
+  };
+
   // Calculate missing items count for monthly-report
   const calculateMonthlyReportMissing = useCallback(async () => {
     if (!apiResponse?.recordId) return 0;
@@ -303,32 +333,42 @@ export default function EmployeesPage() {
       return <div dir="rtl" className="flex items-center justify-center h-64"><div className="text-lg text-gray-600">טוען נתונים...</div></div>;
     }
 
+    // For admin users, use selected employer record ID if available, otherwise use apiResponse recordId
+    const userEmail = user?.emailAddresses?.[0]?.emailAddress;
+    const isAdmin = userEmail?.endsWith('@cpateam.co.il') || userEmail === 'neemandu@gmail.com';
+    const recordIdToUse = isAdmin && selectedEmployerRecordId ? selectedEmployerRecordId : apiResponse?.recordId;
+    
+    // Get the selected period status
+    const selectedPeriodStatus = selectedPeriodId 
+      ? periods.find(p => p.recordId === selectedPeriodId)?.status 
+      : undefined;
+
     if (showYearlyForm) {
-      return <YearlyForm yearlyData={inquiryData?.general} employer={inquiryData?.employer} recordId={apiResponse?.recordId} />;
+      return <YearlyForm yearlyData={inquiryData?.general} employer={inquiryData?.employer} recordId={recordIdToUse} />;
     }
 
     if (selectedSupplier) {
-      return <SupplierTable supplierId={selectedSupplier} employer={inquiryData?.employer} monthlyData={inquiryData?.monthly} recordId={apiResponse?.recordId} />;
+      return <SupplierTable supplierId={selectedSupplier} employer={inquiryData?.employer} monthlyData={inquiryData?.monthly} recordId={recordIdToUse} />;
     }
 
     switch (activeView) {
       case 'monthly-report':
-        return <MonthlyReport {...{
+        return <MonthlyReport key={`monthly-report-${selectedPeriodId || 'default'}`} {...{
           columnSettings, onColumnToggle: toggleColumn, dynamicColumnSettings,
-          onDynamicColumnToggle: toggleDynamicColumn, apiResponse, clientRecordId: apiResponse?.recordId || '', onRefetchData: loadEmployeeData
+          onDynamicColumnToggle: toggleDynamicColumn, apiResponse, clientRecordId: recordIdToUse || '', onRefetchData: loadEmployeeData, selectedPeriodStatus
         }} />;
       case 'add-employee':
-        return <AddEmployee recordId={apiResponse?.recordId || ''} changeTime={changeTime} link101={apiResponse?.link101 || ''} />;
+        return <AddEmployee recordId={recordIdToUse || ''} changeTime={changeTime} link101={apiResponse?.link101 || ''} />;
       case 'employee-recognition':
         return <EmployeeRecognition employees={employees} leavingReasons={leavingReasons} is161Must={apiResponse?.is161Must} changeTime={changeTime} />;
       case 'pay-slip':
-        return <PaySlip recordId={apiResponse?.recordId} employees={employees} />;
+        return <PaySlip recordId={recordIdToUse} employees={employees} />;
       case 'vacations':
-        return <Vacations recordId={apiResponse?.recordId || ''} />;
+        return <Vacations recordId={recordIdToUse || ''} />;
       case 'document-upload':
-        return <DocumentUpload employees={employees} recordId={apiResponse?.recordId || ''} />;
+        return <DocumentUpload employees={employees} recordId={recordIdToUse || ''} />;
       default:
-        return <MonthlyReport {...{ columnSettings, onColumnToggle: toggleColumn, dynamicColumnSettings, onDynamicColumnToggle: toggleDynamicColumn, apiResponse, clientRecordId: apiResponse?.recordId || '', onRefetchData: loadEmployeeData }} />;
+        return <MonthlyReport key={`monthly-report-${selectedPeriodId || 'default'}`} {...{ columnSettings, onColumnToggle: toggleColumn, dynamicColumnSettings, onDynamicColumnToggle: toggleDynamicColumn, apiResponse, clientRecordId: recordIdToUse || '', onRefetchData: loadEmployeeData, selectedPeriodStatus }} />;
     }
   };
 
@@ -336,13 +376,14 @@ export default function EmployeesPage() {
     <div className="min-h-screen bg-gray-50">
       <header className="w-full p-4 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="logo-container">
+          <div className="logo-container flex items-center gap-3">
             <Image
               src="/big_logo.jpg"
               alt="לוגו"
               width={200}
               height={200}
             />
+            <span className="text-2xl font-bold" dir="rtl">Connect</span>
           </div>
           <div className="flex items-center gap-4">
             {isLoaded && (
@@ -363,9 +404,37 @@ export default function EmployeesPage() {
 
       <main className="mx-auto p-6 w-full">
         <SignedIn>
+          {/* Admin dropdown for @cpateam.co.il users and neemandu@gmail.com */}
+          {isLoaded && user?.emailAddresses?.[0]?.emailAddress && (activeView) && (
+            (user.emailAddresses[0].emailAddress.endsWith('@cpateam.co.il') || 
+             user.emailAddresses[0].emailAddress === 'neemandu@gmail.com')
+          ) && (
+            <div className="flex flex-col items-end gap-2">
+              <AdminDropdown
+                onEmployerSelect={(employerEmail, employerRecordId, employerName) => {
+                  setSelectedEmployerEmail(employerEmail);
+                  setSelectedEmployerRecordId(employerRecordId);
+                  setSelectedEmployerName(employerName);
+                }}
+                selectedEmployerName={selectedEmployerName}
+              />
+              {periods.length > 0 && (
+                <PeriodDropdown
+                  periods={periods}
+                  selectedPeriodId={selectedPeriodId}
+                  onPeriodSelect={handlePeriodSelect}
+                />
+              )}
+            </div>
+          )}
+          
           <div className="flex h-full">
             <div className="flex-1">
-              {(activeView) && (
+              {/* Regular period display for non-admin users */}
+              {isLoaded && user?.emailAddresses?.[0]?.emailAddress && 
+               !(user.emailAddresses[0].emailAddress.endsWith('@cpateam.co.il') || 
+                 user.emailAddresses[0].emailAddress === 'neemandu@gmail.com') && 
+               (activeView) && (
                 <div className="flex justify-end items-center mb-2">
                   <span className="text-right" dir="rtl" style={{ fontWeight: 'bold' }}>
                     תקופת דיווח: {changeTime}

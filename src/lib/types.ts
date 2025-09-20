@@ -53,6 +53,12 @@ interface ColumnNameConfig {
   columnNameRecordId: string;
 }
 
+export interface Period {
+  date: string;
+  status: string;
+  recordId: string;
+}
+
 export interface EmployeeResponse {
   employees: EmployeeData[];
   leavingReasons: LeavingReason[];
@@ -61,6 +67,7 @@ export interface EmployeeResponse {
   is161Must: boolean;
   recordId: string;
   columnNames: ColumnNameConfig[];
+  periods?: Period[];
 }
 
 // Simplified update payload interface
@@ -210,3 +217,18 @@ export interface PDF {
 export interface PDFResponse {
   documents: PDF[];
 }
+
+// Admin types for @cpateam.co.il users
+export interface AdminPeriod {
+  date: string;
+  recordId: string;
+}
+
+export interface AdminClient {
+  employerName: string;
+  employerRecordId: string;
+  employerEmail: string | null;
+  periods: AdminPeriod[];
+}
+
+export type AdminClientsResponse = AdminClient[];
