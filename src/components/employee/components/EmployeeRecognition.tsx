@@ -50,63 +50,14 @@ type EmployeeRecognitionFormValues = z.infer<typeof employeeRecognitionSchema>;
 export default function EmployeeRecognition(
   { employees,
     leavingReasons,
-    is161Must = false,
-    changeTime,
+    is161Must = false
   }: {
     employees: Employee[],
     leavingReasons: LeavingReason[],
-    is161Must?: boolean,
-    changeTime: string,
+    is161Must?: boolean
   }
 ) {
 
-  // Parse changeTime to extract month and year
-  const parseChangeTime = (changeTime: string): Date => {
-    // Handle null/undefined/empty changeTime
-    if (!changeTime || typeof changeTime !== 'string') {
-      return new Date();
-    }
-    
-    // Try to parse different formats
-    // Example: "May 2025", "2025-05", "05/2025", etc.
-    const monthNames = [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December"
-    ];
-    
-    // Try parsing "Month Year" format
-    const monthYearMatch = changeTime.match(/(\w+)\s+(\d{4})/);
-    if (monthYearMatch) {
-      const [, monthStr, yearStr] = monthYearMatch;
-      const monthIndex = monthNames.findIndex(month => 
-        month.toLowerCase().startsWith(monthStr.toLowerCase())
-      );
-      if (monthIndex !== -1) {
-        return new Date(parseInt(yearStr), monthIndex, 1);
-      }
-    }
-    
-    // Try parsing "YYYY-MM" format
-    const yearMonthMatch = changeTime.match(/(\d{4})-(\d{1,2})/);
-    if (yearMonthMatch) {
-      const [, yearStr, monthStr] = yearMonthMatch;
-      return new Date(parseInt(yearStr), parseInt(monthStr) - 1, 1);
-    }
-    
-    // Try parsing "MM/YYYY" format
-    const monthYearSlashMatch = changeTime.match(/(\d{1,2})\/(\d{4})/);
-    if (monthYearSlashMatch) {
-      const [, monthStr, yearStr] = monthYearSlashMatch;
-      return new Date(parseInt(yearStr), parseInt(monthStr) - 1, 1);
-    }
-    
-    // Default fallback
-    return new Date();
-  };
-
-  const targetMonth = parseChangeTime(changeTime);
-  const targetYear = targetMonth.getFullYear();
-  const targetMonthIndex = targetMonth.getMonth();
 
   const form = useForm<EmployeeRecognitionFormValues>({
     resolver: zodResolver(employeeRecognitionSchema),

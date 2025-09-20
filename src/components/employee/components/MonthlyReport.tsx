@@ -736,13 +736,13 @@ export default function MonthlyReport({
 
     if (employeeColumn.type === 'doc') {
       return (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 w-full" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
           {typeof employeeColumn.oldValue === 'object' && employeeColumn.oldValue.fileName && (
-            <div className="text-xs text-gray-600">
+            <div className="text-xs text-gray-600 whitespace-normal break-words" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
               קובץ קיים: {employeeColumn.oldValue.fileName}
             </div>
           )}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full">
             <Input
               type="file"
               accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
@@ -752,11 +752,12 @@ export default function MonthlyReport({
                   handleFileUpload(employee.id, column.key, file);
                 }
               }}
-              className={`${isMustClass} ${errorClass}`}
+              className={`w-full max-w-full min-w-0 ${isMustClass} ${errorClass}`}
+              style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
             />
-            <Upload className="w-4 h-4 text-gray-400" />
+            <Upload className="w-4 h-4 text-gray-400 flex-shrink-0" />
           </div>
-          {hasError && <div className="text-xs text-red-500">{hasError}</div>}
+          {hasError && <div className="text-xs text-red-500 whitespace-normal break-words" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{hasError}</div>}
         </div>
       );
     }
@@ -764,37 +765,43 @@ export default function MonthlyReport({
     if (employeeColumn.type === 'number' || employeeColumn.type === 'autoNumber') {
       const isReadOnly = employeeColumn.type === 'autoNumber';
       return (
-        <div className="flex flex-col">
+        <div className="flex flex-col w-full" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
           <Input
             type="number"
             value={employeeColumn.newValue as number || ''}
             onChange={(e) => handleCellChange(employee.id, column.key, parseFloat(e.target.value) || 0)}
-            className={`${isMustClass} ${errorClass} ${isReadOnly ? 'bg-gray-100' : ''}`}
+            className={`w-full max-w-full min-w-0 ${isMustClass} ${errorClass} ${isReadOnly ? 'bg-gray-100' : ''}`}
             placeholder={`${employeeColumn.oldValue}`}
             readOnly={isReadOnly}
+            style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
           />
-          {hasError && <div className="text-xs text-red-500 mt-1">{hasError}</div>}
+          {hasError && <div className="text-xs text-red-500 mt-1 whitespace-normal break-words" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{hasError}</div>}
         </div>
       );
     }
 
     // String type
     return (
-      <div className="flex flex-col">
-        <Input
-          type="text"
-          value={employeeColumn.newValue as string || ''}
-          onChange={(e) => handleCellChange(employee.id, column.key, e.target.value)}
-          className={`${isMustClass} ${errorClass}`}
-          placeholder={`${employeeColumn.oldValue}`}
-        />
-        {hasError && <div className="text-xs text-red-500 mt-1">{hasError}</div>}
-      </div>
+        <div className="flex flex-col w-full" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+          <Input
+            type="text"
+            value={employeeColumn.newValue as string || ''}
+            onChange={(e) => handleCellChange(employee.id, column.key, e.target.value)}
+            className={`w-full max-w-full min-w-0 ${isMustClass} ${errorClass}`}
+            placeholder={`${employeeColumn.oldValue}`}
+            style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
+          />
+          {hasError && <div className="text-xs text-red-500 mt-1 whitespace-normal break-words" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{hasError}</div>}
+        </div>
     );
   };
 
   const columns = getDisplayColumns();
   const visibleColumns = columns.filter(col => col.show);
+  
+  // Calculate column width - 20% smaller than original
+  const minColumnWidth = 160; // 20% smaller than 200px
+  const columnWidth = `${minColumnWidth}px`;
 
   if (isLoading) {
     return (
@@ -1054,20 +1061,26 @@ export default function MonthlyReport({
       {/* Table */}
       <Card className="bg-gray-50 w-full max-w-none">
         <CardContent className="p-0">
-          <div ref={tableContainerRef} className="overflow-auto w-full h-[calc(100vh-300px)]">
-            <table className="w-full min-w-max" dir="rtl">
+          <div ref={tableContainerRef} className="overflow-auto w-full h-[calc(100vh-300px)]" style={{ minWidth: '100%' }}>
+            <table className="w-full table-auto" dir="rtl" >
               <thead>
                 <tr className="bg-gray-50">
                   {visibleColumns.map((column) => (
                     <th
                       key={column.key}
-                      className={`px-6 py-4 text-right font-medium text-gray-900 border-r border-gray-300 min-w-[200px] cursor-pointer hover:bg-gray-100 transition-colors select-none ${
+                      className={`px-6 py-4 text-right font-medium text-gray-900 border-r border-gray-300 min-w-[128px] cursor-pointer hover:bg-gray-100 transition-colors select-none ${
                         column.isFrozen ? 'sticky right-0 bg-gray-50 z-20 border-l-2 border-gray-300 shadow-[4px_0_4px_-2px_rgba(0,0,0,0.1)]' : ''
                       }`}
+                      style={{ 
+                        width: columnWidth,
+                        wordBreak: 'break-word',
+                        overflowWrap: 'anywhere',
+                        whiteSpace: 'normal'
+                      }}
                       onClick={() => handleSort(column.key)}
                     >
-                      <div className="flex items-center justify-center gap-2">
-                        <span>{column.label}</span>
+                      <div className="flex items-center justify-center gap-2 whitespace-normal break-words" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                        <span style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{column.label}</span>
                         {sortConfig?.key === column.key && (
                           <span className="text-sm">
                             {sortConfig.direction === 'asc' ? '↑' : '↓'}
@@ -1086,16 +1099,22 @@ export default function MonthlyReport({
                       rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-25'
                     }`}
                   >
-                    {visibleColumns.map((column) => (
-                      <td
-                        key={column.key}
-                        className={`px-6 py-6 text-right border-r border-gray-200 min-w-[250px] ${
-                          column.isFrozen ? `sticky right-0 z-20 border-l-2 border-gray-300 ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-100'} shadow-[4px_0_4px_-2px_rgba(0,0,0,0.1)]` : ''
-                        }`}
-                      >
-                        {renderEditableCell(employee, column)}
-                      </td>
-                    ))}
+                    {visibleColumns.map((column) => {
+                     return (
+                        <td
+                          key={column.key}
+                          className={`px-2 py-2 text-right border-r border-gray-200 whitespace-normal break-words
+                            ${column.isFrozen
+                              ? `sticky right-0 z-20 border-l-2 border-gray-300 ${
+                                  rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-100'
+                                } shadow-[4px_0_4px_-2px_rgba(0,0,0,0.1)]`
+                              : rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                            }`}
+                        >
+                          {renderEditableCell(employee, column)}
+                        </td>
+                      );
+                    })}
                   </tr>
                 ))}
               </tbody>

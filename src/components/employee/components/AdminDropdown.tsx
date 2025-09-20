@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { AdminClient, AdminClientsResponse } from '@/lib/types';
+import { AdminClient } from '@/lib/types';
 import { fetchAdminClients } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 

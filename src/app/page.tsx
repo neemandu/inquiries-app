@@ -360,7 +360,7 @@ export default function EmployeesPage() {
       case 'add-employee':
         return <AddEmployee recordId={recordIdToUse || ''} changeTime={changeTime} link101={apiResponse?.link101 || ''} />;
       case 'employee-recognition':
-        return <EmployeeRecognition employees={employees} leavingReasons={leavingReasons} is161Must={apiResponse?.is161Must} changeTime={changeTime} />;
+        return <EmployeeRecognition employees={employees} leavingReasons={leavingReasons} is161Must={apiResponse?.is161Must}/>;
       case 'pay-slip':
         return <PaySlip recordId={recordIdToUse} employees={employees} />;
       case 'vacations':
