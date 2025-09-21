@@ -405,7 +405,7 @@ export default function EmployeesPage() {
       <main className="mx-auto p-6 w-full">
         <SignedIn>
           {/* Admin dropdown for @cpateam.co.il users and neemandu@gmail.com */}
-          {isLoaded && user?.emailAddresses?.[0]?.emailAddress && (activeView) && (
+          {isLoaded && user?.emailAddresses?.[0]?.emailAddress && (
             (user.emailAddresses[0].emailAddress.endsWith('@cpateam.co.il') || 
              user.emailAddresses[0].emailAddress === 'neemandu@gmail.com')
           ) && (
