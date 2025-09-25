@@ -202,6 +202,7 @@ export interface AddEmployee {
   record_id: string;
   firstName: string;
   lastName: string;
+  tz: string;
   startDate: string;
   is101Full: boolean;
   pension: Pension;

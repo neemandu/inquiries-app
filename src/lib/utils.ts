@@ -104,6 +104,7 @@ export async function addEmployee(
           record_id: updatedApiResponse.record_id,
           firstName: updatedApiResponse.firstName,
           lastName: updatedApiResponse.lastName,
+          tz: updatedApiResponse.tz,
           startDate: updatedApiResponse.startDate,
           is101Full: updatedApiResponse.is101Full,
           pension: updatedApiResponse.pension,
