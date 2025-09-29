@@ -11,15 +11,70 @@ export const FileUploadComponent = ({ onFilesChange, isMandatory = false }: File
   const [files, setFiles] = useState<File[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileAdd = (newFiles: FileList) => {
+  // Compress images on the client to reduce upload size
+  const compressImageFile = (file: File, maxDimension = 1280, quality = 0.7): Promise<File> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(file);
+            return;
+          }
+
+          let { width, height } = img;
+          const scale = Math.min(1, maxDimension / Math.max(width, height));
+          width = Math.floor(width * scale);
+          height = Math.floor(height * scale);
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Prefer JPEG for better compression
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                resolve(file);
+                return;
+              }
+              const newFileName = file.name.replace(/\.(png|jpeg|jpg)$/i, '') + '.jpg';
+              const compressed = new File([blob], newFileName, { type: 'image/jpeg', lastModified: Date.now() });
+              resolve(compressed);
+            },
+            'image/jpeg',
+            quality
+          );
+        };
+        img.onerror = () => resolve(file);
+        img.src = reader.result as string;
+      };
+      reader.onerror = () => resolve(file);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFileAdd = async (newFiles: FileList) => {
     const newFilesArray = Array.from(newFiles);
     const updatedFiles = [...files];
 
-    newFilesArray.forEach(newFile => {
-      if (!updatedFiles.some(existing => existing.name === newFile.name && existing.size === newFile.size)) {
-        updatedFiles.push(newFile);
+    for (const newFile of newFilesArray) {
+      let fileToAdd = newFile;
+      // Compress images larger than 200KB
+      if (newFile.type.startsWith('image/') && newFile.size > 200 * 1024) {
+        try {
+          fileToAdd = await compressImageFile(newFile);
+        } catch {
+          fileToAdd = newFile;
+        }
       }
-    });
+      // Avoid duplicates by name + size
+      if (!updatedFiles.some(existing => existing.name === fileToAdd.name && existing.size === fileToAdd.size)) {
+        updatedFiles.push(fileToAdd);
+      }
+    }
 
     setFiles(updatedFiles);
     onFilesChange(updatedFiles);
@@ -84,7 +139,7 @@ export const FileUploadComponent = ({ onFilesChange, isMandatory = false }: File
           style={{ display: 'none' }}
           onChange={(e) => {
             if (e.target.files) {
-              handleFileAdd(e.target.files);
+              void handleFileAdd(e.target.files);
             }
           }}
         />

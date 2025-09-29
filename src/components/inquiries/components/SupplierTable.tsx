@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import FileUploadComponent from './FileUploadComponent';
 import { MonthlyInquiry } from '@/lib/types';
 import { toBase64 } from '@/lib/utils';
@@ -20,6 +20,8 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
   const [files, setFiles] = useState<{ [key: string]: File[] }>({});
   const [modifiedKeys, setModifiedKeys] = useState<Set<string>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const filteredData = supplierId === 'הכל'
     ? monthlyData
@@ -59,7 +61,21 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
   };
 
   const handleFilesChange = (key: string, newFiles: File[]) => {
-    setFiles(prev => ({ ...prev, [key]: newFiles }));
+    setFiles(prev => {
+      const updated = { ...prev, [key]: newFiles };
+
+      // Calculate total size across all selected files (in bytes)
+      const totalSize = Object.values(updated)
+        .flat()
+        .reduce((sum, f) => sum + (f?.size || 0), 0);
+
+      // If total >= 3MB, open confirmation modal
+      if (totalSize >= 3 * 1024 * 1024) {
+        setShowConfirmSubmit(true);
+      }
+
+      return updated;
+    });
     
     // Mark as modified when files are added/changed
     if (newFiles.length > 0) {
@@ -152,7 +168,7 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
+      <form ref={formRef} onSubmit={handleSubmit}>
         <table className="supplier-table">
           <colgroup>
             <col style={{ width: '12%' }} />
@@ -234,6 +250,35 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
           {modifiedKeys.size === 0 ? 'שלח' : `שלח (${modifiedKeys.size} שינויים)`}
         </button>
       </form>
+
+      {showConfirmSubmit && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" dir="rtl">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-3 text-right">האם לשלוח את הקבצים?</h3>
+            <p className="text-sm text-gray-700 mb-6 text-right">הקבצים שצירפת מגיעים לנפח של לפחות 3MB. האם ברצונך לשלוח את מה שמילאת עד כה?</p>
+            <div className="flex gap-3 justify-start" dir="rtl">
+              <button
+                type="button"
+                className="px-4 py-2 bg-blue-600 text-white rounded"
+                onClick={() => {
+                  setShowConfirmSubmit(false);
+                  // Trigger form submit programmatically
+                  formRef.current?.requestSubmit();
+                }}
+              >
+                כן
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded"
+                onClick={() => setShowConfirmSubmit(false)}
+              >
+                לא
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         table {
