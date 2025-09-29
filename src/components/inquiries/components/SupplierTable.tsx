@@ -70,7 +70,7 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
         .reduce((sum, f) => sum + (f?.size || 0), 0);
 
       // If total >= 3MB, open confirmation modal
-      if (totalSize >= 3 * 1024 * 1024) {
+      if (totalSize >= 5 * 1024 * 1024) {
         setShowConfirmSubmit(true);
       }
 
@@ -255,7 +255,7 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" dir="rtl">
           <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold mb-3 text-right">האם לשלוח את הקבצים?</h3>
-            <p className="text-sm text-gray-700 mb-6 text-right">הקבצים שצירפת מגיעים לנפח של לפחות 3MB. האם ברצונך לשלוח את מה שמילאת עד כה?</p>
+            <p className="text-sm text-gray-700 mb-6 text-right">הקבצים שצירפת מגיעים לנפח של לפחות 5MB. האם ברצונך לשלוח את מה שמילאת עד כה?</p>
             <div className="flex gap-3 justify-start" dir="rtl">
               <button
                 type="button"
