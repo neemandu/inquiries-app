@@ -562,7 +562,7 @@ export default function MonthlyReport({
     }
 
     // Check if all required (isMust) fields are filled\
-    /*
+    
     for (const employee of editableEmployees) {
       for (const column of employee.columns) {
         if (column.isMust) {
@@ -575,7 +575,7 @@ export default function MonthlyReport({
           }
         }
       }
-    }*/
+    }
 
     return true;
   };
