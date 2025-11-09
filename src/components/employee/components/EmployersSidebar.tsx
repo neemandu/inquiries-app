@@ -14,6 +14,7 @@ interface EmployersSidebarProps {
     'monthly-report'?: number;
     'vacations'?: number;
   };
+  yearlyInquiriesCount?: number;
 }
 
 const navigationItems = [
@@ -57,6 +58,7 @@ export default function EmployersSidebar({
   onSupplierSelect,
   onShowYearlyForm,
   notificationCounts,
+  yearlyInquiriesCount,
 }: EmployersSidebarProps) {
   return (
     <div className="w-60 space-y-6">
@@ -90,7 +92,12 @@ export default function EmployersSidebar({
             className="w-full flex items-center justify-start gap-4 px-4 py-3 h-auto text-black bg-white hover:bg-purple-50"
             dir="rtl"
           >
-            <span className="font-medium text-base">בירורים כלליים&gt;&gt;</span>
+            <span className="font-medium text-base">
+              בירורים כלליים&gt;&gt;
+              {yearlyInquiriesCount !== undefined && (
+                <span className="mr-2 text-gray-600">({yearlyInquiriesCount})</span>
+              )}
+            </span>
           </Button>
         </CardContent>
       </Card>

@@ -435,9 +435,9 @@ export default function EmployeesPage() {
                !(user.emailAddresses[0].emailAddress.endsWith('@cpateam.co.il') || 
                  user.emailAddresses[0].emailAddress === 'neemandu@gmail.com') && 
                (activeView) && (
-                <div className="flex justify-end items-center mb-2">
-                  <span className="text-right" dir="rtl" style={{ fontWeight: 'bold' }}>
-                    תקופת דיווח: {changeTime}
+                <div className="flex justify-center items-center mb-4">
+                  <span className="text-center text-xl font-bold text-gray-800" dir="rtl">
+                    תקופת דיווח: <span className="text-blue-600">{changeTime}</span>
                   </span>
                 </div>
               )}
@@ -458,6 +458,7 @@ export default function EmployeesPage() {
                 onSupplierSelect={handleSupplierSelect}
                 onShowYearlyForm={handleShowYearlyForm}
                 notificationCounts={notificationCounts}
+                yearlyInquiriesCount={inquiryData?.general?.length || 0}
               />
             </div>
           </div>

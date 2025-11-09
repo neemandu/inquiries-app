@@ -30,10 +30,10 @@ export default function PeriodDropdown({ periods, selectedPeriodId, onPeriodSele
   };
 
   return (
-    <div className="flex items-center gap-2 mb-4" dir="rtl">
-      <span className="text-sm font-medium text-gray-700"><b>תקופת דיווח:</b></span>
+    <div className="flex items-center gap-3 mb-4" dir="rtl">
+      <span className="text-lg font-bold text-gray-800">תקופת דיווח:</span>
       <Select onValueChange={onPeriodSelect} value={selectedPeriodId || undefined}>
-        <SelectTrigger className="w-64 text-right bg-white" dir="rtl">
+        <SelectTrigger className="w-64 text-lg font-semibold text-right bg-white border-2 border-gray-300" dir="rtl">
           <SelectValue placeholder="בחר תקופת דיווח" />
         </SelectTrigger>
         <SelectContent dir="rtl">

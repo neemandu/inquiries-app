@@ -1069,7 +1069,7 @@ export default function MonthlyReport({
                     <th
                       key={column.key}
                       className={`px-6 py-4 text-right font-medium text-gray-900 border-r border-gray-300 min-w-[128px] cursor-pointer hover:bg-gray-100 transition-colors select-none ${
-                        column.isFrozen ? 'sticky right-0 bg-gray-50 z-20 border-l-2 border-gray-300 shadow-[4px_0_4px_-2px_rgba(0,0,0,0.1)]' : ''
+                        column.isFrozen ? 'sticky top-0 right-0 bg-gray-50 z-20 border-l-2 border-gray-300 shadow-[4px_0_4px_-2px_rgba(0,0,0,0.1)]' : 'sticky top-0 bg-gray-50 z-10'
                       }`}
                       style={{ 
                         width: columnWidth,
