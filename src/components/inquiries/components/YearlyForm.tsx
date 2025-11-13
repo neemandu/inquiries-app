@@ -22,29 +22,25 @@ export default function YearlyForm({
   const [files, setFiles] = useState<{ [key: string]: File[] }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Populate answers from yearlyData on mount or when yearlyData changes
+  // Populate answers from yearlyData whenever the dataset changes.
   useEffect(() => {
-    if (yearlyData) {
-      const initialAnswers: { [key: string]: string } = {};
-      yearlyData.forEach((item, index) => {
-        const questionKey = `${index}-${item.question}`;
-        if (item.answer != null && item.answer !== undefined) {
-          initialAnswers[questionKey] = item.answer;
-        }
-      });
-      // Only update if different to prevent infinite loop
-      const isDifferent =
-        Object.keys(initialAnswers).some(
-          (key) => initialAnswers[key] !== answers[key]
-        ) ||
-        Object.keys(answers).some(
-          (key) => answers[key] !== initialAnswers[key]
-        );
-      if (isDifferent) {
-        setAnswers(initialAnswers);
-      }
+    if (!yearlyData) {
+      setAnswers({});
+      return;
     }
-  }, [yearlyData, answers]);
+
+    const initialAnswers = yearlyData.reduce(
+      (acc, item, index) => {
+        if (item.answer != null && item.answer !== undefined) {
+          acc[`${index}-${item.question}`] = item.answer;
+        }
+        return acc;
+      },
+      {} as Record<string, string>
+    );
+
+    setAnswers(initialAnswers);
+  }, [yearlyData]);
 
   useEffect(() => {
     if (answers) {
