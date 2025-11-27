@@ -44,6 +44,21 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredData]);
 
+  // Add hover tooltips with the full text of each cell
+  useEffect(() => {
+    const cells = document.querySelectorAll<HTMLTableCellElement>('.supplier-table td, .supplier-table th');
+    cells.forEach((cell) => {
+      const field = cell.querySelector('textarea, input');
+      const inputValue = (field as HTMLInputElement | HTMLTextAreaElement | null)?.value?.trim();
+      const text = inputValue || cell.textContent?.trim();
+      if (text && text.length > 0) {
+        cell.title = text;
+      } else {
+        cell.removeAttribute('title');
+      }
+    });
+  }, [filteredData, answers, files]);
+
   const handleAnswerChange = (key: string, value: string) => {
     setAnswers(prev => ({ ...prev, [key]: value }));
     
@@ -174,18 +189,6 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
         </button>
         <br />
         <table className="supplier-table">
-          <colgroup>
-            <col style={{ width: '12%' }} />
-            <col style={{ width: '10%' }} />
-            <col style={{ width: '8%' }} />
-            <col style={{ width: '10%' }} />
-            <col style={{ width: '10%' }} />
-            <col style={{ width: '8%' }} />
-            <col style={{ width: '7%' }} />
-            <col style={{ width: '30%' }} />
-            <col style={{ width: '30%' }} />
-            <col style={{ width: '20%' }} />
-          </colgroup>
           <thead>
             <tr>
               <th>שם ספק</th>
@@ -206,19 +209,20 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
               const isModified = modifiedKeys.has(key);
               return (
                 <tr key={key + '-' + index} style={{ backgroundColor: isModified ? '#fff3cd' : 'transparent' }}>
-                  <td>{item.supplier}</td>
-                  <td>{item.asm}</td>
-                  <td>{item.asm2}</td>
-                  <td>{new Date(item.date).toLocaleDateString('he-IL')}</td>
-                  <td>{item.details}</td>
-                  <td>{item.hova}</td>
-                  <td>{item.prev}</td>
-                  <td>{item.question}</td>
-                  <td>
+                  <td title={item.supplier}>{item.supplier}</td>
+                  <td title={item.asm}>{item.asm}</td>
+                  <td title={item.asm2}>{item.asm2}</td>
+                  <td title={new Date(item.date).toLocaleDateString('he-IL')}>{new Date(item.date).toLocaleDateString('he-IL')}</td>
+                  <td title={item.details}>{item.details}</td>
+                  <td title={item.hova}>{item.hova}</td>
+                  <td title={item.prev}>{item.prev}</td>
+                  <td title={item.question}>{item.question}</td>
+                  <td title={answers[key] || ''}>
                     <textarea
                       style={{ border: item.isTextMandatory ? '1px solid red' : '1px solid #ccc' }}
                       value={answers[key] || ''}
                       onChange={(e) => handleAnswerChange(key, e.target.value)}
+                      title={answers[key] || ''}
                       placeholder="תשובה..."
                     />
                   </td>
@@ -286,7 +290,7 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
 
       <style jsx>{`
         table {
-          table-layout: fixed;
+          table-layout: auto;
           width: 100%;
           border-collapse: collapse;
           margin-bottom: 1rem;
@@ -299,18 +303,6 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
         }
         th {
           background: #eee;
-        }
-        th:nth-child(2),
-        td:nth-child(2) {
-          width: 150px;
-        }
-        th:nth-child(10),
-        td:nth-child(10) {
-          width: 300px;
-        }
-        th:nth-child(11),
-        td:nth-child(11) {
-          width: 300px;
         }
         table th,
         table td {
@@ -343,7 +335,7 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
           background: #0069d9;
         }
         .supplier-table {
-          table-layout: fixed;
+          table-layout: auto;
           width: 100%;
           border-collapse: collapse;
           margin-bottom: 1rem;
@@ -358,6 +350,45 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
         }
         .supplier-table th {
           background: #eee;
+        }
+        .supplier-table th:nth-child(6),
+        .supplier-table td:nth-child(6),
+        .supplier-table th:nth-child(7),
+        .supplier-table td:nth-child(7) {
+          white-space: nowrap;
+          width: 1%;
+        }
+        .supplier-table th:nth-child(1),
+        .supplier-table td:nth-child(1) {
+          white-space: normal;
+          width: 200px;
+          max-width: 200px;
+          word-break: break-word;
+          overflow-wrap: break-word;
+        }
+        .supplier-table th:nth-child(5),
+        .supplier-table td:nth-child(5) {
+          white-space: normal;
+          width: 200px;
+          max-width: 200px;
+          word-break: break-word;
+          overflow-wrap: break-word;
+        }
+        .supplier-table th:nth-child(8),
+        .supplier-table td:nth-child(8) {
+          white-space: normal;
+          width: 200px;
+          max-width: 200px;
+          word-break: break-word;
+          overflow-wrap: break-word;
+        }
+        .supplier-table th:nth-child(9),
+        .supplier-table td:nth-child(9) {
+          white-space: normal;
+          width: auto;
+          min-width: 240px;
+          word-break: break-word;
+          overflow-wrap: break-word;
         }
         textarea {
           width: 100%;
