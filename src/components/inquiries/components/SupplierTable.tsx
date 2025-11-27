@@ -169,6 +169,10 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
       )}
 
       <form ref={formRef} onSubmit={handleSubmit}>
+      <button type="submit" disabled={isSubmitting}>
+          {modifiedKeys.size === 0 ? 'שלח' : `שלח (${modifiedKeys.size} שינויים)`}
+        </button>
+        <br />
         <table className="supplier-table">
           <colgroup>
             <col style={{ width: '12%' }} />
