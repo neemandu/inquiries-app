@@ -211,11 +211,11 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
                 <tr key={key + '-' + index} style={{ backgroundColor: isModified ? '#fff3cd' : 'transparent' }}>
                   <td title={item.supplier}>{item.supplier}</td>
                   <td title={item.asm}>{item.asm}</td>
-                  <td title={item.asm2}>{item.asm2}</td>
+                  <td title={item.asm2 ?? ''}>{item.asm2 ?? ''}</td>
                   <td title={new Date(item.date).toLocaleDateString('he-IL')}>{new Date(item.date).toLocaleDateString('he-IL')}</td>
                   <td title={item.details}>{item.details}</td>
                   <td title={item.hova}>{item.hova}</td>
-                  <td title={item.prev}>{item.prev}</td>
+                  <td title={item.prev ?? ''}>{item.prev ?? ''}</td>
                   <td title={item.question}>{item.question}</td>
                   <td title={answers[key] || ''}>
                     <textarea
