@@ -61,6 +61,7 @@ export default function MonthlyReport({
   const [selectedColumnName, setSelectedColumnName] = useState<string>('');
   const [showUnsavedChangesPopup, setShowUnsavedChangesPopup] = useState(false);
   const [showValidationPopup, setShowValidationPopup] = useState(false);
+  const [validationIssues, setValidationIssues] = useState<string[]>([]);
   const [missingDocs, setMissingDocs] = useState<unknown[]>([]);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -553,31 +554,48 @@ export default function MonthlyReport({
 
   // Validate all required fields and missing documents
   const validateAllRequiredFieldsAndDocs = () => {
-    // Check if there are any missing documents with fileType="טופס 101"
+    const issues: string[] = [];
+
     if (missingDocs.length > 0) {
-      const hasForm101 = missingDocs.some((doc: unknown) => (doc as { fileType?: string }).fileType === "טופס 101");
-      if (hasForm101) {
-        return false;
-      }
+      const missingForm101 = missingDocs.filter(
+        (doc: unknown) => (doc as { fileType?: string })?.fileType === "טופס 101"
+      );
+
+      missingForm101.forEach((doc: unknown) => {
+        const details = doc as {
+          firstName?: string;
+          lastName?: string;
+          employeeRecordId?: string;
+          idNumber?: string;
+          fileType?: string;
+        };
+
+        const fullName = `${details.firstName ?? ""} ${details.lastName ?? ""}`.trim();
+        const identifier = details.employeeRecordId || details.idNumber || "עובד לא מזוהה";
+        const displayName = fullName || identifier;
+
+        issues.push(`חסר מסמך ${details.fileType ?? "נדרש"} עבור ${displayName}`);
+      });
     }
 
-    // Check if all required (isMust) fields are filled\
-    
     for (const employee of editableEmployees) {
       for (const column of employee.columns) {
         if (column.isMust) {
-          // Check if field has a value (either old or new)
-          const hasOldValue = column.oldValue !== undefined && column.oldValue !== null && column.oldValue !== '';
-          const hasNewValue = column.newValue !== undefined && column.newValue !== null && column.newValue !== '';
-          
+          const hasOldValue =
+            column.oldValue !== undefined && column.oldValue !== null && column.oldValue !== "";
+          const hasNewValue =
+            column.newValue !== undefined && column.newValue !== null && column.newValue !== "";
+
           if (!hasOldValue && !hasNewValue) {
-            return false;
+            const employeeName = getEmployeeName(employee);
+            issues.push(`שדה חובה "${column.name}" חסר עבור ${employeeName}`);
           }
         }
       }
     }
 
-    return true;
+    setValidationIssues(issues);
+    return issues.length === 0;
   };
 
   // Handle save and continue navigation
@@ -726,11 +744,13 @@ export default function MonthlyReport({
     const errorKey = `${employee.id}_${column.key}`;
     const hasError = errors[errorKey];
     
-    // Check if mandatory field has a value (either old or new)
-    const hasValue = employeeColumn.newValue !== undefined && employeeColumn.newValue !== null && employeeColumn.newValue !== '' ||
-                    employeeColumn.oldValue !== undefined && employeeColumn.oldValue !== null && employeeColumn.oldValue !== '';
+    // Check if mandatory field has a current value (only check newValue, not oldValue)
+    // This ensures red border shows when user clears a field, even if it had an old value
+    const hasValue = employeeColumn.newValue !== undefined && 
+                    employeeColumn.newValue !== null && 
+                    String(employeeColumn.newValue).trim() !== '';
     
-    // Only show red border if it's mandatory AND has no value AND is not a "הערות" column
+    // Only show red border if it's mandatory AND has no current value AND is not a "הערות" column
     const isMustClass = employeeColumn.isMust && !hasValue && !employeeColumn.name.includes('הערות') ? 'border-red-500 border-2' : '';
     const errorClass = hasError ? 'border-red-500' : '';
 
@@ -996,9 +1016,20 @@ export default function MonthlyReport({
             <div className="text-lg font-bold text-red-600 mb-4" dir="rtl">
               אנא השלימו את כל הדיווחים החודשיים והמסמכים החסרים
             </div>
+            {validationIssues.length > 0 && (
+              <div className="mt-4 max-h-48 overflow-y-auto text-right pr-2" dir="rtl">
+                <ul className="list-disc list-inside text-sm text-gray-700 space-y-2">
+                  {validationIssues.map((issue, index) => (
+                    <li key={`${issue}-${index}`}>{issue}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <div className="flex justify-center gap-4 mt-6">
               <Button
-                onClick={() => setShowValidationPopup(false)}
+                onClick={() => {
+                  setShowValidationPopup(false);
+                }}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6"
               >
                 הבנתי
