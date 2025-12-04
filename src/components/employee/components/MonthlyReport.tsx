@@ -552,31 +552,9 @@ export default function MonthlyReport({
     }
   }, [editableEmployees, onHasChangesChange]);
 
-  // Validate all required fields and missing documents
+  // Validate all required fields (ignore missing documents)
   const validateAllRequiredFieldsAndDocs = () => {
     const issues: string[] = [];
-
-    if (missingDocs.length > 0) {
-      const missingForm101 = missingDocs.filter(
-        (doc: unknown) => (doc as { fileType?: string })?.fileType === "טופס 101"
-      );
-
-      missingForm101.forEach((doc: unknown) => {
-        const details = doc as {
-          firstName?: string;
-          lastName?: string;
-          employeeRecordId?: string;
-          idNumber?: string;
-          fileType?: string;
-        };
-
-        const fullName = `${details.firstName ?? ""} ${details.lastName ?? ""}`.trim();
-        const identifier = details.employeeRecordId || details.idNumber || "עובד לא מזוהה";
-        const displayName = fullName || identifier;
-
-        issues.push(`חסר מסמך ${details.fileType ?? "נדרש"} עבור ${displayName}`);
-      });
-    }
 
     for (const employee of editableEmployees) {
       for (const column of employee.columns) {
