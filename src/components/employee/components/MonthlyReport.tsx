@@ -62,7 +62,6 @@ export default function MonthlyReport({
   const [showUnsavedChangesPopup, setShowUnsavedChangesPopup] = useState(false);
   const [showValidationPopup, setShowValidationPopup] = useState(false);
   const [validationIssues, setValidationIssues] = useState<string[]>([]);
-  const [missingDocs, setMissingDocs] = useState<unknown[]>([]);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
@@ -107,37 +106,6 @@ export default function MonthlyReport({
   useEffect(() => {
     loadMonthlyEmployeesData();
   }, [loadMonthlyEmployeesData]);
-
-  // Fetch missing documents data
-  const fetchMissingDocs = useCallback(async () => {
-    if (!clientRecordId) return;
-    
-    try {
-      const response = await fetch(`/api/missing-docs?employerRecordId=${clientRecordId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setMissingDocs(data || []);
-      } else {
-        console.error('Failed to fetch missing documents');
-        setMissingDocs([]);
-      }
-    } catch (error) {
-      console.error('Error fetching missing documents:', error);
-      setMissingDocs([]);
-    }
-  }, [clientRecordId]);
-
-  // Fetch missing docs when component mounts
-  useEffect(() => {
-    fetchMissingDocs();
-  }, [fetchMissingDocs]);
-
-  // Provide save function reference to parent
-  useEffect(() => {
-    if (onSaveRefSet) {
-      onSaveRefSet(handleSave);
-    }
-  }, [onSaveRefSet]);
 
   // Scroll table to the right on initial load
   useEffect(() => {
@@ -390,8 +358,112 @@ export default function MonthlyReport({
     }
   };
 
+  // Sort employees based on sort configuration
+  const getSortedEmployees = () => {
+    if (!sortConfig) return editableEmployees;
+
+    return [...editableEmployees].sort((a, b) => {
+      let aValue: string | number;
+      let bValue: string | number;
+
+      if (sortConfig.key === 'name') {
+        aValue = getEmployeeName(a);
+        bValue = getEmployeeName(b);
+      } else {
+        const aColumn = a.columns.find(col => col.columnId === sortConfig.key);
+        const bColumn = b.columns.find(col => col.columnId === sortConfig.key);
+        
+        // Handle different value types, including file objects
+        const aRawValue = aColumn?.newValue ?? aColumn?.oldValue ?? '';
+        const bRawValue = bColumn?.newValue ?? bColumn?.oldValue ?? '';
+        
+        // Convert file objects to strings for sorting
+        aValue = typeof aRawValue === 'object' && aRawValue !== null && 'fileName' in aRawValue 
+          ? (aRawValue as { fileName: string }).fileName 
+          : aRawValue;
+        bValue = typeof bRawValue === 'object' && bRawValue !== null && 'fileName' in bRawValue 
+          ? (bRawValue as { fileName: string }).fileName 
+          : bRawValue;
+      }
+
+      // Handle different data types
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
+      }
+
+      // Convert to strings for comparison
+      const aStr = String(aValue).toLowerCase();
+      const bStr = String(bValue).toLowerCase();
+
+      if (aStr < bStr) {
+        return sortConfig.direction === 'asc' ? -1 : 1;
+      }
+      if (aStr > bStr) {
+        return sortConfig.direction === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+  };
+
+  // Generate and download CSV file
+  const downloadCSV = useCallback(() => {
+    const columns = getDisplayColumns();
+    const visibleColumns = columns.filter(col => col.show);
+    const sortedEmployees = getSortedEmployees();
+
+    // Create CSV headers
+    const headers = visibleColumns.map(col => col.label);
+    const csvHeaders = headers.join(',');
+
+    // Create CSV rows
+    const csvRows = sortedEmployees.map(employee => {
+      const rowData = visibleColumns.map(column => {
+        let cellValue = '';
+        
+        if (column.key === 'name') {
+          cellValue = getEmployeeName(employee);
+        } else {
+          const employeeColumn = employee.columns.find(col => col.columnId === column.key);
+          if (employeeColumn) {
+            // Use new value if available, otherwise use old value
+            const value = employeeColumn.newValue ?? employeeColumn.oldValue ?? '';
+            cellValue = String(value);
+          }
+        }
+        
+        // Escape CSV values (handle commas, quotes, newlines)
+        if (cellValue.includes(',') || cellValue.includes('"') || cellValue.includes('\n')) {
+          cellValue = `"${cellValue.replace(/"/g, '""')}"`;
+        }
+        
+        return cellValue;
+      });
+      
+      return rowData.join(',');
+    });
+
+    // Combine headers and rows
+    const csvContent = [csvHeaders, ...csvRows].join('\n');
+
+    // Create and download file
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    
+    // Generate filename with current date
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+    link.setAttribute('download', `monthly-report-${dateStr}.csv`);
+    
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }, [editableEmployees, columnNames, sortConfig]);
+
   // Handle save
-  const handleSave = useCallback(async () => {
+  const handleSave = useCallback(async (skipRefetch: boolean = false) => {
     setIsSaving(true);
     try {
       // Filter and convert only employees with changes and only changed columns
@@ -504,21 +576,57 @@ export default function MonthlyReport({
             }
           );
         }
-        if (onRefetchData) {
+        // Only refetch if not skipped (skip when called from blue button to avoid state reset)
+        if (!skipRefetch && onRefetchData) {
           onRefetchData();
         }
-        // Reload the monthly data to get fresh values
-        await loadMonthlyEmployeesData();
+        
+        // Update local state: mark saved newValue as the new oldValue
+        // This avoids needing to reload from the API
+        setEditableEmployees(prev => prev.map(emp => {
+          const updatedEmp = updateData.find(u => u.id === emp.id);
+          if (updatedEmp) {
+            return {
+              ...emp,
+              columns: emp.columns.map(col => {
+                const updatedCol = updatedEmp.columns.find(c => c.columnId === col.columnId);
+                if (updatedCol && col.newValue !== undefined && col.newValue !== null) {
+                  // The saved newValue becomes the new oldValue
+                  return {
+                    ...col,
+                    oldValue: col.newValue,
+                    newValue: col.newValue // Keep newValue same as oldValue to indicate no unsaved changes
+                  };
+                }
+                return col;
+              })
+            };
+          }
+          return emp;
+        }));
+        
+        return true;
       } else {
         toast.error('שגיאה בשמירת הנתונים');
+        return false;
       }
     } catch (error) {
       console.error('Save error:', error);
       toast.error('שגיאה בשמירת הנתונים');
+      return false;
     } finally {
       setIsSaving(false);
     }
-  }, [editableEmployees, loadMonthlyEmployeesData, onRefetchData]);
+  }, [editableEmployees, loadMonthlyEmployeesData, onRefetchData, downloadCSV]);
+
+  // Provide save function reference to parent
+  useEffect(() => {
+    if (onSaveRefSet) {
+      onSaveRefSet(async () => {
+        await handleSave(false);
+      });
+    }
+  }, [onSaveRefSet, handleSave]);
 
   // Check if there are unsaved changes
   const hasUnsavedChanges = useCallback(() => {
@@ -550,7 +658,7 @@ export default function MonthlyReport({
     if (onHasChangesChange) {
       onHasChangesChange(hasUnsavedChanges());
     }
-  }, [editableEmployees, onHasChangesChange]);
+  }, [editableEmployees, onHasChangesChange, hasUnsavedChanges]);
 
   // Validate all required fields (ignore missing documents)
   const validateAllRequiredFieldsAndDocs = () => {
@@ -593,7 +701,7 @@ export default function MonthlyReport({
 
   // Handle save and continue navigation
   const handleSaveAndNavigate = async () => {
-    await handleSave();
+    await handleSave(false);
     if (onSaveAndNavigate) {
       onSaveAndNavigate();
     }
@@ -615,110 +723,6 @@ export default function MonthlyReport({
       direction = 'desc';
     }
     setSortConfig({ key: columnKey, direction });
-  };
-
-  // Sort employees based on sort configuration
-  const getSortedEmployees = () => {
-    if (!sortConfig) return editableEmployees;
-
-    return [...editableEmployees].sort((a, b) => {
-      let aValue: string | number;
-      let bValue: string | number;
-
-      if (sortConfig.key === 'name') {
-        aValue = getEmployeeName(a);
-        bValue = getEmployeeName(b);
-      } else {
-        const aColumn = a.columns.find(col => col.columnId === sortConfig.key);
-        const bColumn = b.columns.find(col => col.columnId === sortConfig.key);
-        
-        // Handle different value types, including file objects
-        const aRawValue = aColumn?.newValue ?? aColumn?.oldValue ?? '';
-        const bRawValue = bColumn?.newValue ?? bColumn?.oldValue ?? '';
-        
-        // Convert file objects to strings for sorting
-        aValue = typeof aRawValue === 'object' && aRawValue !== null && 'fileName' in aRawValue 
-          ? (aRawValue as { fileName: string }).fileName 
-          : aRawValue;
-        bValue = typeof bRawValue === 'object' && bRawValue !== null && 'fileName' in bRawValue 
-          ? (bRawValue as { fileName: string }).fileName 
-          : bRawValue;
-      }
-
-      // Handle different data types
-      if (typeof aValue === 'number' && typeof bValue === 'number') {
-        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
-      }
-
-      // Convert to strings for comparison
-      const aStr = String(aValue).toLowerCase();
-      const bStr = String(bValue).toLowerCase();
-
-      if (aStr < bStr) {
-        return sortConfig.direction === 'asc' ? -1 : 1;
-      }
-      if (aStr > bStr) {
-        return sortConfig.direction === 'asc' ? 1 : -1;
-      }
-      return 0;
-    });
-  };
-
-  // Generate and download CSV file
-  const downloadCSV = () => {
-    const columns = getDisplayColumns();
-    const visibleColumns = columns.filter(col => col.show);
-    const sortedEmployees = getSortedEmployees();
-
-    // Create CSV headers
-    const headers = visibleColumns.map(col => col.label);
-    const csvHeaders = headers.join(',');
-
-    // Create CSV rows
-    const csvRows = sortedEmployees.map(employee => {
-      const rowData = visibleColumns.map(column => {
-        let cellValue = '';
-        
-        if (column.key === 'name') {
-          cellValue = getEmployeeName(employee);
-        } else {
-          const employeeColumn = employee.columns.find(col => col.columnId === column.key);
-          if (employeeColumn) {
-            // Use new value if available, otherwise use old value
-            const value = employeeColumn.newValue ?? employeeColumn.oldValue ?? '';
-            cellValue = String(value);
-          }
-        }
-        
-        // Escape CSV values (handle commas, quotes, newlines)
-        if (cellValue.includes(',') || cellValue.includes('"') || cellValue.includes('\n')) {
-          cellValue = `"${cellValue.replace(/"/g, '""')}"`;
-        }
-        
-        return cellValue;
-      });
-      
-      return rowData.join(',');
-    });
-
-    // Combine headers and rows
-    const csvContent = [csvHeaders, ...csvRows].join('\n');
-
-    // Create and download file
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    
-    // Generate filename with current date
-    const now = new Date();
-    const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD format
-    link.setAttribute('download', `monthly-report-${dateStr}.csv`);
-    
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   // Render editable cell
@@ -855,13 +859,13 @@ export default function MonthlyReport({
         {/* Blue Close Period Button */}
         <Button
           onClick={async () => {
-            // Step 1: Save changes first (same as green button)
-            await handleSave();
+            // Step 1: Save changes first (skip refetch to avoid state reset)
+            const saveSuccess = await handleSave(true);
             
             // Step 2: Then proceed with validation and closing (current blue button logic)
-            if (validateAllRequiredFieldsAndDocs()) {
+            if (saveSuccess && validateAllRequiredFieldsAndDocs()) {
               setShowConfirmClose(true);
-            } else {
+            } else if (saveSuccess) {
               setShowValidationPopup(true);
             }
           }}
@@ -872,7 +876,7 @@ export default function MonthlyReport({
         </Button>
         {/* Green Save Button (leftmost in RTL, separated) */}
         <Button
-          onClick={handleSave}
+          onClick={() => handleSave(false)}
           disabled={isSaving}
           className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white mr-auto"
           dir="rtl"
@@ -1154,7 +1158,7 @@ export default function MonthlyReport({
       <br />
       <div className="flex justify-between items-center mb-4">
         <Button
-          onClick={handleSave}
+          onClick={() => handleSave(false)}
           disabled={isSaving}
           className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
           dir="rtl"
