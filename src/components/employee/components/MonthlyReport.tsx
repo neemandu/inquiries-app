@@ -559,10 +559,25 @@ export default function MonthlyReport({
     for (const employee of editableEmployees) {
       for (const column of employee.columns) {
         if (column.isMust) {
-          const hasOldValue =
-            column.oldValue !== undefined && column.oldValue !== null && column.oldValue !== "";
-          const hasNewValue =
-            column.newValue !== undefined && column.newValue !== null && column.newValue !== "";
+          // Helper function to check if a value is empty (handles whitespace and file objects)
+          const isEmpty = (value: string | number | { fileName: string; fileData: string } | undefined | null): boolean => {
+            if (value === undefined || value === null) return true;
+            
+            // Handle file objects
+            if (typeof value === 'object' && value !== null && 'fileName' in value) {
+              const fileObj = value as { fileName: string; fileData: string };
+              return !fileObj.fileName || fileObj.fileName.trim() === "";
+            }
+            
+            // Handle numbers - 0 is valid, only reject NaN
+            if (typeof value === 'number') return isNaN(value);
+            
+            // For strings, trim whitespace and check if empty
+            return String(value).trim() === "";
+          };
+
+          const hasOldValue = !isEmpty(column.oldValue);
+          const hasNewValue = !isEmpty(column.newValue);
 
           if (!hasOldValue && !hasNewValue) {
             const employeeName = getEmployeeName(employee);
@@ -839,7 +854,11 @@ export default function MonthlyReport({
         </div>
         {/* Blue Close Period Button */}
         <Button
-          onClick={() => {
+          onClick={async () => {
+            // Step 1: Save changes first (same as green button)
+            await handleSave();
+            
+            // Step 2: Then proceed with validation and closing (current blue button logic)
             if (validateAllRequiredFieldsAndDocs()) {
               setShowConfirmClose(true);
             } else {
@@ -847,7 +866,7 @@ export default function MonthlyReport({
             }
           }}
           className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-          disabled={isClosing || selectedPeriodStatus === 'סגורה'}
+          disabled={isSaving || isClosing || selectedPeriodStatus === 'סגורה'}
         >
           אישור מידע וסגירת תקופת דיווח
         </Button>
