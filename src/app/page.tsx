@@ -28,7 +28,7 @@ export default function EmployeesPage() {
     accounting: false,
     salary: true,
     other: true
-  });
+  }); 
   const [dynamicColumnSettings, setDynamicColumnSettings] = useState<DynamicColumnSettings>({});
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
+     
     const response = await fetch(
       "https://hook.eu2.make.com/tpofetnytl2hy2qbamc36dsajoqgmi5r",
       {

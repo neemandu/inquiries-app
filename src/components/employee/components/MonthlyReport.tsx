@@ -698,7 +698,7 @@ export default function MonthlyReport({
     setValidationIssues(issues);
     return issues.length === 0;
   };
-
+ 
   // Handle save and continue navigation
   const handleSaveAndNavigate = async () => {
     await handleSave(false);
