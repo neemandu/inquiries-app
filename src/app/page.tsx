@@ -110,7 +110,7 @@ export default function EmployeesPage() {
         setLoading(false);
       }
     }
-  }, [isLoaded, user, selectedEmployerEmail, selectedEmployerRecordId, selectedPeriodId]);
+  }, [isLoaded, user, selectedEmployerEmail, selectedPeriodId]);
 
   useEffect(() => {
     loadEmployeeData();

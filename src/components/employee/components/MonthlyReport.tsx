@@ -116,7 +116,7 @@ export default function MonthlyReport({
   }, [editableEmployees]);
 
   // Helper function to get employee name for display
-  const getEmployeeName = (employee: EditableEmployee): string => {
+  const getEmployeeName = useCallback((employee: EditableEmployee): string => {
     const firstNameCol = employee.columns.find((col: EditableColumn) => 
       col.name.includes('שם פרטי') || col.name.includes('First Name') || col.columnId.includes('firstName')
     );
@@ -128,10 +128,10 @@ export default function MonthlyReport({
     const lastName = lastNameCol?.oldValue || '';
     
     return `${firstName} ${lastName}`.trim() || `עובד ${employee.id.slice(-4)}`;
-  };
+  }, []);
 
   // Get columns for display, ensuring "הערות רואה חשבון" is leftmost
-  const getDisplayColumns = () => {
+  const getDisplayColumns = useCallback(() => {
     if (editableEmployees.length === 0) return [];
 
     // Get all unique column types from all employees
@@ -189,7 +189,7 @@ export default function MonthlyReport({
     finalColumns.push(...dynamicColumns);
 
     return finalColumns;
-  };
+  }, [editableEmployees, columnNames]);
 
   // Handle input change for editable cells
   const handleCellChange = (employeeId: string, columnId: string, value: string | number) => {
@@ -359,7 +359,7 @@ export default function MonthlyReport({
   };
 
   // Sort employees based on sort configuration
-  const getSortedEmployees = () => {
+  const getSortedEmployees = useCallback(() => {
     if (!sortConfig) return editableEmployees;
 
     return [...editableEmployees].sort((a, b) => {
@@ -403,7 +403,7 @@ export default function MonthlyReport({
       }
       return 0;
     });
-  };
+  }, [editableEmployees, sortConfig, getEmployeeName]);
 
   // Generate and download CSV file
   const downloadCSV = useCallback(() => {
@@ -460,7 +460,7 @@ export default function MonthlyReport({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  }, [editableEmployees, columnNames, sortConfig]);
+  }, [getDisplayColumns, getSortedEmployees, getEmployeeName]);
 
   // Handle save
   const handleSave = useCallback(async (skipRefetch: boolean = false) => {
@@ -617,7 +617,7 @@ export default function MonthlyReport({
     } finally {
       setIsSaving(false);
     }
-  }, [editableEmployees, loadMonthlyEmployeesData, onRefetchData, downloadCSV]);
+  }, [editableEmployees, onRefetchData, downloadCSV]);
 
   // Provide save function reference to parent
   useEffect(() => {
