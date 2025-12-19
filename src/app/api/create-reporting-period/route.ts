@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     const response = await fetch(
-      "https://bai0obs5qh.execute-api.eu-west-2.amazonaws.com/default/createNewReportingPeriod",
+      "https://hook.eu2.make.com/tpofetnytl2hy2qbamc36dsajoqgmi5r",
       {
         method: "POST",
         headers: { 
