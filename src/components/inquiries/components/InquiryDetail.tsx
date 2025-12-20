@@ -59,6 +59,11 @@ export default function InquiryDetail({
   }, [inquiry.recordId]);
 
   useEffect(() => {
+    setAnswer(inquiry.answer || '');
+    setNewFiles([]);
+  }, [inquiry.recordId, inquiry.answer]);
+
+  useEffect(() => {
     const baseDocs = inquiry.docs || [];
     const blobDocs = newFiles.map((file) => {
       const key = `${file.name}-${file.size}-${file.lastModified}`;
@@ -246,13 +251,9 @@ export default function InquiryDetail({
           <p className="text-gray-600 text-sm">{employer}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {meta.isOpen ? (
+          {meta.isOpen && (
             <span className="rounded-full bg-amber-100 text-amber-800 px-3 py-1 text-xs font-semibold">
               פתוח
-            </span>
-          ) : (
-            <span className="rounded-full bg-green-100 text-green-800 px-3 py-1 text-xs font-semibold">
-              סגור
             </span>
           )}
           {meta.missingAnswer && (
@@ -427,18 +428,18 @@ export default function InquiryDetail({
                         const pdfFit = raw.includes('#') ? raw : `${raw}#view=FitH`;
                         const gview = `https://docs.google.com/gview?url=${encodeURIComponent(raw)}&embedded=true#zoom=page-fit`;
                         return (
-                      <object
-                        data={pdfFit}
-                        type="application/pdf"
-                        className="w-full h-full min-h-[600px]"
-                      >
-                        <iframe
-                          src={gview}
-                          className="h-full w-full border-0"
-                          title={selectedDoc.filename}
-                          style={{ minHeight: '600px' }}
-                        />
-                      </object>
+                          <object
+                            data={pdfFit}
+                            type="application/pdf"
+                            className="w-full h-full min-h-[600px]"
+                          >
+                            <iframe
+                              src={gview}
+                              className="h-full w-full border-0"
+                              title={selectedDoc.filename}
+                              style={{ minHeight: '600px' }}
+                            />
+                          </object>
                         );
                       })()}
                     </div>

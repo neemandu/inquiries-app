@@ -33,13 +33,13 @@ export default function PendingInquiriesList({
   const [viewMode, setViewMode] = useState<'list' | 'table'>('list');
 
   const enriched = useMemo(() => {
-    return inquiries.map((inquiry) => {
-      const missingAnswer =
-        inquiry.isTextMandatory && (!inquiry.answer || inquiry.answer.trim().length === 0);
-      const missingDocs = inquiry.isDocMandatory && (!inquiry.docs || inquiry.docs.length === 0);
-      const isOpen = missingAnswer || missingDocs;
-      return { inquiry, missingAnswer, missingDocs, isOpen };
-    });
+    // Backend sends only open inquiries; mark all as open
+    return inquiries.map((inquiry) => ({
+      inquiry,
+      missingAnswer: false,
+      missingDocs: false,
+      isOpen: true,
+    }));
   }, [inquiries]);
 
   const supplierStats = useMemo(() => {
@@ -233,7 +233,7 @@ export default function PendingInquiriesList({
         </Card>
       ) : (
         <div className="grid grid-cols-1 gap-4">
-          {filtered.map(({ inquiry, missingAnswer, missingDocs, isOpen }) => (
+          {filtered.map(({ inquiry }) => (
             <Card
               key={inquiry.recordId}
               className="hover:shadow-lg hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50 transition-all cursor-pointer"
@@ -245,27 +245,6 @@ export default function PendingInquiriesList({
                   <div className="space-y-1">
                     <CardTitle className="text-xl text-gray-900">{inquiry.supplier}</CardTitle>
                     <p className="text-sm text-gray-600">{inquiry.question}</p>
-                  </div>
-                  <div className="flex flex-wrap gap-2 justify-end">
-                    {isOpen ? (
-                      <span className="rounded-full bg-amber-100 text-amber-800 px-3 py-1 text-xs font-semibold">
-                        פתוח
-                      </span>
-                    ) : (
-                      <span className="rounded-full bg-green-100 text-green-800 px-3 py-1 text-xs font-semibold">
-                        סגור
-                      </span>
-                    )}
-                    {missingAnswer && (
-                      <span className="rounded-full bg-red-100 text-red-700 px-3 py-1 text-xs font-semibold">
-                        חסר מענה
-                      </span>
-                    )}
-                    {missingDocs && (
-                      <span className="rounded-full bg-orange-100 text-orange-800 px-3 py-1 text-xs font-semibold">
-                        חסר מסמך
-                      </span>
-                    )}
                   </div>
                 </div>
               </CardHeader>

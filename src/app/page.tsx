@@ -41,13 +41,7 @@ export default function EmployeesPage() {
   const [inquiryData, setInquiryData] = useState<InquiryData | null>(null);
   const monthlyInquiries = useMemo(() => inquiryData?.monthly || [], [inquiryData]);
   const pendingOpenCount = useMemo(
-    () =>
-      monthlyInquiries.filter(
-        (item) =>
-          !item.answer ||
-          item.answer.trim().length === 0 ||
-          (item.isDocMandatory && (!item.docs || item.docs.length === 0))
-      ).length,
+    () => monthlyInquiries.length,
     [monthlyInquiries]
   );
   const [changeTime, setChangeTime] = useState<string>('');
@@ -268,9 +262,14 @@ export default function EmployeesPage() {
     (updatedInquiry: MonthlyInquiry, resolved?: boolean) => {
       setInquiryData((prev) => {
         if (!prev) return prev;
-        const updatedMonthly = prev.monthly.map((item) =>
-          item.recordId === updatedInquiry.recordId ? updatedInquiry : item
-        );
+
+        // If resolved, drop from monthly list; otherwise update in place
+        const updatedMonthly = resolved
+          ? prev.monthly.filter((item) => item.recordId !== updatedInquiry.recordId)
+          : prev.monthly.map((item) =>
+              item.recordId === updatedInquiry.recordId ? updatedInquiry : item
+            );
+
         return { ...prev, monthly: updatedMonthly };
       });
 
