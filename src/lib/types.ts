@@ -93,7 +93,9 @@ export type ViewType =
   | "employee-recognition"
   | "pay-slip"
   | "vacations"
-  | "document-upload";
+  | "document-upload"
+  | "pending-inquiries"
+  | "inquiry-detail";
 
 export interface Employee {
   // salary: number | null;
@@ -122,6 +124,7 @@ export interface Docs {
   height?: number;
   filename?: string;
   url?: string;
+  file?: string;
   type?: string;
   size?: number;
   thumbnails?: {
@@ -154,7 +157,7 @@ export interface MonthlyInquiry {
   supplier: string;
   isDocMandatory: boolean;
   isTextMandatory: boolean; // Note: typo in original data 'Manadatory'
-  recordId: boolean;
+  recordId: string;
 }
 
 export interface GeneralInquiry {

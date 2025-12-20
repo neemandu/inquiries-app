@@ -1,0 +1,306 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import { MonthlyInquiry } from '@/lib/types';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import SupplierTable from './SupplierTable';
+
+interface PendingInquiriesListProps {
+  inquiries?: MonthlyInquiry[];
+  employer?: string;
+  onSelect: (inquiry: MonthlyInquiry) => void;
+  activeSupplier?: string | null;
+  recordId?: string;
+}
+
+type StatusFilter = 'open' | 'missing-docs' | 'missing-answer' | 'all';
+type SortOption = 'date-desc' | 'date-asc' | 'supplier' | 'question';
+
+export default function PendingInquiriesList({
+  inquiries = [],
+  employer,
+  onSelect,
+  activeSupplier,
+  recordId,
+}: PendingInquiriesListProps) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('open');
+  const [sortBy, setSortBy] = useState<SortOption>('date-desc');
+  const [supplierFilter, setSupplierFilter] = useState<string>('הכל');
+  const [viewMode, setViewMode] = useState<'list' | 'table'>('list');
+
+  const enriched = useMemo(() => {
+    return inquiries.map((inquiry) => {
+      const missingAnswer =
+        inquiry.isTextMandatory && (!inquiry.answer || inquiry.answer.trim().length === 0);
+      const missingDocs = inquiry.isDocMandatory && (!inquiry.docs || inquiry.docs.length === 0);
+      const isOpen = missingAnswer || missingDocs;
+      return { inquiry, missingAnswer, missingDocs, isOpen };
+    });
+  }, [inquiries]);
+
+  const supplierStats = useMemo(() => {
+    const stats = new Map<string, { open: number }>();
+    enriched.forEach(({ inquiry, isOpen }) => {
+      const name = inquiry.supplier || 'לא ידוע';
+      const entry = stats.get(name) || { open: 0 };
+      if (isOpen) entry.open += 1;
+      stats.set(name, entry);
+    });
+    return stats;
+  }, [enriched]);
+
+  const supplierList = useMemo(() => {
+    const entries = Array.from(supplierStats.entries()).map(([name, data]) => ({
+      name,
+      open: data.open,
+    }));
+    entries.sort((a, b) => {
+      if (b.open !== a.open) return b.open - a.open;
+      return a.name.localeCompare(b.name);
+    });
+    const totalOpen = entries.reduce((sum, item) => sum + item.open, 0);
+    return [{ name: 'הכל', open: totalOpen }, ...entries];
+  }, [supplierStats]);
+
+  useEffect(() => {
+    const supplierNames = supplierList.map((s) => s.name);
+    if (activeSupplier && supplierNames.includes(activeSupplier)) {
+      setSupplierFilter(activeSupplier);
+      setStatusFilter('all');
+      setSearchTerm('');
+    } else if (!activeSupplier) {
+      setSupplierFilter('הכל');
+      setStatusFilter('all');
+      setSearchTerm('');
+    }
+  }, [activeSupplier, supplierList]);
+
+  const filtered = useMemo(() => {
+    return enriched
+      .filter(({ inquiry, missingAnswer, missingDocs, isOpen }) => {
+        if (supplierFilter !== 'הכל' && inquiry.supplier !== supplierFilter) {
+          return false;
+        }
+        const matchesSearch =
+          inquiry.supplier.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          inquiry.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          inquiry.details.toLowerCase().includes(searchTerm.toLowerCase());
+
+        if (!matchesSearch) return false;
+
+        switch (statusFilter) {
+          case 'missing-answer':
+            return missingAnswer;
+          case 'missing-docs':
+            return missingDocs;
+          case 'open':
+            return isOpen;
+          default:
+            return true;
+        }
+      })
+      .sort((a, b) => {
+        if (sortBy === 'supplier') {
+          return a.inquiry.supplier.localeCompare(b.inquiry.supplier);
+        }
+        if (sortBy === 'question') {
+          return a.inquiry.question.localeCompare(b.inquiry.question);
+        }
+        const dateA = new Date(a.inquiry.date).getTime();
+        const dateB = new Date(b.inquiry.date).getTime();
+        return sortBy === 'date-asc' ? dateA - dateB : dateB - dateA;
+      });
+  }, [enriched, searchTerm, statusFilter, sortBy, supplierFilter]);
+
+  const pendingCount = filtered.length;
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime())) return dateStr;
+    const [y, m, d] = date.toISOString().split('T')[0].split('-');
+    return `${d}/${m}/${y}`;
+  };
+
+  const formatCurrency = (val: string | null) => {
+    if (val === null || val === undefined || val === '') return '0';
+    const cleaned = String(val).replace(/,/g, '').trim();
+    const num = Number(cleaned);
+    if (Number.isNaN(num)) return String(val);
+    return num.toLocaleString('he-IL');
+  };
+
+  return (
+    <div dir="rtl" className="space-y-6">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">בירורי הנהלת חשבונות</h2>
+            <p className="text-gray-600 text-sm">{employer}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex gap-2">
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+                className={viewMode === 'list' ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}
+              >
+                תצוגת רשימה
+              </Button>
+              <Button
+                variant={viewMode === 'table' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('table')}
+                className={viewMode === 'table' ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}
+              >
+                תצוגת טבלה
+              </Button>
+            </div>
+          </div>
+        </div>
+        {viewMode === 'list' && (
+          <div className="flex flex-wrap gap-2">
+            {supplierList.map((supplier) => (
+              <Button
+                key={supplier.name}
+                variant={supplierFilter === supplier.name ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setSupplierFilter(supplier.name)}
+                className="rounded-full flex items-center gap-2"
+              >
+                <span>{supplier.name}</span>
+                <span className="text-xs bg-gray-100 text-gray-800 rounded-full px-2 py-0.5">
+                  {supplier.open}
+                </span>
+              </Button>
+            ))}
+          </div>
+        )}
+
+        {viewMode === 'list' && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <Input
+              placeholder="חיפוש לפי ספק, נושא או תיאור"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="col-span-1 md:col-span-2"
+            />
+            <div className="flex gap-3">
+              <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="סינון" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="open">פתוחים</SelectItem>
+                  <SelectItem value="missing-answer">חסר מענה</SelectItem>
+                  <SelectItem value="missing-docs">חסרים מסמכים</SelectItem>
+                  <SelectItem value="all">הכל</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="מיון" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date-desc">תאריך (חדש קודם)</SelectItem>
+                  <SelectItem value="date-asc">תאריך (ישן קודם)</SelectItem>
+                  <SelectItem value="supplier">לפי ספק</SelectItem>
+                  <SelectItem value="question">לפי נושא</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {viewMode === 'table' ? (
+        <SupplierTable
+          supplierId={activeSupplier || 'הכל'}
+          employer={employer}
+          monthlyData={inquiries}
+          recordId={recordId}
+        />
+      ) : pendingCount === 0 ? (
+        <Card className="border-dashed border-2 border-gray-200 bg-gray-50">
+          <CardContent className="py-10 text-center space-y-2">
+            <p className="text-lg font-semibold text-gray-800">אין בירורים ממתינים</p>
+            <p className="text-gray-600">נסה לשנות את הסינון או החיפוש.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 gap-4">
+          {filtered.map(({ inquiry, missingAnswer, missingDocs, isOpen }) => (
+            <Card
+              key={inquiry.recordId}
+              className="hover:shadow-lg hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50 transition-all cursor-pointer"
+              style={{ transitionProperty: 'box-shadow, transform, border-color' }}
+              onClick={() => onSelect(inquiry)}
+            >
+              <CardHeader className="pb-2">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <CardTitle className="text-xl text-gray-900">{inquiry.supplier}</CardTitle>
+                    <p className="text-sm text-gray-600">{inquiry.question}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 justify-end">
+                    {isOpen ? (
+                      <span className="rounded-full bg-amber-100 text-amber-800 px-3 py-1 text-xs font-semibold">
+                        פתוח
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-green-100 text-green-800 px-3 py-1 text-xs font-semibold">
+                        סגור
+                      </span>
+                    )}
+                    {missingAnswer && (
+                      <span className="rounded-full bg-red-100 text-red-700 px-3 py-1 text-xs font-semibold">
+                        חסר מענה
+                      </span>
+                    )}
+                    {missingDocs && (
+                      <span className="rounded-full bg-orange-100 text-orange-800 px-3 py-1 text-xs font-semibold">
+                        חסר מסמך
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-700">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">תאריך:</span>
+                    <span>{formatDate(inquiry.date)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">מסמכים:</span>
+                    <span>{inquiry.docs?.length || 0}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">אסמ:</span>
+                    <span>{inquiry.asm}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">חובה:</span>
+                    <span>{formatCurrency(inquiry.hova)} ₪</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">זכות:</span>
+                    <span>{formatCurrency(inquiry.prev ?? '')} ₪</span>
+                  </div>
+                </div>
+                <p className="text-gray-800 text-sm leading-relaxed line-clamp-2">{inquiry.details}</p>
+                <div className="flex justify-end">
+                  <Button variant="outline">פתח</Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

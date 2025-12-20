@@ -575,7 +575,7 @@ export default function UpdateInquiriesPage() {
             type="button"
             onClick={() => setShowYearlyForm(true)}
           >
-            בירורים כלליים&gt;&gt;
+            בירורים כלליים
           </button>
         </nav>
 

@@ -6,13 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 interface EmployersSidebarProps {
   activeView?: ViewType | null;
   onViewChange: (view: ViewType) => void;
-  suppliers: string[];
-  selectedSupplier: string | null;
-  onSupplierSelect: (supplier: string) => void;
   onShowYearlyForm: () => void;
   notificationCounts?: {
     'monthly-report'?: number;
     'vacations'?: number;
+    'pending-inquiries'?: number;
   };
   yearlyInquiriesCount?: number;
 }
@@ -53,15 +51,12 @@ const navigationItems = [
 export default function EmployersSidebar({
   activeView,
   onViewChange,
-  suppliers,
-  selectedSupplier,
-  onSupplierSelect,
   onShowYearlyForm,
   notificationCounts,
   yearlyInquiriesCount,
 }: EmployersSidebarProps) {
   return (
-    <div className="w-60 space-y-6">
+    <div className="w-72 space-y-6">
       {/* בירורים Section */}
       <Card className="shadow-sm">
         <CardHeader>
@@ -70,34 +65,37 @@ export default function EmployersSidebar({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {suppliers.map((supplier) => (
-              <Button
-                key={supplier}
-                onClick={() => onSupplierSelect(supplier)}
-                variant={selectedSupplier === supplier ? "default" : "ghost"}
-                className={`w-full flex items-center justify-start gap-4 px-4 py-3 h-auto text-black ${selectedSupplier === supplier
-                    ? 'bg-purple-100 border border-purple-300 hover:bg-purple-200'
-                    : 'bg-white hover:bg-purple-50'
-                  }`}
-                dir="rtl"
-              >
-                <span className="font-medium text-base whitespace-normal break-words text-right">{supplier}</span>
-              </Button>
-            ))}
-          </div>
+          <Button
+            onClick={() => onViewChange('pending-inquiries')}
+            variant={activeView === 'pending-inquiries' ? "default" : "ghost"}
+            className={`w-full grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-3 h-auto text-black mb-3 ${activeView === 'pending-inquiries'
+                ? 'bg-purple-100 border border-purple-300 hover:bg-purple-200'
+                : 'bg-white hover:bg-purple-50'
+              }`}
+            dir="rtl"
+          >
+            <span className="font-medium text-base text-right whitespace-normal break-words">
+              📂 בירורי הנהלת חשבונות
+            </span>
+            <span className="rounded-full bg-red-500 text-white text-xs font-bold h-5 min-w-5 px-2 flex items-center justify-center flex-shrink-0">
+              {notificationCounts?.['pending-inquiries'] ?? 0}
+            </span>
+          </Button>
+          <div className="border-t-4 border-gray-400 my-4" />
           <Button
             onClick={onShowYearlyForm}
             variant="ghost"
-            className="w-full flex items-center justify-start gap-4 px-4 py-3 h-auto text-black bg-white hover:bg-purple-50"
+            className="w-full grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-3 h-auto text-black bg-white hover:bg-purple-50"
             dir="rtl"
           >
-            <span className="font-medium text-base">
-              בירורים כלליים&gt;&gt;
-              {yearlyInquiriesCount !== undefined && (
-                <span className="mr-2 text-gray-600">({yearlyInquiriesCount})</span>
-              )}
+            <span className="font-medium text-base text-right whitespace-normal break-words">
+              📑 בירורים כלליים
             </span>
+            {yearlyInquiriesCount !== undefined && (
+              <span className="rounded-full bg-red-500 text-white text-xs font-bold h-5 min-w-5 px-2 flex items-center justify-center flex-shrink-0">
+                {yearlyInquiriesCount}
+              </span>
+            )}
           </Button>
         </CardContent>
       </Card>

@@ -2,13 +2,13 @@
 
 import { SignedIn, SignedOut, UserButton, useUser } from '@clerk/nextjs';
 import Link from 'next/link';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import AddEmployee from '@/components/employee/components/AddEmployee';
 import EmployeeRecognition from '@/components/employee/components/EmployeeRecognition';
 import PaySlip from '@/components/employee/components/PaySlip';
 import Vacations from '@/components/employee/components/Vacations';
 import EmployersSidebar from '@/components/employee/components/EmployersSidebar';
-import { ColumnSettingsType, ViewType, Employee, ApiResponse, LeavingReason, DynamicColumnSettings, InquiryData, Period } from '@/lib/types';
+import { ColumnSettingsType, ViewType, Employee, ApiResponse, LeavingReason, DynamicColumnSettings, InquiryData, Period, MonthlyInquiry } from '@/lib/types';
 import { fetchMonthlyEmployeesData, updateColumnSetting } from '@/lib/utils';
 import Image from 'next/image';
 import MonthlyReport from '@/components/employee/components/MonthlyReport';
@@ -17,10 +17,12 @@ import AdminDropdown from '@/components/employee/components/AdminDropdown';
 import PeriodDropdown from '@/components/employee/components/PeriodDropdown';
 import SupplierTable from '@/components/inquiries/components/SupplierTable';
 import DocumentUpload from '@/components/employee/components/DocumentUpload';
+import PendingInquiriesList from '@/components/inquiries/components/PendingInquiriesList';
+import InquiryDetail from '@/components/inquiries/components/InquiryDetail';
 
 export default function EmployeesPage() {
   const { user, isLoaded } = useUser();
-  const [activeView, setActiveView] = useState<ViewType | null>(null);
+  const [activeView, setActiveView] = useState<ViewType | null>('pending-inquiries');
   const [columnSettings, setColumnSettings] = useState<ColumnSettingsType>({
     travel: true,
     competition: true,
@@ -34,10 +36,20 @@ export default function EmployeesPage() {
   const [loading, setLoading] = useState(false);
   const [apiResponse, setApiResponse] = useState<ApiResponse | null>(null);
   const [leavingReasons, setLeavingReasons] = useState<LeavingReason[]>([]);
-  const [suppliers, setSuppliers] = useState<string[]>(['הכל']);
   const [selectedSupplier, setSelectedSupplier] = useState<string | null>('הכל');
   const [showYearlyForm, setShowYearlyForm] = useState<boolean>(false);
   const [inquiryData, setInquiryData] = useState<InquiryData | null>(null);
+  const monthlyInquiries = useMemo(() => inquiryData?.monthly || [], [inquiryData]);
+  const pendingOpenCount = useMemo(
+    () =>
+      monthlyInquiries.filter(
+        (item) =>
+          !item.answer ||
+          item.answer.trim().length === 0 ||
+          (item.isDocMandatory && (!item.docs || item.docs.length === 0))
+      ).length,
+    [monthlyInquiries]
+  );
   const [changeTime, setChangeTime] = useState<string>('');
   const [employeerName, setEmployeerName] = useState<string>('');
   const [selectedEmployerEmail, setSelectedEmployerEmail] = useState<string | null>(null);
@@ -48,7 +60,14 @@ export default function EmployeesPage() {
   const [notificationCounts, setNotificationCounts] = useState<{
     'monthly-report'?: number;
     'vacations'?: number;
+    'pending-inquiries'?: number;
   }>({});
+  const [selectedInquiry, setSelectedInquiry] = useState<MonthlyInquiry | null>(null);
+  const inquiryIndex = selectedInquiry
+    ? monthlyInquiries.findIndex((item) => item.recordId === selectedInquiry.recordId)
+    : -1;
+  const hasPrevInquiry = inquiryIndex > 0;
+  const hasNextInquiry = inquiryIndex >= 0 && inquiryIndex < monthlyInquiries.length - 1;
 
   const loadEmployeeData = useCallback(async () => {
     if (isLoaded && user?.emailAddresses?.[0]?.emailAddress) {
@@ -131,10 +150,7 @@ export default function EmployeesPage() {
             const data: InquiryData = await res.json();
             console.log('Inquiry data', data);
             setInquiryData(data);
-            if (data?.monthly) {
-              const uniqueSuppliers = ['הכל', ...new Set(data.monthly.map((item) => item.supplier))];
-              setSuppliers(uniqueSuppliers as string[]);
-            }
+          // suppliers handled inside pending view; no state needed here
             setEmployeerName(data.employer);
           } else {
             console.error('Failed to fetch inquiry data');
@@ -237,17 +253,58 @@ export default function EmployeesPage() {
     }
   };
 
-  const handleSupplierSelect = (supplier: string) => {
-    setSelectedSupplier(supplier);
-    setShowYearlyForm(false);
-    setActiveView(null);
-  };
-
   const handleShowYearlyForm = () => {
     setShowYearlyForm(true);
     setSelectedSupplier(null);
     setActiveView(null);
   };
+
+  const handleInquirySelect = useCallback((inquiry: MonthlyInquiry) => {
+    setSelectedInquiry(inquiry);
+    setActiveView('inquiry-detail');
+  }, []);
+
+  const handleInquiryUpdate = useCallback(
+    (updatedInquiry: MonthlyInquiry, resolved?: boolean) => {
+      setInquiryData((prev) => {
+        if (!prev) return prev;
+        const updatedMonthly = prev.monthly.map((item) =>
+          item.recordId === updatedInquiry.recordId ? updatedInquiry : item
+        );
+        return { ...prev, monthly: updatedMonthly };
+      });
+
+      if (resolved) {
+        const idx = monthlyInquiries.findIndex((item) => item.recordId === updatedInquiry.recordId);
+        const nextCandidate =
+          (idx >= 0 && monthlyInquiries[idx + 1]) ||
+          (idx > 0 && monthlyInquiries[idx - 1]) ||
+          null;
+        if (nextCandidate) {
+          setSelectedInquiry(nextCandidate);
+        } else {
+          setSelectedInquiry(null);
+          setActiveView('pending-inquiries');
+        }
+      } else {
+        setSelectedInquiry(updatedInquiry);
+      }
+    },
+    [monthlyInquiries]
+  );
+
+  const handleInquiryNavigate = useCallback(
+    (direction: 'prev' | 'next') => {
+      if (!selectedInquiry) return;
+      const source = monthlyInquiries;
+      const idx = source.findIndex((i) => i.recordId === selectedInquiry.recordId);
+      if (idx === -1) return;
+      const nextIdx = direction === 'next' ? idx + 1 : idx - 1;
+      if (nextIdx < 0 || nextIdx >= source.length) return;
+      setSelectedInquiry(source[nextIdx]);
+    },
+    [monthlyInquiries, selectedInquiry]
+  );
 
   const handlePeriodSelect = (periodId: string) => {
     setSelectedPeriodId(periodId);
@@ -310,7 +367,9 @@ export default function EmployeesPage() {
   useEffect(() => {
     const updateNotificationCounts = async () => {
       if (!apiResponse?.recordId) {
-        setNotificationCounts({});
+        setNotificationCounts({
+          'pending-inquiries': pendingOpenCount,
+        });
         return;
       }
 
@@ -321,12 +380,13 @@ export default function EmployeesPage() {
 
       setNotificationCounts({
         'monthly-report': monthlyReportCount,
-        'vacations': vacationsCount
+        'vacations': vacationsCount,
+        'pending-inquiries': pendingOpenCount,
       });
     };
 
     updateNotificationCounts();
-  }, [apiResponse, calculateMonthlyReportMissing, calculateVacationsCount]);
+  }, [apiResponse, calculateMonthlyReportMissing, calculateVacationsCount, pendingOpenCount]);
 
   const renderMainContent = () => {
     if (loading) {
@@ -347,7 +407,7 @@ export default function EmployeesPage() {
       return <YearlyForm yearlyData={inquiryData?.general} employer={inquiryData?.employer} recordId={recordIdToUse} />;
     }
 
-    if (selectedSupplier) {
+    if (selectedSupplier && selectedSupplier !== 'הכל' && activeView !== 'pending-inquiries') {
       return <SupplierTable supplierId={selectedSupplier} employer={inquiryData?.employer} monthlyData={inquiryData?.monthly} recordId={recordIdToUse} />;
     }
 
@@ -367,6 +427,33 @@ export default function EmployeesPage() {
         return <Vacations recordId={recordIdToUse || ''} />;
       case 'document-upload':
         return <DocumentUpload employees={employees} recordId={recordIdToUse || ''} />;
+      case 'pending-inquiries':
+        return (
+          <PendingInquiriesList
+            inquiries={monthlyInquiries}
+            employer={inquiryData?.employer}
+            onSelect={handleInquirySelect}
+            activeSupplier={selectedSupplier}
+            recordId={recordIdToUse || ''}
+          />
+        );
+      case 'inquiry-detail':
+        if (!selectedInquiry) {
+          return <div className="text-center text-gray-700">בחרו בירור מהרשימה כדי לצפות בפרטים</div>;
+        }
+        return (
+          <InquiryDetail
+            inquiry={selectedInquiry}
+            employer={inquiryData?.employer}
+            recordId={recordIdToUse || ''}
+            onBack={() => setActiveView('pending-inquiries')}
+            onUpdate={handleInquiryUpdate}
+            onPrev={() => handleInquiryNavigate('prev')}
+            onNext={() => handleInquiryNavigate('next')}
+            hasPrev={hasPrevInquiry}
+            hasNext={hasNextInquiry}
+          />
+        );
       default:
         return <MonthlyReport key={`monthly-report-${selectedPeriodId || 'default'}`} {...{ columnSettings, onColumnToggle: toggleColumn, dynamicColumnSettings, onDynamicColumnToggle: toggleDynamicColumn, apiResponse, clientRecordId: recordIdToUse || '', onRefetchData: loadEmployeeData, selectedPeriodStatus }} />;
     }
@@ -452,10 +539,8 @@ export default function EmployeesPage() {
                   setActiveView(view);
                   setSelectedSupplier(null);
                   setShowYearlyForm(false);
+                  setSelectedInquiry(null);
                 }}
-                suppliers={suppliers}
-                selectedSupplier={loading ? null : selectedSupplier}
-                onSupplierSelect={handleSupplierSelect}
                 onShowYearlyForm={handleShowYearlyForm}
                 notificationCounts={notificationCounts}
                 yearlyInquiriesCount={inquiryData?.general?.length || 0}
