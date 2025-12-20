@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { useEffect, useMemo, useState } from 'react';
-import { MonthlyInquiry } from '@/lib/types';
+import { MonthlyInquiry, Docs } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,6 +39,9 @@ export default function InquiryDetail({
   const [selectedDocIndex, setSelectedDocIndex] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [viewMode, setViewMode] = useState<'loading' | 'image' | 'pdf' | 'gview' | 'error'>('loading');
+  const [previewFiles, setPreviewFiles] = useState<Docs[]>([]);
+  const hasMultipleDocs = previewFiles.length > 1;
+  const isNewDoc = (doc: Docs) => doc.url?.startsWith('blob:');
 
   const meta = useMemo(() => {
     const missingAnswer = inquiry.isTextMandatory && (!answer || answer.trim().length === 0);
@@ -48,7 +51,7 @@ export default function InquiryDetail({
     return { missingAnswer, missingDocs, isOpen };
   }, [answer, inquiry, newFiles]);
 
-  const selectedDoc = inquiry.docs?.[selectedDocIndex];
+  const selectedDoc = previewFiles[selectedDocIndex];
   const formattedDate = new Date(inquiry.date).toLocaleDateString('he-IL');
 
   useEffect(() => {
@@ -56,13 +59,74 @@ export default function InquiryDetail({
   }, [inquiry.recordId]);
 
   useEffect(() => {
+    const baseDocs = inquiry.docs || [];
+    const blobDocs = newFiles.map((file) => {
+      const key = `${file.name}-${file.size}-${file.lastModified}`;
+      return {
+        id: key,
+        filename: file.name,
+        url: URL.createObjectURL(file),
+        type: file.type,
+      };
+    });
+    setPreviewFiles([...baseDocs, ...blobDocs]);
+    setSelectedDocIndex(0);
+    return () => {
+      blobDocs.forEach((doc) => {
+        if (doc.url && doc.url.startsWith('blob:')) {
+          URL.revokeObjectURL(doc.url);
+        }
+      });
+    };
+  }, [inquiry.docs, inquiry.recordId, newFiles]);
+
+  useEffect(() => {
+    if (selectedDocIndex >= previewFiles.length) {
+      setSelectedDocIndex(previewFiles.length > 0 ? previewFiles.length - 1 : 0);
+    }
+  }, [selectedDocIndex, previewFiles.length]);
+
+  const handleDocNavigate = (direction: 'prev' | 'next') => {
+    if (previewFiles.length === 0) return;
+    setSelectedDocIndex((prev) => {
+      const next =
+        direction === 'next'
+          ? (prev + 1) % previewFiles.length
+          : (prev - 1 + previewFiles.length) % previewFiles.length;
+      return next;
+    });
+  };
+
+  const handleRemoveDoc = () => {
+    const doc = previewFiles[selectedDocIndex];
+    if (!doc || !isNewDoc(doc)) return; // only allow removing newly added files
+    // Revoke blob URL
+    if (doc.url && doc.url.startsWith('blob:')) {
+      URL.revokeObjectURL(doc.url);
+    }
+    // Remove from newFiles state
+    const docKey = doc.id || doc.filename || '';
+    setNewFiles((prev) =>
+      prev.filter((f) => `${f.name}-${f.size}-${f.lastModified}` !== docKey && f.name !== doc.filename)
+    );
+    // Remove from preview list
+    setPreviewFiles((prev) => prev.filter((_, idx) => idx !== selectedDocIndex));
+    setSelectedDocIndex((prev) => (prev > 0 ? prev - 1 : 0));
+  };
+
+  useEffect(() => {
     const url = selectedDoc?.url || selectedDoc?.file;
     if (!url) {
       setViewMode('error');
       return;
     }
+    const mime = (selectedDoc?.type || '').toLowerCase();
     const cleanUrl = url.split('?')[0].toLowerCase();
-    if (cleanUrl.endsWith('.pdf')) {
+    if (mime.startsWith('image/')) {
+      setViewMode('image');
+    } else if (mime.includes('pdf')) {
+      setViewMode('pdf');
+    } else if (cleanUrl.endsWith('.pdf')) {
       setViewMode('pdf');
     } else if (/\.(jpg|jpeg|png|gif|webp|svg)$/.test(cleanUrl)) {
       setViewMode('image');
@@ -75,12 +139,24 @@ export default function InquiryDetail({
   }, [selectedDoc]);
 
   const handleImageError = () => {
-    setViewMode((prev) => (prev === 'image' ? 'gview' : 'error'));
+    setViewMode('error');
   };
 
   const handleFileChange = (files: FileList | null) => {
     if (!files) return;
-    setNewFiles(Array.from(files));
+    const incoming = Array.from(files);
+    setNewFiles((prev) => {
+      const merged = [...prev, ...incoming];
+      const seen = new Set<string>();
+      const unique: File[] = [];
+      merged.forEach((f) => {
+        const key = `${f.name}-${f.size}-${f.lastModified}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        unique.push(f);
+      });
+      return unique;
+    });
   };
 
   const isResolved = () => {
@@ -197,6 +273,9 @@ export default function InquiryDetail({
               <ChevronLeft className="w-5 h-5" />
             </Button>
           </div>
+          <Button onClick={handleSave} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700 text-white">
+            {isSaving ? 'שומר...' : 'שמירת בירור'}
+          </Button>
           <Button variant="outline" onClick={onBack}>
             חזרה
           </Button>
@@ -313,7 +392,29 @@ export default function InquiryDetail({
 
         <Card className="lg:col-span-2 h-full">
           <CardHeader>
-            <CardTitle className="text-lg text-gray-900">תצוגת קבצים</CardTitle>
+            <div className="flex items-center justify-between gap-3">
+              <CardTitle className="text-lg text-gray-900">תצוגת קבצים</CardTitle>
+              <div className="flex items-center gap-2">
+                {hasMultipleDocs && (
+                  <>
+                    <Button variant="ghost" size="icon" onClick={() => handleDocNavigate('prev')}>
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                    <span className="text-sm text-gray-600">
+                      {selectedDocIndex + 1}/{previewFiles.length}
+                    </span>
+                    <Button variant="ghost" size="icon" onClick={() => handleDocNavigate('next')}>
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                  </>
+                )}
+                {selectedDoc && isNewDoc(selectedDoc) && (
+                  <Button variant="destructive" size="sm" onClick={handleRemoveDoc}>
+                    הסר קובץ
+                  </Button>
+                )}
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             {selectedDoc ? (
