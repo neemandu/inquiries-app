@@ -57,11 +57,18 @@ export default function EmployeesPage() {
     'pending-inquiries'?: number;
   }>({});
   const [selectedInquiry, setSelectedInquiry] = useState<MonthlyInquiry | null>(null);
+  const navigationSource = useMemo(
+    () =>
+      selectedInquiry
+        ? monthlyInquiries.filter((item) => item.supplier === selectedInquiry.supplier)
+        : monthlyInquiries,
+    [monthlyInquiries, selectedInquiry?.supplier]
+  );
   const inquiryIndex = selectedInquiry
-    ? monthlyInquiries.findIndex((item) => item.recordId === selectedInquiry.recordId)
+    ? navigationSource.findIndex((item) => item.recordId === selectedInquiry.recordId)
     : -1;
   const hasPrevInquiry = inquiryIndex > 0;
-  const hasNextInquiry = inquiryIndex >= 0 && inquiryIndex < monthlyInquiries.length - 1;
+  const hasNextInquiry = inquiryIndex >= 0 && inquiryIndex < navigationSource.length - 1;
 
   const loadEmployeeData = useCallback(async () => {
     if (isLoaded && user?.emailAddresses?.[0]?.emailAddress) {
@@ -274,10 +281,11 @@ export default function EmployeesPage() {
       });
 
       if (resolved) {
-        const idx = monthlyInquiries.findIndex((item) => item.recordId === updatedInquiry.recordId);
+        const source = monthlyInquiries.filter((item) => item.supplier === updatedInquiry.supplier);
+        const idx = source.findIndex((item) => item.recordId === updatedInquiry.recordId);
         const nextCandidate =
-          (idx >= 0 && monthlyInquiries[idx + 1]) ||
-          (idx > 0 && monthlyInquiries[idx - 1]) ||
+          (idx >= 0 && source[idx + 1]) ||
+          (idx > 0 && source[idx - 1]) ||
           null;
         if (nextCandidate) {
           setSelectedInquiry(nextCandidate);
@@ -295,14 +303,14 @@ export default function EmployeesPage() {
   const handleInquiryNavigate = useCallback(
     (direction: 'prev' | 'next') => {
       if (!selectedInquiry) return;
-      const source = monthlyInquiries;
+      const source = navigationSource;
       const idx = source.findIndex((i) => i.recordId === selectedInquiry.recordId);
       if (idx === -1) return;
       const nextIdx = direction === 'next' ? idx + 1 : idx - 1;
       if (nextIdx < 0 || nextIdx >= source.length) return;
       setSelectedInquiry(source[nextIdx]);
     },
-    [monthlyInquiries, selectedInquiry]
+    [navigationSource, selectedInquiry]
   );
 
   const handlePeriodSelect = (periodId: string) => {
