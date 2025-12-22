@@ -54,28 +54,33 @@ export default function PendingInquiriesList({
   }, [enriched]);
 
   const supplierList = useMemo(() => {
-    const entries = Array.from(supplierStats.entries()).map(([name, data]) => ({
+    const baseEntries = Array.from(supplierStats.entries()).map(([name, data]) => ({
       name,
       open: data.open,
     }));
-    entries.sort((a, b) => {
+
+    const term = searchTerm.trim().toLowerCase();
+    const filtered =
+      term.length > 0
+        ? baseEntries.filter((entry) => entry.name.toLowerCase().includes(term))
+        : baseEntries;
+
+    filtered.sort((a, b) => {
       if (b.open !== a.open) return b.open - a.open;
       return a.name.localeCompare(b.name);
     });
-    const totalOpen = entries.reduce((sum, item) => sum + item.open, 0);
-    return [{ name: 'הכל', open: totalOpen }, ...entries];
-  }, [supplierStats]);
+    const totalOpen = filtered.reduce((sum, item) => sum + item.open, 0);
+    return [{ name: 'הכל', open: totalOpen }, ...filtered];
+  }, [supplierStats, searchTerm]);
 
   useEffect(() => {
     const supplierNames = supplierList.map((s) => s.name);
     if (activeSupplier && supplierNames.includes(activeSupplier)) {
       setSupplierFilter(activeSupplier);
       setStatusFilter('all');
-      setSearchTerm('');
     } else if (!activeSupplier) {
       setSupplierFilter('הכל');
       setStatusFilter('all');
-      setSearchTerm('');
     }
   }, [activeSupplier, supplierList]);
 
@@ -163,6 +168,17 @@ export default function PendingInquiriesList({
           </div>
         </div>
         {viewMode === 'list' && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <Input
+              placeholder="חיפוש לפי ספק, נושא או תיאור"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="col-span-1 md:col-span-3 border-2 border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+        )}
+
+        {viewMode === 'list' && (
           <div className="flex flex-wrap gap-2">
             {supplierList.map((supplier) => (
               <Button
@@ -183,12 +199,6 @@ export default function PendingInquiriesList({
 
         {viewMode === 'list' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <Input
-              placeholder="חיפוש לפי ספק, נושא או תיאור"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="col-span-1 md:col-span-2"
-            />
             <div className="flex gap-3">
               <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
                 <SelectTrigger className="w-full">
