@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 import FileUploadComponent from './FileUploadComponent';
 import { MonthlyInquiry } from '@/lib/types';
 import { toBase64 } from '@/lib/utils';
@@ -22,10 +23,59 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  const [sortKey, setSortKey] = useState<
+    'supplier' | 'asm' | 'asm2' | 'date' | 'details' | 'hova' | 'prev' | 'question' | 'answer'
+  >('date');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
   const filteredData = supplierId === 'הכל'
     ? monthlyData
     : monthlyData?.filter(item => item.supplier === supplierId);
+
+  const sortedData = React.useMemo(() => {
+    if (!filteredData) return filteredData;
+    const getVal = (item: MonthlyInquiry) => {
+      switch (sortKey) {
+        case 'supplier': return item.supplier || '';
+        case 'asm': return item.asm || '';
+        case 'asm2': return item.asm2 || '';
+        case 'date': return new Date(item.date).getTime() || 0;
+        case 'details': return item.details || '';
+        case 'hova': return Number(String(item.hova).replace(/,/g, '')) || 0;
+        case 'prev': return Number(String(item.prev ?? '').replace(/,/g, '')) || 0;
+        case 'question': return item.question || '';
+        case 'answer': return answers[`${item.recordId}`] || '';
+        default: return '';
+      }
+    };
+    return [...filteredData].sort((a, b) => {
+      const va = getVal(a);
+      const vb = getVal(b);
+      if (typeof va === 'number' && typeof vb === 'number') {
+        return sortDir === 'asc' ? va - vb : vb - va;
+      }
+      const sa = String(va).toLowerCase();
+      const sb = String(vb).toLowerCase();
+      if (sa < sb) return sortDir === 'asc' ? -1 : 1;
+      if (sa > sb) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [filteredData, sortDir, sortKey, answers]);
+
+  const handleSort = (key: typeof sortKey) => {
+    setSortDir((prevDir) => (sortKey === key ? (prevDir === 'asc' ? 'desc' : 'asc') : 'asc'));
+    setSortKey(key);
+  };
+
+  const renderSortIcon = (key: typeof sortKey) => {
+    const active = sortKey === key;
+    return (
+      <span className="flex flex-col leading-none text-gray-400">
+        <ChevronUp className={`w-3 h-3 ${active && sortDir === 'asc' ? 'text-blue-600' : ''}`} />
+        <ChevronDown className={`w-3 h-3 ${active && sortDir === 'desc' ? 'text-blue-600' : ''}`} />
+      </span>
+    );
+  };
 
   // Populate initial answers from data
   useEffect(() => {
@@ -191,20 +241,65 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
         <table className="supplier-table">
           <thead>
             <tr>
-              <th>שם ספק</th>
-              <th>אסמ.</th>
-              <th>אסמ. 2</th>
-              <th>תאריך</th>
-              <th>פרטים</th>
-              <th>חובה</th>
-              <th>זכות</th>
-              <th>שאלות</th>
-              <th>תשובה מילולית</th>
+              <th className="cursor-pointer" onClick={() => handleSort('supplier')}>
+                <div className="flex items-center gap-1">
+                  שם ספק
+                  {renderSortIcon('supplier')}
+                </div>
+              </th>
+              <th className="cursor-pointer" onClick={() => handleSort('asm')}>
+                <div className="flex items-center gap-1">
+                  אסמ.
+                  {renderSortIcon('asm')}
+                </div>
+              </th>
+              <th className="cursor-pointer" onClick={() => handleSort('asm2')}>
+                <div className="flex items-center gap-1">
+                  אסמ. 2
+                  {renderSortIcon('asm2')}
+                </div>
+              </th>
+              <th className="cursor-pointer" onClick={() => handleSort('date')}>
+                <div className="flex items-center gap-1">
+                  תאריך
+                  {renderSortIcon('date')}
+                </div>
+              </th>
+              <th className="cursor-pointer" onClick={() => handleSort('details')}>
+                <div className="flex items-center gap-1">
+                  פרטים
+                  {renderSortIcon('details')}
+                </div>
+              </th>
+              <th className="cursor-pointer" onClick={() => handleSort('hova')}>
+                <div className="flex items-center gap-1">
+                  חובה
+                  {renderSortIcon('hova')}
+                </div>
+              </th>
+              <th className="cursor-pointer" onClick={() => handleSort('prev')}>
+                <div className="flex items-center gap-1">
+                  זכות
+                  {renderSortIcon('prev')}
+                </div>
+              </th>
+              <th className="cursor-pointer" onClick={() => handleSort('question')}>
+                <div className="flex items-center gap-1">
+                  שאלות
+                  {renderSortIcon('question')}
+                </div>
+              </th>
+              <th className="cursor-pointer" onClick={() => handleSort('answer')}>
+                <div className="flex items-center gap-1">
+                  תשובה מילולית
+                  {renderSortIcon('answer')}
+                </div>
+              </th>
               <th>מסמכים</th>
             </tr>
           </thead>
           <tbody>
-            {filteredData?.map((item, index) => {
+            {sortedData?.map((item, index) => {
               const key = `${item.recordId}`;
               const isModified = modifiedKeys.has(key);
               return (

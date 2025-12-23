@@ -16,8 +16,8 @@ interface PendingInquiriesListProps {
   recordId?: string;
 }
 
-type StatusFilter = 'open' | 'missing-docs' | 'missing-answer' | 'all';
-type SortOption = 'date-desc' | 'date-asc' | 'supplier' | 'question';
+type StatusFilter = 'missing-docs' | 'missing-answer' | 'all';
+type SortOption = 'date-desc' | 'date-asc' | 'supplier';
 
 export default function PendingInquiriesList({
   inquiries = [],
@@ -27,19 +27,18 @@ export default function PendingInquiriesList({
   recordId,
 }: PendingInquiriesListProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('open');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [sortBy, setSortBy] = useState<SortOption>('date-desc');
   const [supplierFilter, setSupplierFilter] = useState<string>('הכל');
   const [viewMode, setViewMode] = useState<'list' | 'table'>('list');
 
   const enriched = useMemo(() => {
-    // Backend sends only open inquiries; mark all as open
-    return inquiries.map((inquiry) => ({
-      inquiry,
-      missingAnswer: false,
-      missingDocs: false,
-      isOpen: true,
-    }));
+    return inquiries.map((inquiry) => {
+      const missingAnswer =
+        inquiry.isTextMandatory && (!inquiry.answer || inquiry.answer.trim().length === 0);
+      const missingDocs = inquiry.isDocMandatory && (!inquiry.docs || inquiry.docs.length === 0);
+      return { inquiry, missingAnswer, missingDocs, isOpen: true };
+    });
   }, [inquiries]);
 
   const supplierStats = useMemo(() => {
@@ -86,7 +85,7 @@ export default function PendingInquiriesList({
 
   const filtered = useMemo(() => {
     return enriched
-      .filter(({ inquiry, missingAnswer, missingDocs, isOpen }) => {
+      .filter(({ inquiry, missingAnswer, missingDocs }) => {
         if (supplierFilter !== 'הכל' && inquiry.supplier !== supplierFilter) {
           return false;
         }
@@ -102,8 +101,6 @@ export default function PendingInquiriesList({
             return missingAnswer;
           case 'missing-docs':
             return missingDocs;
-          case 'open':
-            return isOpen;
           default:
             return true;
         }
@@ -111,9 +108,6 @@ export default function PendingInquiriesList({
       .sort((a, b) => {
         if (sortBy === 'supplier') {
           return a.inquiry.supplier.localeCompare(b.inquiry.supplier);
-        }
-        if (sortBy === 'question') {
-          return a.inquiry.question.localeCompare(b.inquiry.question);
         }
         const dateA = new Date(a.inquiry.date).getTime();
         const dateB = new Date(b.inquiry.date).getTime();
@@ -205,7 +199,6 @@ export default function PendingInquiriesList({
                   <SelectValue placeholder="סינון" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="open">פתוחים</SelectItem>
                   <SelectItem value="missing-answer">חסר מענה</SelectItem>
                   <SelectItem value="missing-docs">חסרים מסמכים</SelectItem>
                   <SelectItem value="all">הכל</SelectItem>
@@ -219,7 +212,6 @@ export default function PendingInquiriesList({
                   <SelectItem value="date-desc">תאריך (חדש קודם)</SelectItem>
                   <SelectItem value="date-asc">תאריך (ישן קודם)</SelectItem>
                   <SelectItem value="supplier">לפי ספק</SelectItem>
-                  <SelectItem value="question">לפי נושא</SelectItem>
                 </SelectContent>
               </Select>
             </div>

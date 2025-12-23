@@ -62,7 +62,7 @@ export default function EmployeesPage() {
       selectedInquiry
         ? monthlyInquiries.filter((item) => item.supplier === selectedInquiry.supplier)
         : monthlyInquiries,
-    [monthlyInquiries, selectedInquiry?.supplier]
+    [monthlyInquiries, selectedInquiry]
   );
   const inquiryIndex = selectedInquiry
     ? navigationSource.findIndex((item) => item.recordId === selectedInquiry.recordId)
