@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import FileUploadComponent from './FileUploadComponent';
 import { MonthlyInquiry } from '@/lib/types';
 import { toBase64 } from '@/lib/utils';
@@ -27,13 +28,47 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
     'supplier' | 'asm' | 'asm2' | 'date' | 'details' | 'hova' | 'prev' | 'question' | 'answer'
   >('date');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({
+    supplier: '',
+    asm: '',
+    asm2: '',
+    date: '',
+    details: '',
+    hova: '',
+    prev: '',
+    question: '',
+    answer: '',
+  });
 
   const filteredData = supplierId === 'הכל'
     ? monthlyData
     : monthlyData?.filter(item => item.supplier === supplierId);
 
-  const sortedData = React.useMemo(() => {
+  const columnFilteredData = useMemo(() => {
     if (!filteredData) return filteredData;
+    return filteredData.filter((item) => {
+      const answerVal = answers[`${item.recordId}`] || '';
+      const checks: [keyof typeof columnFilters, string][] = [
+        ['supplier', item.supplier || ''],
+        ['asm', item.asm || ''],
+        ['asm2', item.asm2 || ''],
+        ['date', item.date || ''],
+        ['details', item.details || ''],
+        ['hova', String(item.hova ?? '')],
+        ['prev', String(item.prev ?? '')],
+        ['question', item.question || ''],
+        ['answer', answerVal],
+      ];
+      return checks.every(([key, val]) => {
+        const filterVal = columnFilters[key] || '';
+        if (!filterVal) return true;
+        return val.toLowerCase().includes(filterVal.toLowerCase());
+      });
+    });
+  }, [filteredData, columnFilters, answers]);
+
+  const sortedData = useMemo(() => {
+    if (!columnFilteredData) return columnFilteredData;
     const getVal = (item: MonthlyInquiry) => {
       switch (sortKey) {
         case 'supplier': return item.supplier || '';
@@ -48,7 +83,7 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
         default: return '';
       }
     };
-    return [...filteredData].sort((a, b) => {
+    return [...columnFilteredData].sort((a, b) => {
       const va = getVal(a);
       const vb = getVal(b);
       if (typeof va === 'number' && typeof vb === 'number') {
@@ -60,7 +95,7 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
       if (sa > sb) return sortDir === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [filteredData, sortDir, sortKey, answers]);
+  }, [columnFilteredData, sortDir, sortKey, answers]);
 
   const handleSort = (key: typeof sortKey) => {
     setSortDir((prevDir) => (sortKey === key ? (prevDir === 'asc' ? 'desc' : 'asc') : 'asc'));
@@ -240,7 +275,7 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
         <br />
         <table className="supplier-table">
           <thead>
-            <tr>
+            <tr className="sticky top-0 z-10 bg-white">
               <th className="cursor-pointer" onClick={() => handleSort('supplier')}>
                 <div className="flex items-center gap-1">
                   שם ספק
@@ -296,6 +331,81 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
                 </div>
               </th>
               <th>מסמכים</th>
+            </tr>
+            <tr className="sticky top-10 z-10 bg-white">
+              <th>
+                <Input
+                  value={columnFilters.supplier}
+                  onChange={(e) => setColumnFilters((prev) => ({ ...prev, supplier: e.target.value }))}
+                  placeholder="חיפוש ספק"
+                  className="text-sm"
+                />
+              </th>
+              <th>
+                <Input
+                  value={columnFilters.asm}
+                  onChange={(e) => setColumnFilters((prev) => ({ ...prev, asm: e.target.value }))}
+                  placeholder="חיפוש אסמ"
+                  className="text-sm"
+                />
+              </th>
+              <th>
+                <Input
+                  value={columnFilters.asm2}
+                  onChange={(e) => setColumnFilters((prev) => ({ ...prev, asm2: e.target.value }))}
+                  placeholder="חיפוש אסמ 2"
+                  className="text-sm"
+                />
+              </th>
+              <th>
+                <Input
+                  value={columnFilters.date}
+                  onChange={(e) => setColumnFilters((prev) => ({ ...prev, date: e.target.value }))}
+                  placeholder="תאריך"
+                  className="text-sm"
+                />
+              </th>
+              <th>
+                <Input
+                  value={columnFilters.details}
+                  onChange={(e) => setColumnFilters((prev) => ({ ...prev, details: e.target.value }))}
+                  placeholder="פרטים"
+                  className="text-sm"
+                />
+              </th>
+              <th>
+                <Input
+                  value={columnFilters.hova}
+                  onChange={(e) => setColumnFilters((prev) => ({ ...prev, hova: e.target.value }))}
+                  placeholder="חובה"
+                  className="text-sm"
+                />
+              </th>
+              <th>
+                <Input
+                  value={columnFilters.prev}
+                  onChange={(e) => setColumnFilters((prev) => ({ ...prev, prev: e.target.value }))}
+                  placeholder="זכות"
+                  className="text-sm"
+                />
+              </th>
+              <th>
+                <Input
+                  value={columnFilters.question}
+                  onChange={(e) => setColumnFilters((prev) => ({ ...prev, question: e.target.value }))}
+                  placeholder="שאלות"
+                  className="text-sm"
+                />
+              </th>
+              <th>
+                <Input
+                  value={columnFilters.answer}
+                  onChange={(e) => setColumnFilters((prev) => ({ ...prev, answer: e.target.value }))}
+                  placeholder="תשובה"
+                  className="text-sm"
+                />
+              </th>
+              <th />
             </tr>
           </thead>
           <tbody>
