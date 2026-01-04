@@ -30,6 +30,7 @@ interface MonthlyReportProps {
   onHasChangesChange?: (hasChanges: boolean) => void;
   onSaveRefSet?: (saveRef: () => Promise<void>) => void;
   selectedPeriodStatus?: string;
+  onUnsavedNavigation?: (proceed: () => void) => void;
 }
 
 export default function MonthlyReport({ 
@@ -44,7 +45,8 @@ export default function MonthlyReport({
   onDiscardAndNavigate,
   onHasChangesChange,
   onSaveRefSet,
-  selectedPeriodStatus
+  selectedPeriodStatus,
+  onUnsavedNavigation
 }: MonthlyReportProps) {
   const [showSettingsPopup, setShowSettingsPopup] = useState(false);
   const [editableEmployees, setEditableEmployees] = useState<EditableEmployee[]>([]);
@@ -725,6 +727,14 @@ export default function MonthlyReport({
     setSortConfig({ key: columnKey, direction });
   };
 
+  const handleSettingsClick = () => {
+    if (hasUnsavedChanges() && onUnsavedNavigation) {
+      onUnsavedNavigation(() => setShowSettingsPopup(prev => !prev));
+      return;
+    }
+    setShowSettingsPopup(prev => !prev);
+  };
+
   // Render editable cell
   const renderEditableCell = (employee: EditableEmployee, column: { key: string; label: string; show: boolean; isEditable: boolean; type?: string; isFrozen?: boolean }) => {
     if (!column.isEditable) {
@@ -750,6 +760,8 @@ export default function MonthlyReport({
     // Only show red border if it's mandatory AND has no current value AND is not a "הערות" column
     const isMustClass = employeeColumn.isMust && !hasValue && !employeeColumn.name.includes('הערות') ? 'border-red-500 border-2' : '';
     const errorClass = hasError ? 'border-red-500' : '';
+    const isNotesColumn = employeeColumn.name.includes('הערות');
+    const notesTooltip = (employeeColumn.newValue as string) || (employeeColumn.oldValue as string) || '';
 
     if (employeeColumn.type === 'doc') {
       return (
@@ -798,6 +810,33 @@ export default function MonthlyReport({
     }
 
     // String type
+    if (isNotesColumn) {
+      return (
+        <div className="flex flex-col w-full" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+          <textarea
+            value={(employeeColumn.newValue as string) || ''}
+            onChange={(e) => {
+              const el = e.target;
+              el.style.height = 'auto';
+              el.style.height = `${Math.max(el.scrollHeight, 40)}px`;
+              handleCellChange(employee.id, column.key, e.target.value);
+            }}
+            ref={(el) => {
+              if (!el) return;
+              el.style.height = 'auto';
+              el.style.height = `${Math.max(el.scrollHeight, 40)}px`;
+            }}
+            rows={1}
+            className={`w-full max-w-full min-w-0 min-h-10 resize-none whitespace-pre-wrap break-words rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${isMustClass} ${errorClass}`}
+            placeholder={`${employeeColumn.oldValue}`}
+            title={notesTooltip}
+            style={{ wordBreak: 'break-word', overflowWrap: 'anywhere', whiteSpace: 'pre-wrap', overflow: 'hidden' }}
+          />
+          {hasError && <div className="text-xs text-red-500 mt-1 whitespace-normal break-words" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{hasError}</div>}
+        </div>
+      );
+    }
+
     return (
         <div className="flex flex-col w-full" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
           <Input
@@ -837,7 +876,7 @@ export default function MonthlyReport({
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setShowSettingsPopup(!showSettingsPopup)}
+            onClick={handleSettingsClick}
             className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
           >
             <Settings className="w-6 h-6" />

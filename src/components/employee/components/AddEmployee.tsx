@@ -146,8 +146,6 @@ export default function AddEmployee( {recordId, changeTime, link101}: {recordId:
   };
 
   const targetMonth = parseChangeTime(changeTime);
-  const targetYear = targetMonth.getFullYear();
-  const targetMonthIndex = targetMonth.getMonth();
 
   const form = useForm<AddEmployeeFormValues>({
     resolver: zodResolver(addEmployeeSchema),
@@ -173,12 +171,12 @@ export default function AddEmployee( {recordId, changeTime, link101}: {recordId:
       let pensionBase64 = "";
       let workFileBase64 = "";
       
-      if (data.incomeFile instanceof File) {
-        pensionBase64 = await fileToBase64(data.incomeFile);
+      if (data.exemptionFile instanceof File) {
+        pensionBase64 = await fileToBase64(data.exemptionFile);
       }
       
-      if (data.exemptionFile instanceof File) {
-        workFileBase64 = await fileToBase64(data.exemptionFile);
+      if (data.incomeFile instanceof File) {
+        workFileBase64 = await fileToBase64(data.incomeFile);
       }
       
       // Transform data to match API format
@@ -191,12 +189,12 @@ export default function AddEmployee( {recordId, changeTime, link101}: {recordId:
         is101Full: data.form101 === "כן",
         pension: {
           contentType: "application/pdf",
-          file_name: data.incomeFile?.name || "",
+          file_name: data.exemptionFile?.name || "",
           file: pensionBase64
         },
         workFile: {
           contentType: "application/pdf",
-          file_name: data.exemptionFile?.name || "",
+          file_name: data.incomeFile?.name || "",
           file: workFileBase64
         },
         department: data.department || "",
@@ -240,11 +238,6 @@ export default function AddEmployee( {recordId, changeTime, link101}: {recordId:
       return false;
     }
     return !isNaN(date.getTime());
-  }
-
-  // Function to check if a date is within the allowed month/year
-  function isDateInAllowedMonth(date: Date): boolean {
-    return date.getFullYear() === targetYear && date.getMonth() === targetMonthIndex;
   }
 
   const [open, setOpen] = React.useState(false);
@@ -388,7 +381,7 @@ export default function AddEmployee( {recordId, changeTime, link101}: {recordId:
                         onChange={(e) => {
                           const date = new Date(e.target.value);
                           field.onChange(e.target.value);
-                          if (isValidDate(date) && isDateInAllowedMonth(date)) {
+                          if (isValidDate(date)) {
                             setDate(date);
                             setMonth(date);
                           }
@@ -423,22 +416,18 @@ export default function AddEmployee( {recordId, changeTime, link101}: {recordId:
                             captionLayout="dropdown"
                             month={month}
                             onMonthChange={(newMonth) => {
-                              // Only allow navigation within the target month/year
-                              if (newMonth && isDateInAllowedMonth(newMonth)) {
+                              if (newMonth) {
                                 setMonth(newMonth);
                               }
                             }}
                             onSelect={(date) => {
-                              if (date && isDateInAllowedMonth(date)) {
+                              if (date) {
                                 setDate(date);
                                 field.onChange(formatDate(date));
                                 setOpen(false);
                               }
                             }}
-                            disabled={(date) => !isDateInAllowedMonth(date)}
                             defaultMonth={targetMonth}
-                            startMonth={targetMonth}
-                            endMonth={new Date(targetYear, targetMonthIndex, 31)}
                           />
                         </PopoverContent>
                       </Popover>
@@ -510,18 +499,18 @@ export default function AddEmployee( {recordId, changeTime, link101}: {recordId:
 
                   </FormLabel>
                   <FormControl>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <SelectTrigger className="w-[80px]">
-                        <SelectValue placeholder="בחר אפשרות" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="כן">כן</SelectItem>
-                        <SelectItem value="לא">לא</SelectItem>
-                      </SelectContent>
-                    </Select>
+          <Select
+            onValueChange={field.onChange}
+            defaultValue={field.value}
+          >
+            <SelectTrigger className="w-[80px]">
+              <SelectValue placeholder="בחר אפשרות" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="כן">כן</SelectItem>
+              <SelectItem value="לא">לא</SelectItem>
+            </SelectContent>
+          </Select>
                   </FormControl>
                   </div>
                   <FormMessage className="text-right" />
@@ -544,12 +533,13 @@ export default function AddEmployee( {recordId, changeTime, link101}: {recordId:
                         onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
-                        <SelectTrigger className="w-[80px]">
+                        <SelectTrigger className="w-[160px]">
                           <SelectValue placeholder="בחר אפשרות" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="כן">כן</SelectItem>
                           <SelectItem value="לא">לא</SelectItem>
+                          <SelectItem value="בבדיקה">בבדיקה</SelectItem>
                         </SelectContent>
                       </Select>
                     </FormControl>

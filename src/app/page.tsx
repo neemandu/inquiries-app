@@ -19,6 +19,7 @@ import SupplierTable from '@/components/inquiries/components/SupplierTable';
 import DocumentUpload from '@/components/employee/components/DocumentUpload';
 import PendingInquiriesList from '@/components/inquiries/components/PendingInquiriesList';
 import InquiryDetail from '@/components/inquiries/components/InquiryDetail';
+import { Button } from '@/components/ui/button';
 
 export default function EmployeesPage() {
   const { user, isLoaded } = useUser();
@@ -57,6 +58,9 @@ export default function EmployeesPage() {
     'pending-inquiries'?: number;
   }>({});
   const [selectedInquiry, setSelectedInquiry] = useState<MonthlyInquiry | null>(null);
+  const [hasUnsavedMonthlyChanges, setHasUnsavedMonthlyChanges] = useState(false);
+  const [showUnsavedNavModal, setShowUnsavedNavModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const navigationSource = useMemo(
     () =>
       selectedInquiry
@@ -254,12 +258,6 @@ export default function EmployeesPage() {
     }
   };
 
-  const handleShowYearlyForm = () => {
-    setShowYearlyForm(true);
-    setSelectedSupplier(null);
-    setActiveView(null);
-  };
-
   const handleInquirySelect = useCallback((inquiry: MonthlyInquiry) => {
     setSelectedInquiry(inquiry);
     setActiveView('inquiry-detail');
@@ -395,6 +393,56 @@ export default function EmployeesPage() {
     updateNotificationCounts();
   }, [apiResponse, calculateMonthlyReportMissing, calculateVacationsCount, pendingOpenCount]);
 
+  const requestUnsavedConfirmation = useCallback((action: () => void) => {
+    setPendingAction(() => action);
+    setShowUnsavedNavModal(true);
+  }, []);
+
+  const handleProceedAfterConfirm = useCallback(() => {
+    if (pendingAction) {
+      pendingAction();
+    }
+    setPendingAction(null);
+    setShowUnsavedNavModal(false);
+  }, [pendingAction]);
+
+  const handleCancelNavigation = useCallback(() => {
+    setPendingAction(null);
+    setShowUnsavedNavModal(false);
+  }, []);
+
+  const handleGuardedViewChange = useCallback((view: ViewType) => {
+    const performChange = () => {
+      setActiveView(view);
+      setSelectedSupplier(null);
+      setShowYearlyForm(false);
+      setSelectedInquiry(null);
+      setHasUnsavedMonthlyChanges(false);
+    };
+
+    if (activeView === 'monthly-report' && hasUnsavedMonthlyChanges && view !== 'monthly-report') {
+      requestUnsavedConfirmation(performChange);
+      return;
+    }
+
+    performChange();
+  }, [activeView, hasUnsavedMonthlyChanges, requestUnsavedConfirmation]);
+
+  const handleGuardedShowYearlyForm = useCallback(() => {
+    const performChange = () => {
+      setShowYearlyForm(true);
+      setActiveView(null);
+      setHasUnsavedMonthlyChanges(false);
+    };
+
+    if (activeView === 'monthly-report' && hasUnsavedMonthlyChanges) {
+      requestUnsavedConfirmation(performChange);
+      return;
+    }
+
+    performChange();
+  }, [activeView, hasUnsavedMonthlyChanges, requestUnsavedConfirmation]);
+
   const renderMainContent = () => {
     if (loading) {
       return <div dir="rtl" className="flex items-center justify-center h-64"><div className="text-lg text-gray-600">טוען נתונים...</div></div>;
@@ -422,7 +470,9 @@ export default function EmployeesPage() {
       case 'monthly-report':
         return <MonthlyReport key={`monthly-report-${selectedPeriodId || 'default'}`} {...{
           columnSettings, onColumnToggle: toggleColumn, dynamicColumnSettings,
-          onDynamicColumnToggle: toggleDynamicColumn, apiResponse, clientRecordId: recordIdToUse || '', onRefetchData: loadEmployeeData, selectedPeriodStatus
+          onDynamicColumnToggle: toggleDynamicColumn, apiResponse, clientRecordId: recordIdToUse || '', onRefetchData: loadEmployeeData, selectedPeriodStatus,
+          onHasChangesChange: setHasUnsavedMonthlyChanges,
+          onUnsavedNavigation: requestUnsavedConfirmation
         }} />;
       case 'add-employee':
         return <AddEmployee recordId={recordIdToUse || ''} changeTime={changeTime} link101={apiResponse?.link101 || ''} />;
@@ -462,7 +512,7 @@ export default function EmployeesPage() {
           />
         );
       default:
-        return <MonthlyReport key={`monthly-report-${selectedPeriodId || 'default'}`} {...{ columnSettings, onColumnToggle: toggleColumn, dynamicColumnSettings, onDynamicColumnToggle: toggleDynamicColumn, apiResponse, clientRecordId: recordIdToUse || '', onRefetchData: loadEmployeeData, selectedPeriodStatus }} />;
+        return <MonthlyReport key={`monthly-report-${selectedPeriodId || 'default'}`} {...{ columnSettings, onColumnToggle: toggleColumn, dynamicColumnSettings, onDynamicColumnToggle: toggleDynamicColumn, apiResponse, clientRecordId: recordIdToUse || '', onRefetchData: loadEmployeeData, selectedPeriodStatus, onHasChangesChange: setHasUnsavedMonthlyChanges, onUnsavedNavigation: requestUnsavedConfirmation }} />;
     }
   };
 
@@ -542,13 +592,8 @@ export default function EmployeesPage() {
             <div className="w-[220px] mx-6">
               <EmployersSidebar
                 activeView={loading ? undefined : activeView}
-                onViewChange={(view) => {
-                  setActiveView(view);
-                  setSelectedSupplier(null);
-                  setShowYearlyForm(false);
-                  setSelectedInquiry(null);
-                }}
-                onShowYearlyForm={handleShowYearlyForm}
+                onViewChange={handleGuardedViewChange}
+                onShowYearlyForm={handleGuardedShowYearlyForm}
                 notificationCounts={notificationCounts}
                 yearlyInquiriesCount={inquiryData?.general?.length || 0}
               />
@@ -562,6 +607,18 @@ export default function EmployeesPage() {
           </div>
         </SignedOut>
       </main>
+      {showUnsavedNavModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full text-right" dir="rtl">
+            <div className="text-xl font-bold text-gray-900 mb-2">רק רגע! לא שמרתם...</div>
+            <div className="text-gray-700 mb-6">יש שינויים שלא נשמרו. האם להישאר ולשמור או לצאת בכל מקרה?</div>
+            <div className="flex justify-end gap-3">
+              <Button variant="secondary" onClick={handleCancelNavigation}>חזור חזרה</Button>
+              <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={handleProceedAfterConfirm}>צא בכל מקרה</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
