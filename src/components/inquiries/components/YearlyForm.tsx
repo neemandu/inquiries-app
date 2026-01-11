@@ -10,12 +10,16 @@ interface YearlyFormProps {
   yearlyData?: GeneralInquiry[];
   recordId?: string;
   employer?: string;
+  focusIndex?: number | null;
+  focusRecordId?: string | null;
 }
 
 export default function YearlyForm({
   yearlyData,
   recordId,
   employer,
+  focusIndex,
+  focusRecordId,
 }: YearlyFormProps) {
   console.log("Yearly data", yearlyData);
   const [answers, setAnswers] = useState<{ [key: string]: string }>({});
@@ -69,6 +73,22 @@ export default function YearlyForm({
       // Keeping it for now as it might be re-introduced or removed later.
     }
   }, [answers]);
+
+  useEffect(() => {
+    if (focusIndex === null || focusIndex === undefined) return;
+    const target = document.getElementById(`general-inquiry-${focusIndex}`);
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [focusIndex, yearlyData]);
+
+  useEffect(() => {
+    if (!focusRecordId) return;
+    const target = document.getElementById(`general-inquiry-${focusRecordId}`);
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [focusRecordId, yearlyData]);
 
   const handleAnswerChange = (questionKey: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionKey]: value }));
@@ -183,7 +203,7 @@ export default function YearlyForm({
   }
 
   return (
-    <div dir="rtl">
+    <div dir="rtl" className="yearly-form space-y-4">
       <h2>עדכון בירורים עבור: {employer}</h2>
       <div style={{ color: "red", marginBottom: "1rem" }}>
         הערה: ניתן להגיש את הטופס גם אם חלק מהבירורים טרם הושלמו
@@ -193,7 +213,12 @@ export default function YearlyForm({
         {yearlyData.map((item, index) => {
           const questionKey = `${index}-${item.question}`;
           return (
-          <div key={`${item.question}-${index}`} className="yearly-set">
+          <div
+            key={`${item.question}-${index}`}
+            className="yearly-set"
+            id={`general-inquiry-${item.recordId}`}
+            data-index={index}
+          >
               <label>
                 {index + 1}) {item.chen}: {item.question}
                 {item.isTextMandatory && <span className="required">*</span>}
@@ -237,7 +262,7 @@ export default function YearlyForm({
                 <span>אני מאשר/ת שהאחריות על ההצהרה והשלכותיה היא עליי.</span>
               </label>
               </div>
-              <div className="form-group flex items-start gap-4">
+              <div className="form-group flex flex-col gap-3 sm:flex-row sm:items-start">
                 <FileUploadComponent
                   onFilesChange={(newFiles) =>
                     handleFilesChange(questionKey, newFiles)
@@ -282,9 +307,20 @@ export default function YearlyForm({
         )}
       </form>
       <style jsx>{`
+        .yearly-form {
+          width: 100%;
+          max-width: 100%;
+          overflow-x: hidden;
+        }
         .yearly-set {
           margin-bottom: 2rem;
           text-align: right;
+          max-width: 100%;
+        }
+        .yearly-set label {
+          display: block;
+          word-break: break-word;
+          overflow-wrap: anywhere;
         }
         .required {
           color: red;
@@ -293,14 +329,27 @@ export default function YearlyForm({
         }
         .form-group {
           margin-top: 0.5rem;
+          max-width: 100%;
         }
-        input[type="text"] {
+        .form-group :global(.file-upload) {
+          display: block;
+          max-width: 100%;
+        }
+        input[type="text"],
+        select {
           width: 100%;
           max-width: 500px;
           padding: 0.5rem;
           font-size: 1em;
           border: 1px solid #ccc;
           border-radius: 4px;
+          box-sizing: border-box;
+        }
+        @media (max-width: 640px) {
+          input[type="text"],
+          select {
+            max-width: 100%;
+          }
         }
         button[type="submit"] {
           display: block;

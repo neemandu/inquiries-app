@@ -169,6 +169,7 @@ export interface GeneralInquiry {
   remarks: string | null;
   headline: string | null;
   question: string;
+  recordId: string;
   supplier: string;
   isDocMandatory: boolean;
   isTextMandatory: boolean;

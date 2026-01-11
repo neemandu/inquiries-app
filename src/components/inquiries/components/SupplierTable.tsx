@@ -30,6 +30,7 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
   const [pendingForceCloseKey, setPendingForceCloseKey] = useState<string | null>(null);
   const [forceCloseAck, setForceCloseAck] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  const tableScrollRef = useRef<HTMLDivElement>(null);
   const [sortKey, setSortKey] = useState<
     'supplier' | 'asm' | 'asm2' | 'date' | 'details' | 'hova' | 'prev' | 'question' | 'answer'
   >('date');
@@ -102,6 +103,12 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
       return 0;
     });
   }, [columnFilteredData, sortDir, sortKey, answers]);
+
+  useEffect(() => {
+    const el = tableScrollRef.current;
+    if (!el) return;
+    el.scrollLeft = el.scrollWidth;
+  }, [sortedData]);
 
   const handleSort = (key: typeof sortKey) => {
     setSortDir((prevDir) => (sortKey === key ? (prevDir === 'asc' ? 'desc' : 'asc') : 'asc'));
@@ -312,7 +319,8 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
           {modifiedKeys.size === 0 ? 'שלח' : `שלח (${modifiedKeys.size} שינויים)`}
         </button>
         <br />
-        <table className="supplier-table">
+        <div ref={tableScrollRef} className="supplier-table-scroll">
+          <table className="supplier-table">
           <thead>
             <tr className="sticky top-0 z-10 bg-white">
               <th className="cursor-pointer" onClick={() => handleSort('supplier')}>
@@ -520,7 +528,8 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
               );
             })}
           </tbody>
-        </table>
+          </table>
+        </div>
         <button type="submit" disabled={isSubmitting}>
           {modifiedKeys.size === 0 ? 'שלח' : `שלח (${modifiedKeys.size} שינויים)`}
         </button>
@@ -648,6 +657,10 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
           width: 100%;
           border-collapse: collapse;
           margin-bottom: 1rem;
+        }
+        .supplier-table-scroll {
+          width: 100%;
+          overflow-x: auto;
         }
         .supplier-table th,
         .supplier-table td {

@@ -2,7 +2,8 @@
 
 import { SignedIn, SignedOut, UserButton, useUser } from '@clerk/nextjs';
 import Link from 'next/link';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import AddEmployee from '@/components/employee/components/AddEmployee';
 import EmployeeRecognition from '@/components/employee/components/EmployeeRecognition';
 import PaySlip from '@/components/employee/components/PaySlip';
@@ -21,7 +22,7 @@ import PendingInquiriesList from '@/components/inquiries/components/PendingInqui
 import InquiryDetail from '@/components/inquiries/components/InquiryDetail';
 import { Button } from '@/components/ui/button';
 
-export default function EmployeesPage() {
+function EmployeesPageInner() {
   const { user, isLoaded } = useUser();
   const [activeView, setActiveView] = useState<ViewType | null>('pending-inquiries');
   const [columnSettings, setColumnSettings] = useState<ColumnSettingsType>({
@@ -39,7 +40,10 @@ export default function EmployeesPage() {
   const [leavingReasons, setLeavingReasons] = useState<LeavingReason[]>([]);
   const [selectedSupplier, setSelectedSupplier] = useState<string | null>('הכל');
   const [showYearlyForm, setShowYearlyForm] = useState<boolean>(false);
+  const [focusGeneralIndex, setFocusGeneralIndex] = useState<number | null>(null);
+  const [focusGeneralRecordId, setFocusGeneralRecordId] = useState<string | null>(null);
   const [inquiryData, setInquiryData] = useState<InquiryData | null>(null);
+  const [inquiryRecordId, setInquiryRecordId] = useState<string | null>(null);
   const monthlyInquiries = useMemo(() => inquiryData?.monthly || [], [inquiryData]);
   const pendingOpenCount = useMemo(
     () => monthlyInquiries.length,
@@ -62,6 +66,8 @@ export default function EmployeesPage() {
   const [showUnsavedNavModal, setShowUnsavedNavModal] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const searchParams = useSearchParams();
+  const deepLinkHandledRef = useRef(false);
   const navigationSource = useMemo(
     () =>
       selectedInquiry
@@ -74,6 +80,59 @@ export default function EmployeesPage() {
     : -1;
   const hasPrevInquiry = inquiryIndex > 0;
   const hasNextInquiry = inquiryIndex >= 0 && inquiryIndex < navigationSource.length - 1;
+
+  useEffect(() => {
+    if (deepLinkHandledRef.current) return;
+    const inquiryType = searchParams.get('inquiryType');
+    if (!inquiryType) return;
+    const queryRecordId = searchParams.get('recordId');
+    if (queryRecordId && inquiryRecordId && queryRecordId !== inquiryRecordId) return;
+
+    if (inquiryType === 'monthly') {
+      const inquiryId = searchParams.get('inquiryId');
+      if (!inquiryId || monthlyInquiries.length === 0) return;
+      const match = monthlyInquiries.find((item) => item.recordId === inquiryId);
+      if (!match) return;
+      setSelectedInquiry(match);
+      setSelectedSupplier(match.supplier || 'הכל');
+      setShowYearlyForm(false);
+      setActiveView('inquiry-detail');
+      deepLinkHandledRef.current = true;
+      return;
+    }
+
+    if (inquiryType === 'general') {
+      const generalIdParam = searchParams.get('generalId');
+      const legacyIndexParam = searchParams.get('generalIndex');
+      if ((!generalIdParam && !legacyIndexParam) || !inquiryData?.general?.length) return;
+
+      let idx = -1;
+      let resolvedRecordId: string | null = null;
+
+      if (generalIdParam) {
+        idx = inquiryData.general.findIndex((item) => item.recordId === generalIdParam);
+        resolvedRecordId = generalIdParam;
+      } else if (legacyIndexParam) {
+        const numericIndex = Number(legacyIndexParam);
+        if (!Number.isNaN(numericIndex) && numericIndex >= 0 && numericIndex < inquiryData.general.length) {
+          idx = numericIndex;
+          resolvedRecordId = inquiryData.general[numericIndex]?.recordId || null;
+        } else {
+          idx = inquiryData.general.findIndex((item) => item.recordId === legacyIndexParam);
+          resolvedRecordId = legacyIndexParam;
+        }
+      }
+
+      if (idx === -1) return;
+      setSelectedInquiry(null);
+      setSelectedSupplier('??????');
+      setShowYearlyForm(true);
+      setActiveView(null);
+      setFocusGeneralIndex(idx);
+      setFocusGeneralRecordId(resolvedRecordId);
+      deepLinkHandledRef.current = true;
+    }
+  }, [searchParams, monthlyInquiries, inquiryData, inquiryRecordId, setSelectedSupplier]);
 
   const loadEmployeeData = useCallback(async () => {
     if (isLoaded && user?.emailAddresses?.[0]?.emailAddress) {
@@ -146,8 +205,12 @@ export default function EmployeesPage() {
       // For admin users, use selected employer record ID if available, otherwise use apiResponse recordId
       const userEmail = user?.emailAddresses?.[0]?.emailAddress;
       const isAdmin = userEmail?.endsWith('@cpateam.co.il') || userEmail === 'neemandu@gmail.com';
-      const recordIdToUse = isAdmin && selectedEmployerRecordId ? selectedEmployerRecordId : apiResponse?.recordId;
-      
+      const queryRecordId = searchParams.get('recordId');
+      const baseRecordId = apiResponse?.recordId;
+      const recordIdToUse = isAdmin
+        ? (selectedEmployerRecordId || queryRecordId || baseRecordId)
+        : (baseRecordId ? (queryRecordId === baseRecordId ? queryRecordId : baseRecordId) : undefined);
+
       if (recordIdToUse) {
         setLoading(true);
         try {
@@ -156,6 +219,7 @@ export default function EmployeesPage() {
             const data: InquiryData = await res.json();
             console.log('Inquiry data', data);
             setInquiryData(data);
+            setInquiryRecordId(recordIdToUse);
           // suppliers handled inside pending view; no state needed here
             setEmployeerName(data.employer);
           } else {
@@ -169,7 +233,7 @@ export default function EmployeesPage() {
       }
     };
     fetchInquiryData();
-  }, [apiResponse, selectedEmployerRecordId, user]);
+  }, [apiResponse, selectedEmployerRecordId, user, searchParams]);
 
   const toggleDynamicColumn = async (columnNameRecordId: string) => {
     if (!apiResponse) return;
@@ -460,10 +524,23 @@ export default function EmployeesPage() {
       : undefined;
 
     if (showYearlyForm) {
-      return <YearlyForm yearlyData={inquiryData?.general} employer={inquiryData?.employer} recordId={recordIdToUse} />;
+      return (
+        <YearlyForm
+          yearlyData={inquiryData?.general}
+          employer={inquiryData?.employer}
+          recordId={recordIdToUse}
+          focusIndex={focusGeneralIndex}
+          focusRecordId={focusGeneralRecordId}
+        />
+      );
     }
 
-    if (selectedSupplier && selectedSupplier !== 'הכל' && activeView !== 'pending-inquiries') {
+    if (
+      selectedSupplier &&
+      selectedSupplier !== 'הכל' &&
+      activeView !== 'pending-inquiries' &&
+      activeView !== 'inquiry-detail'
+    ) {
       return <SupplierTable supplierId={selectedSupplier} employer={inquiryData?.employer} monthlyData={inquiryData?.monthly} recordId={recordIdToUse} />;
     }
 
@@ -624,4 +701,12 @@ export default function EmployeesPage() {
       )}
     </div>
   );
-} 
+}
+
+export default function EmployeesPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50" />}>
+      <EmployeesPageInner />
+    </Suspense>
+  );
+}

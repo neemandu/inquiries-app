@@ -258,12 +258,12 @@ export default function InquiryDetail({
 
   return (
     <div dir="rtl" className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <h2 className="text-2xl font-bold text-gray-900">{inquiry.supplier}</h2>
           <p className="text-gray-600 text-sm">{employer}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           {meta.isOpen && (
             <span className="rounded-full bg-amber-100 text-amber-800 px-3 py-1 text-xs font-semibold">
               פתוח
@@ -287,10 +287,10 @@ export default function InquiryDetail({
               <ChevronLeft className="w-5 h-5" />
             </Button>
           </div>
-          <Button onClick={handleSave} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700 text-white">
+          <Button onClick={handleSave} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto">
             {isSaving ? 'שומר...' : 'שמירת בירור'}
           </Button>
-          <Button variant="outline" onClick={onBack}>
+          <Button variant="outline" onClick={onBack} className="w-full sm:w-auto">
             חזרה
           </Button>
         </div>
