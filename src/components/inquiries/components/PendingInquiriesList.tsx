@@ -31,6 +31,7 @@ export default function PendingInquiriesList({
   const [sortBy, setSortBy] = useState<SortOption>('date-desc');
   const [supplierFilter, setSupplierFilter] = useState<string>('הכל');
   const [viewMode, setViewMode] = useState<'list' | 'table'>('list');
+  const [forceCloseMap, setForceCloseMap] = useState<Record<string, string>>({});
 
   const enriched = useMemo(() => {
     return inquiries.map((inquiry) => {
@@ -38,6 +39,20 @@ export default function PendingInquiriesList({
         inquiry.isTextMandatory && (!inquiry.answer || inquiry.answer.trim().length === 0);
       const missingDocs = inquiry.isDocMandatory && (!inquiry.docs || inquiry.docs.length === 0);
       return { inquiry, missingAnswer, missingDocs, isOpen: true };
+    });
+  }, [inquiries]);
+
+  useEffect(() => {
+    setForceCloseMap((prev) => {
+      const updated: Record<string, string> = {};
+      inquiries.forEach((inq) => {
+        if (prev.hasOwnProperty(inq.recordId)) {
+          updated[inq.recordId] = prev[inq.recordId];
+        } else {
+          updated[inq.recordId] = inq.forceClose || '';
+        }
+      });
+      return updated;
     });
   }, [inquiries]);
 
@@ -225,6 +240,13 @@ export default function PendingInquiriesList({
           employer={employer}
           monthlyData={inquiries}
           recordId={recordId}
+          forceCloseMap={forceCloseMap}
+          onForceCloseChange={(id, value) =>
+            setForceCloseMap((prev) => ({
+              ...prev,
+              [id]: value,
+            }))
+          }
         />
       ) : pendingCount === 0 ? (
         <Card className="border-dashed border-2 border-gray-200 bg-gray-50">

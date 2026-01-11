@@ -61,6 +61,7 @@ export default function EmployeesPage() {
   const [hasUnsavedMonthlyChanges, setHasUnsavedMonthlyChanges] = useState(false);
   const [showUnsavedNavModal, setShowUnsavedNavModal] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigationSource = useMemo(
     () =>
       selectedInquiry
@@ -570,9 +571,9 @@ export default function EmployeesPage() {
                 />
               )}
             </div>
-          )}
-          
-          <div className="flex h-full">
+        )}
+        
+        <div className="flex h-full">
             <div className="flex-1">
               {/* Regular period display for non-admin users */}
               {isLoaded && user?.emailAddresses?.[0]?.emailAddress && 
@@ -585,17 +586,19 @@ export default function EmployeesPage() {
                   </span>
                 </div>
               )}
-              <div className="flex-1 bg-white rounded-lg border border-gray-200 p-6 shadow-sm max-w-[calc(100vw-320px)]">
+              <div className="flex-1 bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
                 {renderMainContent()}
               </div>
             </div>
-            <div className="w-[220px] mx-6">
+            <div className={`transition-all duration-200 ${isSidebarOpen ? "w-[260px]" : "w-16"} ml-6`}>
               <EmployersSidebar
                 activeView={loading ? undefined : activeView}
                 onViewChange={handleGuardedViewChange}
                 onShowYearlyForm={handleGuardedShowYearlyForm}
                 notificationCounts={notificationCounts}
                 yearlyInquiriesCount={inquiryData?.general?.length || 0}
+                isOpen={isSidebarOpen}
+                onToggle={() => setIsSidebarOpen(prev => !prev)}
               />
             </div>
           </div>

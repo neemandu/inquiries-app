@@ -187,6 +187,7 @@ export default function AddEmployee( {recordId, changeTime, link101}: {recordId:
         tz: data.tz,
         startDate: formatDateToAPI(data.startDate),
         is101Full: data.form101 === "כן",
+        hasActivePension: data.hasActivePension,
         pension: {
           contentType: "application/pdf",
           file_name: data.exemptionFile?.name || "",

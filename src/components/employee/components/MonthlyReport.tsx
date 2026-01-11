@@ -6,7 +6,7 @@ import { ColumnSettingsType, ApiResponse, DynamicColumnSettings, EditableEmploye
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Settings, Save, Upload } from "lucide-react";
+import { Settings, Save, Upload, Search } from "lucide-react";
 import { updateMonthlyEmployeeData } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -65,6 +65,7 @@ export default function MonthlyReport({
   const [showValidationPopup, setShowValidationPopup] = useState(false);
   const [validationIssues, setValidationIssues] = useState<string[]>([]);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+  const [employeeNameFilter, setEmployeeNameFilter] = useState<string>('');
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
   // Load monthly employees data from the apiResponse prop instead of making a new API call
@@ -362,9 +363,19 @@ export default function MonthlyReport({
 
   // Sort employees based on sort configuration
   const getSortedEmployees = useCallback(() => {
-    if (!sortConfig) return editableEmployees;
+    // First filter by employee name if filter is set
+    let filtered = editableEmployees;
+    if (employeeNameFilter.trim()) {
+      filtered = editableEmployees.filter(employee => {
+        const employeeName = getEmployeeName(employee).toLowerCase();
+        return employeeName.includes(employeeNameFilter.toLowerCase().trim());
+      });
+    }
 
-    return [...editableEmployees].sort((a, b) => {
+    // Then sort if sortConfig is set
+    if (!sortConfig) return filtered;
+
+    return [...filtered].sort((a, b) => {
       let aValue: string | number;
       let bValue: string | number;
 
@@ -405,7 +416,7 @@ export default function MonthlyReport({
       }
       return 0;
     });
-  }, [editableEmployees, sortConfig, getEmployeeName]);
+  }, [editableEmployees, sortConfig, getEmployeeName, employeeNameFilter]);
 
   // Generate and download CSV file
   const downloadCSV = useCallback(() => {
@@ -855,10 +866,6 @@ export default function MonthlyReport({
   const columns = getDisplayColumns();
   const visibleColumns = columns.filter(col => col.show);
   
-  // Calculate column width - 20% smaller than original
-  const minColumnWidth = 160; // 20% smaller than 200px
-  const columnWidth = `${minColumnWidth}px`;
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -1129,37 +1136,57 @@ export default function MonthlyReport({
         </div>
       )}
 
+      {/* Employee Name Filter */}
+      <div className="mb-4" dir="rtl">
+        <div className="relative w-full max-w-md">
+          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input
+            type="text"
+            placeholder="חפש לפי שם עובד..."
+            value={employeeNameFilter}
+            onChange={(e) => setEmployeeNameFilter(e.target.value)}
+            className="pr-10 w-full"
+            dir="rtl"
+          />
+        </div>
+      </div>
+
       {/* Table */}
       <Card className="bg-gray-50 w-full max-w-none">
         <CardContent className="p-0">
           <div ref={tableContainerRef} className="overflow-auto w-full h-[calc(100vh-300px)]" style={{ minWidth: '100%' }}>
-            <table className="w-full table-auto" dir="rtl" >
+            <table className="w-full table-fixed" dir="rtl">
               <thead>
                 <tr className="bg-gray-50">
-                  {visibleColumns.map((column) => (
+                  {visibleColumns.map((column) => {
+                    const isNotesColumn = column.label === 'הערות';
+                    return (
                     <th
                       key={column.key}
-                      className={`px-6 py-4 text-right font-medium text-gray-900 border-r border-gray-300 min-w-[128px] cursor-pointer hover:bg-gray-100 transition-colors select-none ${
+                      className={`px-2 py-2 text-right font-medium text-gray-900 border-r border-gray-300 cursor-pointer hover:bg-gray-100 transition-colors select-none ${
                         column.isFrozen ? 'sticky top-0 right-0 bg-gray-50 z-20 border-l-2 border-gray-300 shadow-[4px_0_4px_-2px_rgba(0,0,0,0.1)]' : 'sticky top-0 bg-gray-50 z-10'
                       }`}
                       style={{ 
-                        width: columnWidth,
+                        minWidth: isNotesColumn ? '80px' : '40px',
+                        maxWidth: isNotesColumn ? '80px' : '40px',
+                        width: isNotesColumn ? '80px' : '40px',
                         wordBreak: 'break-word',
                         overflowWrap: 'anywhere',
                         whiteSpace: 'normal'
                       }}
                       onClick={() => handleSort(column.key)}
                     >
-                      <div className="flex items-center justify-center gap-2 whitespace-normal break-words" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
-                        <span style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{column.label}</span>
+                      <div className="flex items-center justify-center gap-2 flex-wrap" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere', whiteSpace: 'normal' }}>
+                        <span style={{ wordBreak: 'break-word', overflowWrap: 'anywhere', whiteSpace: 'normal' }}>{column.label}</span>
                         {sortConfig?.key === column.key && (
-                          <span className="text-sm">
+                          <span className="text-sm flex-shrink-0">
                             {sortConfig.direction === 'asc' ? '↑' : '↓'}
                           </span>
                         )}
                       </div>
                     </th>
-                  ))}
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody>
@@ -1171,7 +1198,18 @@ export default function MonthlyReport({
                     }`}
                   >
                     {visibleColumns.map((column) => {
-                     return (
+                      const isNotesColumn = column.label === 'הערות';
+                      const empCol = employee.columns.find((col: EditableColumn) => col.columnId === column.key);
+                      let tooltipValue = '';
+                      if (empCol) {
+                        const value = empCol.newValue ?? empCol.oldValue ?? '';
+                        if (typeof value === 'object' && value !== null && 'fileName' in value) {
+                          tooltipValue = (value as { fileName: string }).fileName;
+                        } else {
+                          tooltipValue = String(value);
+                        }
+                      }
+                      return (
                         <td
                           key={column.key}
                           className={`px-2 py-2 text-right border-r border-gray-200 whitespace-normal break-words
@@ -1181,6 +1219,15 @@ export default function MonthlyReport({
                                 } shadow-[4px_0_4px_-2px_rgba(0,0,0,0.1)]`
                               : rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'
                             }`}
+                          style={{
+                            minWidth: isNotesColumn ? '0px' : '40px',
+                            maxWidth: isNotesColumn ? 'none' : '40px',
+                            width: isNotesColumn ? 'auto' : '40px',
+                            wordBreak: 'break-word',
+                            overflowWrap: 'anywhere',
+                            whiteSpace: 'normal'
+                          }}
+                          title={tooltipValue}
                         >
                           {renderEditableCell(employee, column)}
                         </td>

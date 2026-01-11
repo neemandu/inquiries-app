@@ -6,6 +6,7 @@ import { MonthlyInquiry, Docs } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toBase64 } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -40,6 +41,8 @@ export default function InquiryDetail({
   const [isSaving, setIsSaving] = useState(false);
   const [viewMode, setViewMode] = useState<'loading' | 'image' | 'pdf' | 'gview' | 'error'>('loading');
   const [previewFiles, setPreviewFiles] = useState<Docs[]>([]);
+  const [forceClose, setForceClose] = useState(inquiry.forceClose || '');
+  const [forceCloseAck, setForceCloseAck] = useState(false);
   const hasMultipleDocs = previewFiles.length > 1;
   const isNewDoc = (doc: Docs) => doc.url?.startsWith('blob:');
 
@@ -61,7 +64,9 @@ export default function InquiryDetail({
   useEffect(() => {
     setAnswer(inquiry.answer || '');
     setNewFiles([]);
-  }, [inquiry.recordId, inquiry.answer]);
+    setForceClose(inquiry.forceClose || '');
+    setForceCloseAck(false);
+  }, [inquiry.recordId, inquiry.answer, inquiry.forceClose]);
 
   useEffect(() => {
     const baseDocs = inquiry.docs || [];
@@ -178,6 +183,10 @@ export default function InquiryDetail({
       toast.error('חסר מזהה מעסיק לשמירת הבירור');
       return;
     }
+    if (forceClose.trim() && !forceCloseAck) {
+      toast.error('נא לאשר את ההצהרה לפני שליחת הבירור');
+      return;
+    }
 
     setIsSaving(true);
     try {
@@ -194,6 +203,7 @@ export default function InquiryDetail({
             ...inquiry,
             verbalAnswer: answer,
             answer,
+            forceClose,
             files: encodedFiles,
           },
         ],
@@ -223,6 +233,7 @@ export default function InquiryDetail({
       const updatedInquiry: MonthlyInquiry = {
         ...inquiry,
         answer,
+        forceClose,
         docs: combinedDocs,
       };
 
@@ -241,6 +252,8 @@ export default function InquiryDetail({
   const handleReset = () => {
     setAnswer(inquiry.answer || '');
     setNewFiles([]);
+    setForceClose(inquiry.forceClose || '');
+    setForceCloseAck(false);
   };
 
   return (
@@ -362,14 +375,37 @@ export default function InquiryDetail({
                 העלאת מסמכים
                 {inquiry.isDocMandatory && <span className="text-red-500">*</span>}
               </Label>
-              <input
-                type="file"
-                multiple
-                onChange={(e) => handleFileChange(e.target.files)}
-                className={`block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 ${
-                  inquiry.isDocMandatory && meta.missingDocs ? 'border border-red-500 rounded-md' : ''
-                }`}
-              />
+              <div className="flex flex-col gap-3">
+                <input
+                  type="file"
+                  multiple
+                  onChange={(e) => handleFileChange(e.target.files)}
+                  className={`block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 ${
+                    inquiry.isDocMandatory && meta.missingDocs ? 'border border-red-500 rounded-md' : ''
+                  }`}
+                />
+                <div className="flex flex-col gap-1 w-full">
+                  <Label className="text-sm font-medium">סגירת בירור בכוח</Label>
+                  <Select value={forceClose} onValueChange={setForceClose} dir="rtl">
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="בחר/י סיבה" />
+                    </SelectTrigger>
+                    <SelectContent className="text-right" dir="rtl">
+                      <SelectItem value="הוצאה פרטית – לרשום כנגד כרטיס חו״ז בעלים.">הוצאה פרטית – לרשום כנגד כרטיס חו״ז בעלים.</SelectItem>
+                      <SelectItem value="הוצאה עסקית בלי אסמכתא – לא אצליח להשיג מסמך; לרשום כהוצאה עסקית על בסיס הצהרתי.">הוצאה עסקית בלי אסמכתא – לא אצליח להשיג מסמך; לרשום כהוצאה עסקית על בסיס הצהרתי.</SelectItem>
+                      <SelectItem value="החשבונית הועברה ונבדקה – העברתי למערכת את החשבוניות הנכונה (בדקתי ש- ספק/תאריך/סכום תואמים); מבקש לסגור את הבירור.">החשבונית הועברה ונבדקה – העברתי למערכת את החשבוניות הנכונה (בדקתי ש- ספק/תאריך/סכום תואמים); מבקש לסגור את הבירור.</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <label className="mt-2 flex items-start gap-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={forceCloseAck}
+                      onChange={(e) => setForceCloseAck(e.target.checked)}
+                    />
+                    <span>אני מאשר/ת שהאחריות על ההצהרה והשלכותיה היא עליי.</span>
+                  </label>
+                </div>
+              </div>
               {newFiles.length > 0 && (
                 <p className="text-sm text-gray-700">
                   {newFiles.length} קבצים נבחרו לשליחה: {newFiles.map((f) => f.name).join(', ')}

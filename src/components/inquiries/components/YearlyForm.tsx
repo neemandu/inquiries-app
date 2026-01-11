@@ -19,6 +19,8 @@ export default function YearlyForm({
 }: YearlyFormProps) {
   console.log("Yearly data", yearlyData);
   const [answers, setAnswers] = useState<{ [key: string]: string }>({});
+  const [forceClose, setForceClose] = useState<{ [key: string]: string }>({});
+  const [forceCloseAck, setForceCloseAck] = useState<{ [key: string]: boolean }>({});
   const [files, setFiles] = useState<{ [key: string]: File[] }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -26,6 +28,8 @@ export default function YearlyForm({
   useEffect(() => {
     if (!yearlyData) {
       setAnswers({});
+      setForceClose({});
+      setForceCloseAck({});
       return;
     }
 
@@ -38,8 +42,24 @@ export default function YearlyForm({
       },
       {} as Record<string, string>
     );
+    const initialForceClose = yearlyData.reduce(
+      (acc, item, index) => {
+        acc[`${index}-${item.question}`] = '';
+        return acc;
+      },
+      {} as Record<string, string>
+    );
+    const initialForceCloseAck = yearlyData.reduce(
+      (acc, item, index) => {
+        acc[`${index}-${item.question}`] = false;
+        return acc;
+      },
+      {} as Record<string, boolean>
+    );
 
     setAnswers(initialAnswers);
+    setForceClose(initialForceClose);
+    setForceCloseAck(initialForceCloseAck);
   }, [yearlyData]);
 
   useEffect(() => {
@@ -64,32 +84,43 @@ export default function YearlyForm({
 
     // No validation - allow sending even if mandatory fields are empty
 
-    setIsSubmitting(true);
-    const loadingToastId = toast.loading("שולח נתונים...");
-
     // Only send records that have been changed (have answers or files)
-    const changedItems = yearlyData.filter((item, index) => {
-      const questionKey = `${index}-${item.question}`;
-      const hasAnswer = answers[questionKey]?.trim();
-      const hasFiles = files[questionKey] && files[questionKey].length > 0;
-      return hasAnswer || hasFiles;
-    });
+    const changedItems = yearlyData.reduce(
+      (acc, item, index) => {
+        const questionKey = `${index}-${item.question}`;
+        const hasAnswer = answers[questionKey]?.trim();
+        const hasFiles = files[questionKey] && files[questionKey].length > 0;
+        const hasForce = (forceClose[questionKey] || '').trim();
+        if (hasAnswer || hasFiles || hasForce) {
+          acc.push({ item, questionKey, index });
+        }
+        return acc;
+      },
+      [] as { item: GeneralInquiry; questionKey: string; index: number }[]
+    );
 
     if (changedItems.length === 0) {
       toast.error("לא בוצעו שינויים. אנא מלא לפחות שדה אחד כדי לשלוח.", {
         duration: 5000,
       });
-      setIsSubmitting(false);
       return;
     }
 
+    const missingAck = changedItems.some(({ questionKey }) => {
+      const hasForce = (forceClose[questionKey] || '').trim();
+      return hasForce && !forceCloseAck[questionKey];
+    });
+
+    if (missingAck) {
+      toast.error('נא לאשר את ההצהרה לפני שליחת הבירור', { duration: 4000 });
+      return;
+    }
+
+    setIsSubmitting(true);
+    const loadingToastId = toast.loading("שולח נתונים...");
+
     const sets = await Promise.all(
-      changedItems.map(async (item) => {
-        // Find the original index in yearlyData
-        const yearlyIndex = yearlyData.findIndex(
-          (yearlyItem) => yearlyItem === item
-        );
-        const questionKey = `${yearlyIndex}-${item.question}`;
+      changedItems.map(async ({ item, questionKey }) => {
         const itemFiles = files[questionKey] || [];
         const encodedFiles = await Promise.all(
           itemFiles.map(async (f) => ({
@@ -101,6 +132,7 @@ export default function YearlyForm({
         return {
           ...item,
           answer: answers[questionKey] || "",
+          forceClose: forceClose[questionKey] || "",
           files: encodedFiles,
         };
       })
@@ -161,7 +193,7 @@ export default function YearlyForm({
         {yearlyData.map((item, index) => {
           const questionKey = `${index}-${item.question}`;
           return (
-            <div key={`${item.question}-${index}`} className="yearly-set">
+          <div key={`${item.question}-${index}`} className="yearly-set">
               <label>
                 {index + 1}) {item.chen}: {item.question}
                 {item.isTextMandatory && <span className="required">*</span>}
@@ -178,6 +210,32 @@ export default function YearlyForm({
                     handleAnswerChange(questionKey, e.target.value)
                   }
                 />
+              </div>
+              <div className="form-group">
+                <label className="block text-sm font-medium mb-1">סגירת בירור בכוח</label>
+                <select
+                  value={forceClose[questionKey] || ""}
+                  onChange={(e) =>
+                    setForceClose((prev) => ({ ...prev, [questionKey]: e.target.value }))
+                  }
+                  className="border border-gray-300 rounded px-2 py-1 text-right"
+                  dir="rtl"
+                >
+                  <option value="">בחר/י סיבה</option>
+                  <option value="הוצאה פרטית – לרשום כנגד כרטיס חו״ז בעלים.">הוצאה פרטית – לרשום כנגד כרטיס חו״ז בעלים.</option>
+                  <option value="הוצאה עסקית בלי אסמכתא – לא אצליח להשיג מסמך; לרשום כהוצאה עסקית על בסיס הצהרתי.">הוצאה עסקית בלי אסמכתא – לא אצליח להשיג מסמך; לרשום כהוצאה עסקית על בסיס הצהרתי.</option>
+                  <option value="החשבונית הועברה ונבדקה – העברתי למערכת את החשבוניות הנכונה (בדקתי ש- ספק/תאריך/סכום תואמים); מבקש לסגור את הבירור.">החשבונית הועברה ונבדקה – העברתי למערכת את החשבוניות הנכונה (בדקתי ש- ספק/תאריך/סכום תואמים); מבקש לסגור את הבירור.</option>
+                </select>
+              <label className="mt-2 flex items-start gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={forceCloseAck[questionKey] || false}
+                  onChange={(e) =>
+                    setForceCloseAck((prev) => ({ ...prev, [questionKey]: e.target.checked }))
+                  }
+                />
+                <span>אני מאשר/ת שהאחריות על ההצהרה והשלכותיה היא עליי.</span>
+              </label>
               </div>
               <div className="form-group flex items-start gap-4">
                 <FileUploadComponent
