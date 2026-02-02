@@ -68,6 +68,7 @@ export interface EmployeeResponse {
   recordId: string;
   columnNames: ColumnNameConfig[];
   periods?: Period[];
+  canForceClose: boolean;
 }
 
 // Simplified update payload interface

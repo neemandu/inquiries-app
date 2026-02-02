@@ -37,6 +37,7 @@ function EmployeesPageInner() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
   const [apiResponse, setApiResponse] = useState<ApiResponse | null>(null);
+  const [canForceClose, setCanForceClose] = useState(false);
   const [leavingReasons, setLeavingReasons] = useState<LeavingReason[]>([]);
   const [selectedSupplier, setSelectedSupplier] = useState<string | null>('הכל');
   const [showYearlyForm, setShowYearlyForm] = useState<boolean>(false);
@@ -137,6 +138,7 @@ function EmployeesPageInner() {
   const loadEmployeeData = useCallback(async () => {
     if (isLoaded && user?.emailAddresses?.[0]?.emailAddress) {
       setLoading(true);
+      setCanForceClose(false);
       try {
         // Check if user is admin (@cpateam.co.il or neemandu@gmail.com)
         const userEmail = user.emailAddresses[0].emailAddress;
@@ -172,6 +174,7 @@ function EmployeesPageInner() {
           setApiResponse(compatibleApiResponse);
           setEmployees(employees);
           setChangeTime(data.changeTime);
+          setCanForceClose(!!data.canForceClose);
           console.log('Updated apiResponse with new data for period:', selectedPeriodId);
           
           if (data.columnNames) {
@@ -187,6 +190,8 @@ function EmployeesPageInner() {
           if (data.periods) {
             setPeriods(data.periods);
           }
+        } else {
+          setCanForceClose(false);
         }
       } catch (error) {
         console.error('Failed to load employee data:', error);
@@ -581,6 +586,7 @@ function EmployeesPageInner() {
             inquiry={selectedInquiry}
             employer={inquiryData?.employer}
             recordId={recordIdToUse || ''}
+            canForceClose={canForceClose}
             onBack={() => setActiveView('pending-inquiries')}
             onUpdate={handleInquiryUpdate}
             onPrev={() => handleInquiryNavigate('prev')}
@@ -637,6 +643,7 @@ function EmployeesPageInner() {
                   setSelectedEmployerEmail(employerEmail);
                   setSelectedEmployerRecordId(employerRecordId);
                   setSelectedEmployerName(employerName);
+                  setCanForceClose(false);
                 }}
                 selectedEmployerName={selectedEmployerName}
               />

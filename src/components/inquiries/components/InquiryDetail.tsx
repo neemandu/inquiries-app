@@ -16,6 +16,7 @@ interface InquiryDetailProps {
   inquiry: MonthlyInquiry;
   employer?: string;
   recordId?: string;
+  canForceClose?: boolean;
   onBack: () => void;
   onUpdate?: (inquiry: MonthlyInquiry, resolved?: boolean) => void;
   onPrev?: () => void;
@@ -28,6 +29,7 @@ export default function InquiryDetail({
   inquiry,
   employer,
   recordId,
+  canForceClose = false,
   onBack,
   onUpdate,
   onPrev,
@@ -183,7 +185,7 @@ export default function InquiryDetail({
       toast.error('חסר מזהה מעסיק לשמירת הבירור');
       return;
     }
-    if (forceClose.trim() && !forceCloseAck) {
+    if (canForceClose && forceClose.trim() && !forceCloseAck) {
       toast.error('נא לאשר את ההצהרה לפני שליחת הבירור');
       return;
     }
@@ -384,7 +386,8 @@ export default function InquiryDetail({
                     inquiry.isDocMandatory && meta.missingDocs ? 'border border-red-500 rounded-md' : ''
                   }`}
                 />
-                <div className="flex flex-col gap-1 w-full">
+                {canForceClose && (
+                  <div className="flex flex-col gap-1 w-full">
                   <Label className="text-sm font-medium">סגירת בירור בכוח</Label>
                   <Select value={forceClose} onValueChange={setForceClose} dir="rtl">
                     <SelectTrigger className="w-full">
@@ -404,7 +407,8 @@ export default function InquiryDetail({
                     />
                     <span>אני מאשר/ת שהאחריות על ההצהרה והשלכותיה היא עליי.</span>
                   </label>
-                </div>
+                  </div>
+                )}
               </div>
               {newFiles.length > 0 && (
                 <p className="text-sm text-gray-700">
