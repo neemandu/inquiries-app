@@ -14,6 +14,7 @@ interface PendingInquiriesListProps {
   onSelect: (inquiry: MonthlyInquiry) => void;
   activeSupplier?: string | null;
   recordId?: string;
+  canForceClose?: boolean;
 }
 
 type StatusFilter = 'missing-docs' | 'missing-answer' | 'all';
@@ -25,6 +26,7 @@ export default function PendingInquiriesList({
   onSelect,
   activeSupplier,
   recordId,
+  canForceClose = false,
 }: PendingInquiriesListProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -240,6 +242,7 @@ export default function PendingInquiriesList({
           employer={employer}
           monthlyData={inquiries}
           recordId={recordId}
+          canForceClose={canForceClose}
           forceCloseMap={forceCloseMap}
           onForceCloseChange={(id, value) =>
             setForceCloseMap((prev) => ({
@@ -307,3 +310,4 @@ export default function PendingInquiriesList({
     </div>
   );
 }
+

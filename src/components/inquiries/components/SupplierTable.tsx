@@ -13,11 +13,20 @@ interface SupplierTableProps {
   monthlyData?: MonthlyInquiry[];
   recordId?: string;
   employer?: string;
+  canForceClose?: boolean;
   forceCloseMap?: Record<string, string>;
   onForceCloseChange?: (id: string, value: string) => void;
 }
 
-export default function SupplierTable({ supplierId, monthlyData, recordId, employer, forceCloseMap, onForceCloseChange }: SupplierTableProps) {
+export default function SupplierTable({
+  supplierId,
+  monthlyData,
+  recordId,
+  employer,
+  canForceClose = false,
+  forceCloseMap,
+  onForceCloseChange,
+}: SupplierTableProps) {
   console.log('Supplier table data', monthlyData);
   const [answers, setAnswers] = useState<{ [key: string]: string }>({});
   const [initialAnswers, setInitialAnswers] = useState<{ [key: string]: string }>({});
@@ -180,7 +189,7 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
     setForceClose(prev => ({ ...prev, [key]: value }));
     onForceCloseChange?.(key, value);
     setModifiedKeys(prev => new Set(prev).add(key));
-    if (value.trim().length > 0 && !forceCloseAck) {
+    if (canForceClose && value.trim().length > 0 && !forceCloseAck) {
       setPendingForceCloseKey(key);
       setShowForceCloseAckModal(true);
     }
@@ -224,12 +233,14 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
       return;
     }
 
-    const hasForceClose = modifiedItems.some(item => {
-      const key = `${item.recordId}`;
-      return (forceClose[key] || '').trim().length > 0;
-    });
+    const hasForceClose = canForceClose
+      ? modifiedItems.some(item => {
+          const key = `${item.recordId}`;
+          return (forceClose[key] || '').trim().length > 0;
+        })
+      : false;
 
-    if (hasForceClose && !forceCloseAck) {
+    if (canForceClose && hasForceClose && !forceCloseAck) {
       toast.error('נא לאשר את ההצהרה לפני שליחת הבירור', { duration: 4000 });
       return;
     }
@@ -250,7 +261,7 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
         return {
           ...item,
           verbalAnswer: answers[key] || '',
-          forceClose: forceClose[key] || '',
+          forceClose: canForceClose ? (forceClose[key] || '') : '',
           files: encodedFiles,
         };
       })
@@ -305,14 +316,16 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
         </div>
       )}
 
-      <div style={{ marginBottom: '1rem' }}>
-        <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>סגירה בכוח – בחר/י סיבה:</div>
-        <ul style={{ margin: 0, paddingInlineStart: '1.25rem' }}>
-          <li>הוצאה פרטית – לרשום כנגד כרטיס חו״ז בעלים.</li>
-          <li>הוצאה עסקית בלי אסמכתא – לא אצליח להשיג מסמך; לרשום כהוצאה עסקית על בסיס הצהרתי.</li>
-          <li>החשבונית הועברה ונבדקה – העברתי למערכת את החשבוניות הנכונה (בדקתי ש- ספק/תאריך/סכום תואמים); מבקש לסגור את הבירור.</li>
-        </ul>
-      </div>
+      {canForceClose && (
+        <div style={{ marginBottom: '1rem' }}>
+    <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>סגירה בכוח – בחר/י סיבה:</div>
+    <ul style={{ margin: 0, paddingInlineStart: '1.25rem' }}>
+      <li>הוצאה פרטית – לרשום כנגד כרטיס חו״ז בעלים.</li>
+      <li>הוצאה עסקית בלי אסמכתא – לא אצליח להשיג מסמך; לרשום כהוצאה עסקית על בסיס הצהרתי.</li>
+      <li>החשבונית הועברה ונבדקה – העברתי למערכת את החשבוניות הנכונה (בדקתי ש- ספק/תאריך/סכום תואמים); מבקש לסגור את הבירור.</li>
+    </ul>
+  </div>
+      )}
 
       <form ref={formRef} onSubmit={handleSubmit}>
       <button type="submit" disabled={isSubmitting}>
@@ -378,7 +391,7 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
                 </div>
               </th>
               <th>מסמכים</th>
-              <th>סגירת בירור בכוח</th>
+              {canForceClose && <th>סגירת בירור בכוח</th>}
             </tr>
             <tr className="sticky top-10 z-10 bg-white">
               <th>
@@ -454,7 +467,7 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
                 />
               </th>
               <th />
-              <th />
+              {canForceClose && <th />}
             </tr>
           </thead>
           <tbody>
@@ -503,27 +516,29 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
                       </ul>
                     )}
                   </td>
-                  <td>
-                    <div className="flex items-center gap-2">
-                    <span aria-hidden="true" title="סגירת בירור בכוח">✊</span>
-                    <select
-                      value={forceClose[key] || ''}
-                      onChange={(e) => handleForceCloseChange(key, e.target.value)}
-                      style={{
-                        width: '100%',
-                        border: item.isDocMandatory ? '1px solid red' : '1px solid #ccc',
-                        padding: '0.25rem',
-                        textAlign: 'right',
-                      }}
-                      dir="rtl"
-                    >
-                      <option value="">בחר/י סיבה</option>
-                      <option value="הוצאה פרטית – לרשום כנגד כרטיס חו״ז בעלים.">הוצאה פרטית – לרשום כנגד כרטיס חו״ז בעלים.</option>
-                      <option value="הוצאה עסקית בלי אסמכתא – לא אצליח להשיג מסמך; לרשום כהוצאה עסקית על בסיס הצהרתי.">הוצאה עסקית בלי אסמכתא – לא אצליח להשיג מסמך; לרשום כהוצאה עסקית על בסיס הצהרתי.</option>
-                      <option value="החשבונית הועברה ונבדקה – העברתי למערכת את החשבוניות הנכונה (בדקתי ש- ספק/תאריך/סכום תואמים); מבקש לסגור את הבירור.">החשבונית הועברה ונבדקה – העברתי למערכת את החשבוניות הנכונה (בדקתי ש- ספק/תאריך/סכום תואמים); מבקש לסגור את הבירור.</option>
-                    </select>
-                  </div>
-                  </td>
+                  {canForceClose && (
+                    <td>
+                      <div className="flex items-center gap-2">
+                        <span aria-hidden="true" title="סגירת בירור בכוח">✊</span>
+                        <select
+                          value={forceClose[key] || ''}
+                          onChange={(e) => handleForceCloseChange(key, e.target.value)}
+                          style={{
+                            width: '100%',
+                            border: item.isDocMandatory ? '1px solid red' : '1px solid #ccc',
+                            padding: '0.25rem',
+                            textAlign: 'right',
+                          }}
+                          dir="rtl"
+                        >
+                          <option value="">בחר/י סיבה</option>
+                          <option value="הוצאה פרטית – לרשום כנגד כרטיס חו״ז בעלים.">הוצאה פרטית – לרשום כנגד כרטיס חו״ז בעלים.</option>
+                          <option value="הוצאה עסקית בלי אסמכתא – לא אצליח להשיג מסמך; לרשום כהוצאה עסקית על בסיס הצהרתי.">הוצאה עסקית בלי אסמכתא – לא אצליח להשיג מסמך; לרשום כהוצאה עסקית על בסיס הצהרתי.</option>
+                          <option value="החשבונית הועברה ונבדקה – העברתי למערכת את החשבוניות הנכונה (בדקתי ש- ספק/תאריך/סכום תואמים); מבקש לסגור את הבירור.">החשבונית הועברה ונבדקה – העברתי למערכת את החשבוניות הנכונה (בדקתי ש- ספק/תאריך/סכום תואמים); מבקש לסגור את הבירור.</option>
+                        </select>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               );
             })}
@@ -564,7 +579,7 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
         </div>
       )}
 
-      {showForceCloseAckModal && (
+      {canForceClose && showForceCloseAckModal && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" dir="rtl">
           <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold mb-3 text-right">אישור הצהרה</h3>
@@ -735,3 +750,17 @@ export default function SupplierTable({ supplierId, monthlyData, recordId, emplo
     </div>
   );
 } 
+
+
+
+
+
+
+
+
+
+
+
+
+
+

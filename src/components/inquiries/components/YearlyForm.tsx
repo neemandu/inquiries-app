@@ -12,6 +12,7 @@ interface YearlyFormProps {
   employer?: string;
   focusIndex?: number | null;
   focusRecordId?: string | null;
+  canForceClose?: boolean;
 }
 
 export default function YearlyForm({
@@ -20,6 +21,7 @@ export default function YearlyForm({
   employer,
   focusIndex,
   focusRecordId,
+  canForceClose = false,
 }: YearlyFormProps) {
   console.log("Yearly data", yearlyData);
   const [answers, setAnswers] = useState<{ [key: string]: string }>({});
@@ -110,7 +112,7 @@ export default function YearlyForm({
         const questionKey = `${index}-${item.question}`;
         const hasAnswer = answers[questionKey]?.trim();
         const hasFiles = files[questionKey] && files[questionKey].length > 0;
-        const hasForce = (forceClose[questionKey] || '').trim();
+        const hasForce = canForceClose ? (forceClose[questionKey] || '').trim() : '';
         if (hasAnswer || hasFiles || hasForce) {
           acc.push({ item, questionKey, index });
         }
@@ -127,7 +129,7 @@ export default function YearlyForm({
     }
 
     const missingAck = changedItems.some(({ questionKey }) => {
-      const hasForce = (forceClose[questionKey] || '').trim();
+      const hasForce = canForceClose ? (forceClose[questionKey] || '').trim() : '';
       return hasForce && !forceCloseAck[questionKey];
     });
 
@@ -152,7 +154,7 @@ export default function YearlyForm({
         return {
           ...item,
           answer: answers[questionKey] || "",
-          forceClose: forceClose[questionKey] || "",
+          forceClose: canForceClose ? (forceClose[questionKey] || "") : "",
           files: encodedFiles,
         };
       })
@@ -236,32 +238,34 @@ export default function YearlyForm({
                   }
                 />
               </div>
-              <div className="form-group">
-                <label className="block text-sm font-medium mb-1">סגירת בירור בכוח</label>
-                <select
-                  value={forceClose[questionKey] || ""}
-                  onChange={(e) =>
-                    setForceClose((prev) => ({ ...prev, [questionKey]: e.target.value }))
-                  }
-                  className="border border-gray-300 rounded px-2 py-1 text-right"
-                  dir="rtl"
-                >
-                  <option value="">בחר/י סיבה</option>
-                  <option value="הוצאה פרטית – לרשום כנגד כרטיס חו״ז בעלים.">הוצאה פרטית – לרשום כנגד כרטיס חו״ז בעלים.</option>
-                  <option value="הוצאה עסקית בלי אסמכתא – לא אצליח להשיג מסמך; לרשום כהוצאה עסקית על בסיס הצהרתי.">הוצאה עסקית בלי אסמכתא – לא אצליח להשיג מסמך; לרשום כהוצאה עסקית על בסיס הצהרתי.</option>
-                  <option value="החשבונית הועברה ונבדקה – העברתי למערכת את החשבוניות הנכונה (בדקתי ש- ספק/תאריך/סכום תואמים); מבקש לסגור את הבירור.">החשבונית הועברה ונבדקה – העברתי למערכת את החשבוניות הנכונה (בדקתי ש- ספק/תאריך/סכום תואמים); מבקש לסגור את הבירור.</option>
-                </select>
-              <label className="mt-2 flex items-start gap-2 text-sm text-gray-700">
-                <input
-                  type="checkbox"
-                  checked={forceCloseAck[questionKey] || false}
-                  onChange={(e) =>
-                    setForceCloseAck((prev) => ({ ...prev, [questionKey]: e.target.checked }))
-                  }
-                />
-                <span>אני מאשר/ת שהאחריות על ההצהרה והשלכותיה היא עליי.</span>
-              </label>
-              </div>
+              {canForceClose && (
+                <div className="form-group">
+                  <label className="block text-sm font-medium mb-1">סגירת בירור בכוח</label>
+                  <select
+                    value={forceClose[questionKey] || ""}
+                    onChange={(e) =>
+                      setForceClose((prev) => ({ ...prev, [questionKey]: e.target.value }))
+                    }
+                    className="border border-gray-300 rounded px-2 py-1 text-right"
+                    dir="rtl"
+                  >
+                    <option value="">בחר/י סיבה</option>
+                    <option value="הוצאה פרטית – לרשום כנגד כרטיס חו״ז בעלים.">הוצאה פרטית – לרשום כנגד כרטיס חו״ז בעלים.</option>
+                    <option value="הוצאה עסקית בלי אסמכתא – לא אצליח להשיג מסמך; לרשום כהוצאה עסקית על בסיס הצהרתי.">הוצאה עסקית בלי אסמכתא – לא אצליח להשיג מסמך; לרשום כהוצאה עסקית על בסיס הצהרתי.</option>
+                    <option value="החשבונית הועברה ונבדקה – העברתי למערכת את החשבוניות הנכונה (בדקתי ש- ספק/תאריך/סכום תואמים); מבקש לסגור את הבירור.">החשבונית הועברה ונבדקה – העברתי למערכת את החשבוניות הנכונה (בדקתי ש- ספק/תאריך/סכום תואמים); מבקש לסגור את הבירור.</option>
+                  </select>
+                  <label className="mt-2 flex items-start gap-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={forceCloseAck[questionKey] || false}
+                      onChange={(e) =>
+                        setForceCloseAck((prev) => ({ ...prev, [questionKey]: e.target.checked }))
+                      }
+                    />
+                    <span>אני מאשר/ת שהאחריות על ההצהרה והשלכותיה היא על יי.</span>
+                  </label>
+                </div>
+              )}
               <div className="form-group flex flex-col gap-3 sm:flex-row sm:items-start">
                 <FileUploadComponent
                   onFilesChange={(newFiles) =>
@@ -294,7 +298,7 @@ export default function YearlyForm({
               )}
               <hr />
             </div>
-          );
+          )
         })}
         {yearlyData.length > 0 ? (
           <button type="submit" disabled={isSubmitting}>
@@ -384,3 +388,9 @@ export default function YearlyForm({
     </div>
   );
 }
+
+
+
+
+
+

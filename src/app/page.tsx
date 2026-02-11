@@ -536,6 +536,7 @@ function EmployeesPageInner() {
           recordId={recordIdToUse}
           focusIndex={focusGeneralIndex}
           focusRecordId={focusGeneralRecordId}
+          canForceClose={canForceClose}
         />
       );
     }
@@ -546,7 +547,7 @@ function EmployeesPageInner() {
       activeView !== 'pending-inquiries' &&
       activeView !== 'inquiry-detail'
     ) {
-      return <SupplierTable supplierId={selectedSupplier} employer={inquiryData?.employer} monthlyData={inquiryData?.monthly} recordId={recordIdToUse} />;
+      return <SupplierTable supplierId={selectedSupplier} employer={inquiryData?.employer} monthlyData={inquiryData?.monthly} recordId={recordIdToUse} canForceClose={canForceClose} />;
     }
 
     switch (activeView) {
@@ -569,13 +570,14 @@ function EmployeesPageInner() {
         return <DocumentUpload employees={employees} recordId={recordIdToUse || ''} />;
       case 'pending-inquiries':
         return (
-          <PendingInquiriesList
-            inquiries={monthlyInquiries}
-            employer={inquiryData?.employer}
-            onSelect={handleInquirySelect}
-            activeSupplier={selectedSupplier}
-            recordId={recordIdToUse || ''}
-          />
+        <PendingInquiriesList
+          inquiries={monthlyInquiries}
+          employer={inquiryData?.employer}
+          onSelect={handleInquirySelect}
+          activeSupplier={selectedSupplier}
+          recordId={recordIdToUse || ''}
+          canForceClose={canForceClose}
+        />
         );
       case 'inquiry-detail':
         if (!selectedInquiry) {
