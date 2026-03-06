@@ -91,7 +91,7 @@ export async function updateColumnSetting(
 
 export async function addEmployee(
   updatedApiResponse: AddEmployee
-): Promise<boolean> {
+): Promise<{ success: boolean; message?: string; code?: string }> {
   try {
     const response = await fetch(
       `https://hook.eu2.make.com/qv5d2vgs8b992av1tpd9a880abbh7yyu`,
@@ -114,14 +114,80 @@ export async function addEmployee(
       }
     );
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    const contentType = response.headers.get("content-type") || "";
+    let responseData: unknown = null;
+
+    try {
+      if (contentType.includes("application/json")) {
+        responseData = await response.json();
+      } else {
+        const text = await response.text();
+        if (text) {
+          try {
+            responseData = JSON.parse(text) as unknown;
+          } catch {
+            responseData = { message: text };
+          }
+        } else {
+          responseData = null;
+        }
+      }
+    } catch {
+      responseData = null;
     }
 
-    return true;
+    const topLevelData =
+      typeof responseData === "object" && responseData !== null
+        ? (responseData as Record<string, unknown>)
+        : null;
+
+    // Make webhook may wrap the actual payload in a stringified "body" field.
+    let data = topLevelData;
+    const wrappedBody = topLevelData?.body;
+    if (typeof wrappedBody === "string") {
+      try {
+        const parsedBody = JSON.parse(wrappedBody) as unknown;
+        if (typeof parsedBody === "object" && parsedBody !== null) {
+          data = parsedBody as Record<string, unknown>;
+        }
+      } catch {
+        // Keep top-level data if body isn't valid JSON.
+      }
+    } else if (typeof wrappedBody === "object" && wrappedBody !== null) {
+      data = wrappedBody as Record<string, unknown>;
+    }
+
+    const message =
+      (typeof data?.message === "string" && data.message) ||
+      (typeof data?.error === "string" && data.error) ||
+      (typeof data?.description === "string" && data.description) ||
+      undefined;
+    const code = typeof data?.code === "string" ? data.code : undefined;
+    const rawSuccess = data?.success;
+    const bodySuccess =
+      typeof rawSuccess === "boolean"
+        ? rawSuccess
+        : typeof rawSuccess === "string"
+        ? rawSuccess.toLowerCase() === "true"
+          ? true
+          : rawSuccess.toLowerCase() === "false"
+          ? false
+          : undefined
+        : undefined;
+    const hasFailureCode = typeof code === "string" && code.length > 0 && code !== "OK";
+
+    if (!response.ok || bodySuccess === false || (bodySuccess !== true && hasFailureCode)) {
+      return {
+        success: false,
+        message: message || `HTTP error! status: ${response.status}`,
+        code,
+      };
+    }
+
+    return { success: true, message, code };
   } catch (error) {
     console.error("Error updating column setting:", error);
-    return false;
+    return { success: false, message: "שגיאה בתקשורת עם השרת" };
   }
 }
 

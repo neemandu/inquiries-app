@@ -31,6 +31,7 @@ import { CalendarIcon } from "lucide-react";
 import React from "react";
 import { toast } from "sonner";
 import { addEmployee } from "@/lib/utils";
+import { Employee } from "@/lib/types";
 
 const addEmployeeSchema = z.object({
   firstName: z.string().min(2, {
@@ -98,7 +99,29 @@ const formatDateToAPI = (dateString: string): string => {
   return `${day}/${month}/${year}`;
 };
 
-export default function AddEmployee( {recordId, changeTime, link101}: {recordId: string, changeTime: string, link101: string} ) {
+type AddEmployeeProps = {
+  recordId: string;
+  changeTime: string;
+  link101: string;
+  employees: Employee[];
+};
+
+const getColumnTextValue = (value: unknown): string => {
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value).trim();
+  }
+  return "";
+};
+
+const findEmployeeValueByName = (
+  employee: Employee,
+  predicate: (name: string) => boolean
+): string => {
+  const column = employee.columns.find((col) => predicate(col.name));
+  return getColumnTextValue(column?.oldValue);
+};
+
+export default function AddEmployee({ recordId, changeTime, link101, employees }: AddEmployeeProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   // Parse changeTime to extract month and year
@@ -161,6 +184,32 @@ export default function AddEmployee( {recordId, changeTime, link101}: {recordId:
   });
 
   async function onSubmit(data: AddEmployeeFormValues) {
+    const enteredTz = data.tz.trim();
+    const duplicateActiveEmployee = employees.some((employee) => {
+      const employeeTz = findEmployeeValueByName(
+        employee,
+        (name) => name.includes("תעודת") && name.includes("זהות")
+      );
+      const employeeStatus = findEmployeeValueByName(
+        employee,
+        (name) => name.includes("סטטוס")
+      );
+
+      return employeeTz === enteredTz && employeeStatus === "עובד";
+    });
+
+    if (duplicateActiveEmployee) {
+      form.setError("tz", {
+        type: "manual",
+        message: "לא ניתן להוסיף עובד עם תעודת זהות זו כי הוא כבר קיים כעובד.",
+      });
+      toast.error("לא ניתן להוסיף את העובד", {
+        description: "העובד כבר קיים במערכת עם סטטוס עובד.",
+        duration: 5000,
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     console.log("data", data);
@@ -206,8 +255,24 @@ export default function AddEmployee( {recordId, changeTime, link101}: {recordId:
       // Send POST request to backend
       const response = await addEmployee(apiData);
       
-      if (!response) {
-        throw new Error(`HTTP error! status: ${response}`);
+      if (!response.success) {
+        const duplicateByWebhook =
+          response.code === "EMPLOYEE_ALREADY_EXISTS_ACTIVE" ||
+          response.message?.includes("כבר קיים") ||
+          response.message?.includes("already exists");
+
+        if (duplicateByWebhook) {
+          form.setError("tz", {
+            type: "manual",
+            message: response.message || "לא ניתן להוסיף עובד כי הוא כבר קיים כעובד.",
+          });
+        }
+
+        toast.error("שגיאה בהוספת העובד", {
+          description: response.message || "אנא נסה שוב או פנה למנהל המערכת",
+          duration: 5000,
+        });
+        return;
       }
       
       // Show success toast

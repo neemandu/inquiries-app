@@ -559,7 +559,7 @@ function EmployeesPageInner() {
           onUnsavedNavigation: requestUnsavedConfirmation
         }} />;
       case 'add-employee':
-        return <AddEmployee recordId={recordIdToUse || ''} changeTime={changeTime} link101={apiResponse?.link101 || ''} />;
+        return <AddEmployee recordId={recordIdToUse || ''} changeTime={changeTime} link101={apiResponse?.link101 || ''} employees={employees} />;
       case 'employee-recognition':
         return <EmployeeRecognition employees={employees} leavingReasons={leavingReasons} is161Must={apiResponse?.is161Must}/>;
       case 'pay-slip':
