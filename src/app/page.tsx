@@ -67,7 +67,7 @@ function EmployeesPageInner() {
   const [hasUnsavedMonthlyChanges, setHasUnsavedMonthlyChanges] = useState(false);
   const [showUnsavedNavModal, setShowUnsavedNavModal] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const searchParams = useSearchParams();
   const deepLinkHandledRef = useRef(false);
   const navigationSource = useMemo(
