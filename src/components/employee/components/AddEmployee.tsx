@@ -36,7 +36,7 @@ import { Employee } from "@/lib/types";
 const addEmployeeSchema = z.object({
   firstName: z.string().min(2, {
     message: "שם פרטי חייב להכיל לפחות 2 תווים.",
-  }),
+  }), 
   lastName: z.string().min(2, {
     message: "שם משפחה חייב להכיל לפחות 2 תווים.",
   }),
