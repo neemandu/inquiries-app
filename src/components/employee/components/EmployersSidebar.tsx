@@ -36,128 +36,143 @@ export default function EmployersSidebar({
   isOpen,
   onToggle,
 }: EmployersSidebarProps) {
-  const renderBadge = (count: number, compact = false) => (
+  // Inline pill badge, used in the expanded layout.
+  const badge = (count: number) => (
     <span
-      className={`rounded-full font-bold flex items-center justify-center flex-shrink-0 ${
-        compact ? "h-4 min-w-4 px-1 text-[9px]" : "h-5 min-w-5 px-2 text-xs"
-      } ${count > 0 ? "bg-red-500 text-white" : "bg-green-500 text-white"}`}
+      className={`h-5 min-w-5 px-1.5 rounded-full text-xs font-bold flex items-center justify-center flex-shrink-0 shadow-sm ring-1 ${
+        count > 0
+          ? "bg-red-500 text-white ring-red-600/20"
+          : "bg-emerald-500 text-white ring-emerald-600/20"
+      }`}
     >
       {count}
     </span>
   );
 
+  // Floating dot badge anchored to an icon, used in the collapsed rail.
+  const floatingBadge = (count: number) => (
+    <span
+      className={`absolute -top-2 -left-2 h-4 min-w-4 px-1 rounded-full text-[9px] font-bold flex items-center justify-center shadow-sm ring-1 ring-white ${
+        count > 0 ? "bg-red-500 text-white" : "bg-emerald-500 text-white"
+      }`}
+    >
+      {count}
+    </span>
+  );
+
+  const itemClasses = (active: boolean) =>
+    `w-full flex items-center rounded-lg transition-colors text-gray-700 bg-white hover:bg-accent/70 hover:text-accent-foreground ${
+      isOpen
+        ? "justify-between gap-3 px-3 py-2.5 h-auto min-h-[44px]"
+        : "justify-center p-0 h-11 w-11 mx-auto"
+    } ${
+      active
+        ? "bg-accent text-accent-foreground font-semibold ring-1 ring-inset ring-primary/20"
+        : ""
+    }`;
+
   return (
-    <div className="w-full space-y-4" dir="rtl">
+    <div className="w-full space-y-3" dir="rtl">
       <div className="flex justify-center">
         <Button
           variant="ghost"
           size="icon"
-          className="border border-gray-300 bg-white hover:bg-gray-100"
+          className="border border-gray-200 bg-white text-primary shadow-sm hover:bg-accent hover:text-accent-foreground rounded-full"
           onClick={onToggle}
+          aria-label={isOpen ? "כווץ תפריט" : "הרחב תפריט"}
         >
           {isOpen ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
         </Button>
       </div>
 
-      <Card className="shadow-sm">
+      {/* Accounting inquiries */}
+      <Card className={`card-elevated border-gray-200/70 rounded-xl ${isOpen ? "py-4" : "py-3"}`}>
         {isOpen && (
-          <CardHeader>
-            <CardTitle className="text-lg font-medium text-gray-900 text-center">בירורים</CardTitle>
+          <CardHeader className="px-4 pb-1">
+            <CardTitle className="text-base font-semibold text-gray-900 text-center">בירורים</CardTitle>
           </CardHeader>
         )}
-        <CardContent className={`space-y-3 ${isOpen ? 'pr-0' : 'pr-2'}`}>
+        <CardContent className={`space-y-2 ${isOpen ? "px-3" : "px-2"}`}>
           <Button
             onClick={() => onViewChange("pending-inquiries")}
-            variant={activeView === "pending-inquiries" ? "default" : "ghost"}
-            className={`w-full flex items-center ${
-              isOpen ? "justify-between pl-4 pr-2 gap-3" : "justify-center px-2 gap-2"
-            } py-3 h-auto min-h-[44px] text-black bg-white hover:bg-purple-50 ${
-              activeView === "pending-inquiries"
-                ? "border-b-[2px] border-purple-500 border-solid"
-                : ""
-            }`}
+            variant="ghost"
+            title="בירורי הנהלת חשבונות"
+            className={itemClasses(activeView === "pending-inquiries")}
           >
             {isOpen ? (
               <>
-                <div className="flex items-center gap-2">
-                  <Folder className="w-4 h-4 text-yellow-500" />
-                  <span className="font-medium text-base">בירורי הנהלת חשבונות</span>
+                <div className="flex items-center gap-2 min-w-0">
+                  <Folder className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+                  <span className="font-medium text-sm truncate">בירורי הנהלת חשבונות</span>
                 </div>
-                {renderBadge(notificationCounts?.["pending-inquiries"] ?? 0, false)}
+                {badge(notificationCounts?.["pending-inquiries"] ?? 0)}
               </>
             ) : (
-              <div className="flex items-center gap-1.5">
-                <Folder className="w-4 h-4 text-yellow-500" />
-                {renderBadge(notificationCounts?.["pending-inquiries"] ?? 0, true)}
-              </div>
+              <span className="relative flex items-center justify-center">
+                <Folder className="w-5 h-5 text-yellow-500" />
+                {floatingBadge(notificationCounts?.["pending-inquiries"] ?? 0)}
+              </span>
             )}
           </Button>
+
           <Button
             onClick={onShowYearlyForm}
             variant="ghost"
-            className={`w-full flex items-center ${
-              isOpen ? "justify-between pl-4 pr-2 gap-3" : "justify-center px-2 gap-2"
-            } py-3 h-auto min-h-[44px] text-black bg-white hover:bg-purple-50`}
+            title="בירורים כלליים"
+            className={itemClasses(false)}
           >
             {isOpen ? (
               <>
-                <div className="flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-blue-600" />
-                  <span className="font-medium text-base">בירורים כלליים</span>
+                <div className="flex items-center gap-2 min-w-0">
+                  <Mail className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                  <span className="font-medium text-sm truncate">בירורים כלליים</span>
                 </div>
-                {yearlyInquiriesCount !== undefined && renderBadge(yearlyInquiriesCount, false)}
+                {yearlyInquiriesCount !== undefined && badge(yearlyInquiriesCount)}
               </>
             ) : (
-              <div className="flex items-center gap-1.5">
-                <Mail className="w-4 h-4 text-blue-600" />
-                {yearlyInquiriesCount !== undefined && renderBadge(yearlyInquiriesCount, true)}
-              </div>
+              <span className="relative flex items-center justify-center">
+                <Mail className="w-5 h-5 text-blue-600" />
+                {yearlyInquiriesCount !== undefined && floatingBadge(yearlyInquiriesCount)}
+              </span>
             )}
           </Button>
         </CardContent>
       </Card>
 
-      <Card className="shadow-sm">
+      {/* Employer actions */}
+      <Card className={`card-elevated border-gray-200/70 rounded-xl ${isOpen ? "py-4" : "py-3"}`}>
         {isOpen && (
-          <CardHeader>
-            <CardTitle className="text-lg font-medium text-gray-900 text-right">מעסיקים</CardTitle>
+          <CardHeader className="px-4 pb-1">
+            <CardTitle className="text-base font-semibold text-gray-900 text-center">מעסיקים</CardTitle>
           </CardHeader>
         )}
-        <CardContent className={`space-y-3 ${isOpen ? 'pr-0' : 'pr-2'}`}>
+        <CardContent className={`space-y-2 ${isOpen ? "px-3" : "px-2"}`}>
           {navigationItems.map((item) => {
             const count = notificationCounts?.[item.id as keyof typeof notificationCounts] ?? 0;
             const showBadge = item.id === "vacations" || item.id === "monthly-report";
+            const active = activeView === item.id;
 
             return (
               <Button
                 key={item.id}
                 onClick={() => onViewChange(item.id)}
-                variant={activeView === item.id ? "default" : "ghost"}
-                className={`w-full flex items-center ${
-                  isOpen ? "justify-start gap-4 pl-4 pr-2" : "justify-center px-2 gap-2"
-                } py-3 h-auto min-h-[44px] text-black bg-white hover:bg-purple-50 ${
-                  activeView === item.id
-                    ? "border-b-[2px] border-purple-500 border-solid"
-                    : ""
-                }`}
+                variant="ghost"
+                title={item.label}
+                className={itemClasses(active)}
               >
                 {isOpen ? (
                   <>
-                    <div className="flex items-center gap-2">
-                      <div className="relative flex-shrink-0">
-                        <Image src={item.icon} alt={item.label} width={20} height={20} className="flex-shrink-0" />
-                      </div>
-                      <span className="font-medium text-base">{item.label}</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Image src={item.icon} alt="" width={20} height={20} className="flex-shrink-0" />
+                      <span className="font-medium text-sm truncate">{item.label}</span>
                     </div>
-                    {showBadge && renderBadge(count)}
+                    {showBadge && badge(count)}
                   </>
                 ) : (
-                  <div className="flex items-center gap-1.5">
-                    <div className="relative flex-shrink-0">
-                      <Image src={item.icon} alt={item.label} width={20} height={20} className="flex-shrink-0" />
-                    </div>
-                    {showBadge && renderBadge(count, true)}
-                  </div>
+                  <span className="relative flex items-center justify-center">
+                    <Image src={item.icon} alt={item.label} width={22} height={22} />
+                    {showBadge && floatingBadge(count)}
+                  </span>
                 )}
               </Button>
             );

@@ -21,6 +21,7 @@ import DocumentUpload from '@/components/employee/components/DocumentUpload';
 import PendingInquiriesList from '@/components/inquiries/components/PendingInquiriesList';
 import InquiryDetail from '@/components/inquiries/components/InquiryDetail';
 import { Button } from '@/components/ui/button';
+import { Mail } from 'lucide-react';
 
 function EmployeesPageInner() {
   const { user, isLoaded } = useUser();
@@ -603,21 +604,29 @@ function EmployeesPageInner() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="w-full p-4 bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
+    <div className="min-h-screen app-shell">
+      <header className="w-full brand-gradient brand-header-shadow sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto flex justify-between items-center px-4 py-3">
           <div className="logo-container flex items-center gap-3">
-            <Image
-              src="/big_logo.jpg"
-              alt="לוגו"
-              width={200}
-              height={200}
-            />
-            <span className="text-2xl font-bold" dir="rtl">Connect</span>
+            <div className="bg-white rounded-xl p-1.5 shadow-sm ring-1 ring-white/40">
+              <Image
+                src="/big_logo.jpg"
+                alt="לוגו"
+                width={200}
+                height={200}
+                className="h-10 w-auto rounded-lg"
+              />
+            </div>
+            <span className="text-2xl font-bold tracking-tight text-white" dir="rtl">Connect</span>
           </div>
           <div className="flex items-center gap-4">
-            {isLoaded && (
-              <span className="text-right" dir="rtl" style={{ fontWeight: 'bold' }}>{employeerName}</span>
+            {isLoaded && employeerName && (
+              <span
+                className="text-right rounded-full bg-white/15 px-3 py-1 text-sm font-semibold text-white backdrop-blur-sm ring-1 ring-white/25"
+                dir="rtl"
+              >
+                {employeerName}
+              </span>
             )}
             <SignedIn>
               <UserButton appearance={{
@@ -632,7 +641,7 @@ function EmployeesPageInner() {
         </div>
       </header>
 
-      <main className="mx-auto p-6 w-full">
+      <main className="mx-auto p-6 w-full max-w-full overflow-x-hidden">
         <SignedIn>
           {/* Admin dropdown for @cpateam.co.il users and neemandu@gmail.com */}
           {isLoaded && user?.emailAddresses?.[0]?.emailAddress && (
@@ -659,24 +668,24 @@ function EmployeesPageInner() {
             </div>
         )}
         
-        <div className="flex h-full">
-            <div className="flex-1">
+        <div className="flex h-full min-w-0 max-w-full">
+            <div className="flex-1 min-w-0 max-w-full overflow-hidden">
               {/* Regular period display for non-admin users */}
               {isLoaded && user?.emailAddresses?.[0]?.emailAddress && 
                !(user.emailAddresses[0].emailAddress.endsWith('@cpateam.co.il') || 
                  user.emailAddresses[0].emailAddress === 'neemandu@gmail.com') && 
                (activeView) && (
                 <div className="flex justify-center items-center mb-4">
-                  <span className="text-center text-xl font-bold text-gray-800" dir="rtl">
-                    תקופת דיווח: <span className="text-blue-600">{changeTime}</span>
+                  <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-1.5 text-lg font-bold text-gray-800 ring-1 ring-gray-200 shadow-sm" dir="rtl">
+                    תקופת דיווח: <span className="text-primary">{changeTime}</span>
                   </span>
                 </div>
               )}
-              <div className="flex-1 bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+              <div className="flex-1 bg-card rounded-2xl border border-gray-200/70 p-6 card-elevated min-w-0 max-w-full overflow-hidden">
                 {renderMainContent()}
               </div>
             </div>
-            <div className={`transition-all duration-200 ${isSidebarOpen ? "w-[260px]" : "w-16"} ml-6`}>
+            <div className={`transition-all duration-200 ${isSidebarOpen ? "w-[260px]" : "w-20"} ml-6`}>
               <EmployersSidebar
                 activeView={loading ? undefined : activeView}
                 onViewChange={handleGuardedViewChange}
@@ -690,15 +699,26 @@ function EmployeesPageInner() {
           </div>
         </SignedIn>
         <SignedOut>
-          <div className="text-center py-16">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">אנא התחבר כדי לצפות בדף זה</h2>
-            <Link href="/sign-in" className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">התחבר</Link>
+          <div className="flex justify-center py-16 px-4" dir="rtl">
+            <div className="w-full max-w-md rounded-2xl bg-card border border-gray-200/70 card-elevated p-10 text-center">
+              <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl brand-gradient text-white shadow-md">
+                <Mail className="h-7 w-7" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">ברוכים הבאים ל-Connect</h2>
+              <p className="text-gray-500 mb-6">אנא התחברו כדי לצפות בנתונים שלכם</p>
+              <Link
+                href="/sign-in"
+                className="inline-flex items-center justify-center w-full px-6 py-3 brand-gradient text-white font-semibold rounded-xl shadow-md hover:shadow-lg hover:opacity-95 transition-all active:scale-[0.98]"
+              >
+                התחברות
+              </Link>
+            </div>
           </div>
         </SignedOut>
       </main>
       {showUnsavedNavModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full text-right" dir="rtl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full text-right" dir="rtl">
             <div className="text-xl font-bold text-gray-900 mb-2">רק רגע! לא שמרתם...</div>
             <div className="text-gray-700 mb-6">יש שינויים שלא נשמרו. האם להישאר ולשמור או לצאת בכל מקרה?</div>
             <div className="flex justify-end gap-3">

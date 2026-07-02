@@ -289,7 +289,7 @@ export default function InquiryDetail({
               <ChevronLeft className="w-5 h-5" />
             </Button>
           </div>
-          <Button onClick={handleSave} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto">
+          <Button onClick={handleSave} disabled={isSaving} className="w-full sm:w-auto">
             {isSaving ? 'שומר...' : 'שמירת בירור'}
           </Button>
           <Button variant="outline" onClick={onBack} className="w-full sm:w-auto">
@@ -349,9 +349,9 @@ export default function InquiryDetail({
             </div>
 
             <div className="space-y-2">
-              <Label className="font-bold text-blue-700">שאלה</Label>
+              <Label className="font-bold text-primary">שאלה</Label>
               <textarea
-                className="w-full rounded-md border border-blue-300 p-3 text-base min-h-[120px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-md border border-primary/25 bg-accent/30 p-3 text-base min-h-[120px] focus:outline-none focus:ring-2 focus:ring-primary/40"
                 value={inquiry.question}
                 readOnly
               />
@@ -363,7 +363,7 @@ export default function InquiryDetail({
                 {inquiry.isTextMandatory && <span className="text-red-500">*</span>}
               </Label>
               <textarea
-                className={`w-full rounded-md p-3 text-sm min-h-[140px] border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                className={`w-full rounded-md p-3 text-sm min-h-[140px] border focus:outline-none focus:ring-2 focus:ring-primary/40 ${
                   inquiry.isTextMandatory && meta.missingAnswer ? 'border-red-500' : 'border-gray-300'
                 }`}
                 value={answer}
@@ -382,7 +382,7 @@ export default function InquiryDetail({
                   type="file"
                   multiple
                   onChange={(e) => handleFileChange(e.target.files)}
-                  className={`block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 ${
+                  className={`block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-accent file:text-accent-foreground hover:file:bg-accent/70 file:cursor-pointer ${
                     inquiry.isDocMandatory && meta.missingDocs ? 'border border-red-500 rounded-md' : ''
                   }`}
                 />
@@ -520,7 +520,7 @@ export default function InquiryDetail({
                       href={selectedDoc.url || selectedDoc.file}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 text-sm underline"
+                      className="text-primary text-sm underline hover:text-primary/80"
                     >
                       פתח קובץ
                     </a>
@@ -542,7 +542,7 @@ export default function InquiryDetail({
                       <button
                         type="button"
                         onClick={() => setSelectedDocIndex(idx)}
-                        className={`text-right truncate flex-1 ${idx === selectedDocIndex ? 'font-semibold text-blue-700' : 'text-gray-800'}`}
+                        className={`text-right truncate flex-1 ${idx === selectedDocIndex ? 'font-semibold text-primary' : 'text-gray-800'}`}
                         title={doc.filename}
                       >
                       {doc.filename}
@@ -552,7 +552,7 @@ export default function InquiryDetail({
                           href={doc.url || doc.file}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 underline whitespace-nowrap"
+                          className="text-primary underline whitespace-nowrap hover:text-primary/80"
                         >
                           פתח
                         </a>

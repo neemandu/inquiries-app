@@ -196,7 +196,7 @@ export default function YearlyForm({
   if (isSubmitting) {
     return (
       <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white/80">
-        <div className="w-12 h-12 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+        <div className="w-12 h-12 border-4 border-gray-200 border-t-primary rounded-full animate-spin"></div>
         <h2 className="mt-8 text-xl font-semibold text-gray-800 text-center">
           נא לא לסגור את החלון. הפעולה יכולה לקחת מספר דקות.
         </h2>
@@ -206,8 +206,11 @@ export default function YearlyForm({
 
   return (
     <div dir="rtl" className="yearly-form space-y-4">
-      <h2>עדכון בירורים עבור: {employer}</h2>
-      <div style={{ color: "red", marginBottom: "1rem" }}>
+      <div className="mb-4 border-b border-gray-100 pb-4">
+        <h2 className="text-2xl font-bold text-gray-900">בירורים כלליים</h2>
+        {employer && <p className="text-gray-500 text-sm mt-0.5">{employer}</p>}
+      </div>
+      <div className="mb-4 inline-block rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm px-3 py-2">
         הערה: ניתן להגיש את הטופס גם אם חלק מהבירורים טרם הושלמו
       </div>
 
@@ -294,9 +297,8 @@ export default function YearlyForm({
                 )}
               </div>
               {item.remarks && (
-                <p style={{ color: "blue" }}>הערות: {item.remarks}</p>
+                <p className="mt-2 text-sm text-primary">הערות: {item.remarks}</p>
               )}
-              <hr />
             </div>
           )
         })}
@@ -317,9 +319,21 @@ export default function YearlyForm({
           overflow-x: hidden;
         }
         .yearly-set {
-          margin-bottom: 2rem;
+          margin-bottom: 1.25rem;
+          padding: 1.25rem;
           text-align: right;
           max-width: 100%;
+          background: #fff;
+          border: 1px solid #e5e7eb;
+          border-radius: 14px;
+          box-shadow: 0 1px 2px oklch(0.21 0.03 264 / 0.04), 0 8px 24px -18px oklch(0.21 0.03 264 / 0.25);
+        }
+        .yearly-set > label:first-child {
+          display: block;
+          font-weight: 600;
+          color: #111827;
+          word-break: break-word;
+          overflow-wrap: anywhere;
         }
         .yearly-set label {
           display: block;
@@ -343,11 +357,18 @@ export default function YearlyForm({
         select {
           width: 100%;
           max-width: 500px;
-          padding: 0.5rem;
+          padding: 0.5rem 0.65rem;
           font-size: 1em;
-          border: 1px solid #ccc;
-          border-radius: 4px;
+          border: 1px solid #d1d5db;
+          border-radius: 8px;
           box-sizing: border-box;
+          transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        input[type="text"]:focus,
+        select:focus {
+          outline: none;
+          border-color: var(--primary);
+          box-shadow: 0 0 0 3px oklch(0.62 0.19 270 / 0.25);
         }
         @media (max-width: 640px) {
           input[type="text"],
@@ -358,19 +379,28 @@ export default function YearlyForm({
         button[type="submit"] {
           display: block;
           margin: 2rem auto 0;
-          padding: 0.75rem 1.5rem;
-          background: #007bff;
+          padding: 0.7rem 1.75rem;
+          background: linear-gradient(100deg, oklch(0.44 0.24 277), oklch(0.5 0.23 264));
           color: #fff;
           border: none;
-          border-radius: 4px;
+          border-radius: 10px;
           font-size: 1em;
+          font-weight: 600;
           cursor: pointer;
+          box-shadow: 0 6px 16px -8px oklch(0.44 0.24 277 / 0.7);
+          transition: opacity 0.15s, transform 0.05s, box-shadow 0.15s;
         }
         button[type="submit"]:disabled {
-          background: #aaa;
+          background: #cbd5e1;
+          box-shadow: none;
+          cursor: not-allowed;
         }
         button[type="submit"]:hover:not(:disabled) {
-          background: #0069d9;
+          opacity: 0.94;
+          box-shadow: 0 8px 20px -8px oklch(0.44 0.24 277 / 0.8);
+        }
+        button[type="submit"]:active:not(:disabled) {
+          transform: scale(0.98);
         }
         .logo-container {
           text-align: center;

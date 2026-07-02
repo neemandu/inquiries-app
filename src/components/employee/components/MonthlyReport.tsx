@@ -17,6 +17,19 @@ interface ColumnNameConfig {
   columnNameRecordId: string;
 }
 
+const TEXT_WRAP_STYLE = {
+  wordBreak: 'break-word' as const,
+  overflowWrap: 'break-word' as const,
+  whiteSpace: 'normal' as const,
+};
+
+const isNotesColumnLabel = (label: string) => label.includes('הערות');
+
+const getColumnWidth = (column: { key: string; label: string }) => {
+  if (column.key === 'name' || isNotesColumnLabel(column.label)) return '120px';
+  return '80px';
+};
+
 interface MonthlyReportProps {
   columnSettings: ColumnSettingsType;
   onColumnToggle: (column: keyof ColumnSettingsType) => void;
@@ -875,7 +888,7 @@ export default function MonthlyReport({
   }
 
   return (
-    <>
+    <div className="min-w-0 max-w-full overflow-hidden">
       {/* Header with Settings and Save buttons */}
       <div className="flex items-center mb-4 gap-2 w-full max-w-none" dir="rtl">
         {/* Gear Icon (rightmost in RTL) */}
@@ -1152,14 +1165,14 @@ export default function MonthlyReport({
       </div>
 
       {/* Table */}
-      <Card className="bg-gray-50 w-full max-w-none">
+      <Card className="bg-gray-50 w-full max-w-full min-w-0">
         <CardContent className="p-0">
-          <div ref={tableContainerRef} className="overflow-auto w-full h-[calc(100vh-300px)]" style={{ minWidth: '100%' }}>
-            <table className="w-full table-fixed" dir="rtl">
+          <div ref={tableContainerRef} className="overflow-auto max-w-full w-full h-[calc(100vh-300px)]">
+            <table className="table-fixed w-max min-w-full" dir="rtl">
               <thead>
                 <tr className="bg-gray-50">
                   {visibleColumns.map((column) => {
-                    const isNotesColumn = column.label === 'הערות';
+                    const colWidth = getColumnWidth(column);
                     return (
                     <th
                       key={column.key}
@@ -1167,17 +1180,15 @@ export default function MonthlyReport({
                         column.isFrozen ? 'sticky top-0 right-0 bg-gray-50 z-20 border-l-2 border-gray-300 shadow-[4px_0_4px_-2px_rgba(0,0,0,0.1)]' : 'sticky top-0 bg-gray-50 z-10'
                       }`}
                       style={{ 
-                        minWidth: isNotesColumn ? '80px' : '40px',
-                        maxWidth: isNotesColumn ? '80px' : '40px',
-                        width: isNotesColumn ? '80px' : '40px',
-                        wordBreak: 'break-word',
-                        overflowWrap: 'anywhere',
-                        whiteSpace: 'normal'
+                        minWidth: colWidth,
+                        maxWidth: colWidth,
+                        width: colWidth,
+                        ...TEXT_WRAP_STYLE,
                       }}
                       onClick={() => handleSort(column.key)}
                     >
-                      <div className="flex items-center justify-center gap-2 flex-wrap" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere', whiteSpace: 'normal' }}>
-                        <span style={{ wordBreak: 'break-word', overflowWrap: 'anywhere', whiteSpace: 'normal' }}>{column.label}</span>
+                      <div className="flex flex-col items-center gap-1">
+                        <span>{column.label}</span>
                         {sortConfig?.key === column.key && (
                           <span className="text-sm flex-shrink-0">
                             {sortConfig.direction === 'asc' ? '↑' : '↓'}
@@ -1198,7 +1209,7 @@ export default function MonthlyReport({
                     }`}
                   >
                     {visibleColumns.map((column) => {
-                      const isNotesColumn = column.label === 'הערות';
+                      const colWidth = getColumnWidth(column);
                       const empCol = employee.columns.find((col: EditableColumn) => col.columnId === column.key);
                       let tooltipValue = '';
                       if (empCol) {
@@ -1220,12 +1231,10 @@ export default function MonthlyReport({
                               : rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'
                             }`}
                           style={{
-                            minWidth: isNotesColumn ? '0px' : '40px',
-                            maxWidth: isNotesColumn ? 'none' : '40px',
-                            width: isNotesColumn ? 'auto' : '40px',
-                            wordBreak: 'break-word',
-                            overflowWrap: 'anywhere',
-                            whiteSpace: 'normal'
+                            minWidth: colWidth,
+                            maxWidth: colWidth,
+                            width: colWidth,
+                            ...TEXT_WRAP_STYLE,
                           }}
                           title={tooltipValue}
                         >
@@ -1254,6 +1263,6 @@ export default function MonthlyReport({
         </Button>
 
       </div>
-    </>
+    </div>
   );
-} 
+}

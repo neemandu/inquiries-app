@@ -152,10 +152,10 @@ export default function PendingInquiriesList({
   return (
     <div dir="rtl" className="space-y-6">
       <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 border-b border-gray-100 pb-4">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">בירורי הנהלת חשבונות</h2>
-            <p className="text-gray-600 text-sm">{employer}</p>
+            <p className="text-gray-500 text-sm mt-0.5">{employer}</p>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex gap-2">
@@ -163,7 +163,6 @@ export default function PendingInquiriesList({
                 variant={viewMode === 'list' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('list')}
-                className={viewMode === 'list' ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}
               >
                 תצוגת רשימה
               </Button>
@@ -171,7 +170,6 @@ export default function PendingInquiriesList({
                 variant={viewMode === 'table' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('table')}
-                className={viewMode === 'table' ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}
               >
                 תצוגת טבלה
               </Button>
@@ -184,7 +182,7 @@ export default function PendingInquiriesList({
               placeholder="חיפוש לפי ספק, נושא או תיאור"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="col-span-1 md:col-span-3 border-2 border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+              className="col-span-1 md:col-span-3"
             />
           </div>
         )}
@@ -200,7 +198,11 @@ export default function PendingInquiriesList({
                 className="rounded-full flex items-center gap-2"
               >
                 <span>{supplier.name}</span>
-                <span className="text-xs bg-gray-100 text-gray-800 rounded-full px-2 py-0.5">
+                <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${
+                  supplierFilter === supplier.name
+                    ? 'bg-white/25 text-white'
+                    : 'bg-accent text-accent-foreground'
+                }`}>
                   {supplier.open}
                 </span>
               </Button>
@@ -263,7 +265,7 @@ export default function PendingInquiriesList({
           {filtered.map(({ inquiry }) => (
             <Card
               key={inquiry.recordId}
-              className="hover:shadow-lg hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50 transition-all cursor-pointer"
+              className="rounded-xl hover:shadow-lg hover:-translate-y-0.5 hover:border-primary/30 hover:bg-accent/30 transition-all cursor-pointer"
               style={{ transitionProperty: 'box-shadow, transform, border-color' }}
               onClick={() => onSelect(inquiry)}
             >

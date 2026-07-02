@@ -297,7 +297,7 @@ export default function SupplierTable({
   if (isSubmitting) {
     return (
       <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white/80">
-        <div className="w-12 h-12 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+        <div className="w-12 h-12 border-4 border-gray-200 border-t-primary rounded-full animate-spin"></div>
         <h2 className="mt-8 text-xl font-semibold text-gray-800 text-center">נא לא לסגור את החלון. הפעולה יכולה לקחת מספר דקות.</h2>
       </div>
     );
@@ -306,25 +306,31 @@ export default function SupplierTable({
 
   return (
     <div dir="rtl">
-      <h2>עדכון בירורים עבור: {employer}</h2>
-      <div style={{ color: 'red', marginBottom: '1rem' }}>
-        הערה: ניתן להגיש את הטופס גם אם חלק מהבירורים טרם הושלמו
+      <div className="mb-4 border-b border-gray-100 pb-4">
+        <h2 className="text-2xl font-bold text-gray-900">עדכון בירורים</h2>
+        {employer && <p className="text-gray-500 text-sm mt-0.5">{employer}</p>}
       </div>
-      {modifiedKeys.size > 0 && (
-        <div style={{ color: 'green', marginBottom: '1rem' }}>
-          {modifiedKeys.size} רשומות שונו ויישלחו
+
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm px-3 py-2">
+          הערה: ניתן להגיש את הטופס גם אם חלק מהבירורים טרם הושלמו
         </div>
-      )}
+        {modifiedKeys.size > 0 && (
+          <div className="rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold px-3 py-2">
+            {modifiedKeys.size} רשומות שונו ויישלחו
+          </div>
+        )}
+      </div>
 
       {canForceClose && (
-        <div style={{ marginBottom: '1rem' }}>
-    <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>סגירה בכוח – בחר/י סיבה:</div>
-    <ul style={{ margin: 0, paddingInlineStart: '1.25rem' }}>
-      <li>הוצאה פרטית – לרשום כנגד כרטיס חו״ז בעלים.</li>
-      <li>הוצאה עסקית בלי אסמכתא – לא אצליח להשיג מסמך; לרשום כהוצאה עסקית על בסיס הצהרתי.</li>
-      <li>החשבונית הועברה ונבדקה – העברתי למערכת את החשבוניות הנכונה (בדקתי ש- ספק/תאריך/סכום תואמים); מבקש לסגור את הבירור.</li>
-    </ul>
-  </div>
+        <div className="mb-4 rounded-xl border border-gray-200 bg-gray-50/70 p-4">
+          <div className="font-semibold text-gray-900 mb-2">סגירה בכוח – בחר/י סיבה:</div>
+          <ul className="list-disc space-y-1 pr-5 text-sm text-gray-700">
+            <li>הוצאה פרטית – לרשום כנגד כרטיס חו״ז בעלים.</li>
+            <li>הוצאה עסקית בלי אסמכתא – לא אצליח להשיג מסמך; לרשום כהוצאה עסקית על בסיס הצהרתי.</li>
+            <li>החשבונית הועברה ונבדקה – העברתי למערכת את החשבוניות הנכונה (בדקתי ש- ספק/תאריך/סכום תואמים); מבקש לסגור את הבירור.</li>
+          </ul>
+        </div>
       )}
 
       <form ref={formRef} onSubmit={handleSubmit}>
@@ -551,14 +557,14 @@ export default function SupplierTable({
       </form>
 
       {showConfirmSubmit && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" dir="rtl">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-3 text-right">האם לשלוח את הקבצים?</h3>
-            <p className="text-sm text-gray-700 mb-6 text-right">הקבצים שצירפת מגיעים לנפח של לפחות 5MB. האם ברצונך לשלוח את מה שמילאת עד כה?</p>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" dir="rtl">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-bold text-gray-900 mb-2 text-right">האם לשלוח את הקבצים?</h3>
+            <p className="text-sm text-gray-600 mb-6 text-right">הקבצים שצירפת מגיעים לנפח של לפחות 5MB. האם ברצונך לשלוח את מה שמילאת עד כה?</p>
             <div className="flex gap-3 justify-start" dir="rtl">
               <button
                 type="button"
-                className="px-4 py-2 bg-blue-600 text-white rounded"
+                className="px-5 py-2 bg-primary text-primary-foreground font-medium rounded-lg shadow-sm hover:bg-primary/90 transition-colors active:scale-[0.98]"
                 onClick={() => {
                   setShowConfirmSubmit(false);
                   // Trigger form submit programmatically
@@ -569,7 +575,7 @@ export default function SupplierTable({
               </button>
               <button
                 type="button"
-                className="px-4 py-2 bg-gray-200 text-gray-800 rounded"
+                className="px-5 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors"
                 onClick={() => setShowConfirmSubmit(false)}
               >
                 לא
@@ -580,21 +586,22 @@ export default function SupplierTable({
       )}
 
       {canForceClose && showForceCloseAckModal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" dir="rtl">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-3 text-right">אישור הצהרה</h3>
-            <label className="flex items-start gap-2 text-sm text-gray-700">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" dir="rtl">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-bold text-gray-900 mb-3 text-right">אישור הצהרה</h3>
+            <label className="flex items-start gap-2 text-sm text-gray-700 rounded-lg bg-gray-50 border border-gray-200 p-3">
               <input
                 type="checkbox"
                 checked={forceCloseAck}
                 onChange={(e) => setForceCloseAck(e.target.checked)}
+                className="mt-0.5 accent-[var(--primary)]"
               />
               <span>אני מאשר/ת שהאחריות על ההצהרה והשלכותיה היא עליי.</span>
             </label>
             <div className="flex gap-3 justify-start mt-4" dir="rtl">
               <button
                 type="button"
-                className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-60"
+                className="px-5 py-2 bg-primary text-primary-foreground font-medium rounded-lg shadow-sm hover:bg-primary/90 transition-colors active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
                 onClick={() => {
                   setShowForceCloseAckModal(false);
                   setPendingForceCloseKey(null);
@@ -605,7 +612,7 @@ export default function SupplierTable({
               </button>
               <button
                 type="button"
-                className="px-4 py-2 bg-gray-200 text-gray-800 rounded"
+                className="px-5 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors"
                 onClick={() => {
                   if (pendingForceCloseKey) {
                     setForceClose(prev => ({ ...prev, [pendingForceCloseKey]: '' }));
@@ -630,12 +637,12 @@ export default function SupplierTable({
         }
         th,
         td {
-          border: 1px solid #ccc;
+          border: 1px solid #e5e7eb;
           padding: 0.5rem;
           overflow: hidden;
         }
         th {
-          background: #eee;
+          background: #eef2ff;
         }
         table th,
         table td {
@@ -645,27 +652,42 @@ export default function SupplierTable({
           width: 100%;
           box-sizing: border-box;
           padding: 0.5rem;
-          border: 1px solid #ccc;
-          border-radius: 4px;
+          border: 1px solid #d1d5db;
+          border-radius: 8px;
           font-size: 1em;
           resize: vertical;
+          transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        textarea:focus {
+          outline: none;
+          border-color: var(--primary);
+          box-shadow: 0 0 0 3px oklch(0.62 0.19 270 / 0.25);
         }
         button[type="submit"] {
           display: block;
           margin: 1rem auto 0;
-          padding: 0.75rem 1.5rem;
-          background: #007bff;
+          padding: 0.7rem 1.75rem;
+          background: linear-gradient(100deg, oklch(0.44 0.24 277), oklch(0.5 0.23 264));
           color: #fff;
           border: none;
-          border-radius: 4px;
+          border-radius: 10px;
           font-size: 1em;
+          font-weight: 600;
           cursor: pointer;
+          box-shadow: 0 6px 16px -8px oklch(0.44 0.24 277 / 0.7);
+          transition: opacity 0.15s, transform 0.05s, box-shadow 0.15s;
         }
         button[type="submit"]:disabled {
-          background: #aaa;
+          background: #cbd5e1;
+          box-shadow: none;
+          cursor: not-allowed;
         }
         button[type="submit"]:hover:not(:disabled) {
-          background: #0069d9;
+          opacity: 0.94;
+          box-shadow: 0 8px 20px -8px oklch(0.44 0.24 277 / 0.8);
+        }
+        button[type="submit"]:active:not(:disabled) {
+          transform: scale(0.98);
         }
         .supplier-table {
           table-layout: auto;
@@ -676,17 +698,27 @@ export default function SupplierTable({
         .supplier-table-scroll {
           width: 100%;
           overflow-x: auto;
+          border: 1px solid #e5e7eb;
+          border-radius: 12px;
         }
         .supplier-table th,
         .supplier-table td {
-          border: 1px solid #ccc;
+          border: 1px solid #e5e7eb;
           padding: 0.5rem;
           overflow: hidden;
           text-align: right;
           font-size: 0.85em;
         }
         .supplier-table th {
-          background: #eee;
+          background: #eef2ff;
+          color: #3730a3;
+          font-weight: 600;
+        }
+        .supplier-table tbody tr:nth-child(even) {
+          background: #f8fafc;
+        }
+        .supplier-table tbody tr:hover {
+          background: #eef2ff;
         }
         .supplier-table th:nth-child(6),
         .supplier-table td:nth-child(6),
