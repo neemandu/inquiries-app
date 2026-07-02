@@ -32,7 +32,7 @@ export default function PendingInquiriesList({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [sortBy, setSortBy] = useState<SortOption>('date-desc');
   const [supplierFilter, setSupplierFilter] = useState<string>('הכל');
-  const [viewMode, setViewMode] = useState<'list' | 'table'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'table'>('table');
   const [forceCloseMap, setForceCloseMap] = useState<Record<string, string>>({});
 
   const enriched = useMemo(() => {
