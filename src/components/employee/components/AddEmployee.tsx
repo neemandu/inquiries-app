@@ -44,7 +44,7 @@ const addEmployeeSchema = z.object({
     message: "תעודת זהות היא שדה חובה.",
   }).regex(/^\d+$/, {
     message: "תעודת זהות יכולה להכיל רק מספרים.",
-  }),
+  }), 
   startDate: z.string().min(1, {
     message: "תאריך תחילת עבודה הוא שדה חובה.",
   }),
