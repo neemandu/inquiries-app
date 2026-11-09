@@ -74,7 +74,8 @@ export default function MobileEmployerPortal({
     try {
       setMissingDocs(await fetchMissingDocs(recordId));
     } catch (error) {
-      console.error('Failed to load missing documents', error);
+      // Handled on screen with a retry button, so it's logged as a warning rather than an error
+      console.warn('Failed to load missing documents', error);
       setLoadFailed(true);
     }
   }, [recordId]);

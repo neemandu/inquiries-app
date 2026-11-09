@@ -23,7 +23,12 @@ export async function GET(request: NextRequest) {
     );
 
     if (!response.ok) {
-      throw new Error(`AWS API failed with status: ${response.status}`);
+      // Pass the Lambda's own reason on (e.g. an employer record without a current reporting period)
+      const details = await response.json().catch(() => null);
+      return NextResponse.json(
+        { success: false, message: details?.error || `AWS API failed with status: ${response.status}` },
+        { status: response.status }
+      );
     }
 
     const data = await response.json();
