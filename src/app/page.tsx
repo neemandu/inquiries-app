@@ -24,6 +24,8 @@ import MobileWelcome from '@/components/auth/MobileWelcome';
 import MobileAppHeader from '@/components/mobile/MobileAppHeader';
 import MobileMenu, { MobileMenuKey } from '@/components/mobile/MobileMenu';
 import MobileHome from '@/components/mobile/MobileHome';
+import MobileInquiries, { InquiryTab } from '@/components/mobile/MobileInquiries';
+import MobileInquiryDetail from '@/components/mobile/MobileInquiryDetail';
 import { useIsMobile } from '@/lib/useIsMobile';
 import { assistant } from '@/lib/fonts';
 import { Button } from '@/components/ui/button';
@@ -77,6 +79,7 @@ function EmployeesPageInner() {
   const isMobile = useIsMobile();
   const [showMobileHome, setShowMobileHome] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mobileInquiryTab, setMobileInquiryTab] = useState<InquiryTab>('clarifications');
   const searchParams = useSearchParams();
   const deepLinkHandledRef = useRef(false);
   const navigationSource = useMemo(
@@ -722,6 +725,25 @@ function EmployeesPageInner() {
               handleGuardedViewChange('document-upload');
               setShowMobileHome(false);
             }}
+          />
+        ) : activeView === 'pending-inquiries' && !showYearlyForm ? (
+          <MobileInquiries
+            inquiries={monthlyInquiries}
+            loading={loading}
+            tab={mobileInquiryTab}
+            onTabChange={setMobileInquiryTab}
+            onOpenInquiry={handleInquirySelect}
+            onHome={() => handleMobileNavigate('home')}
+            onUpload={() => handleGuardedViewChange('document-upload')}
+          />
+        ) : activeView === 'inquiry-detail' && selectedInquiry && !showYearlyForm ? (
+          <MobileInquiryDetail
+            key={selectedInquiry.recordId}
+            inquiry={selectedInquiry}
+            recordId={isAdminUser && selectedEmployerRecordId ? selectedEmployerRecordId : apiResponse?.recordId}
+            onBack={() => setActiveView('pending-inquiries')}
+            onHome={() => handleMobileNavigate('home')}
+            onSaved={handleInquiryUpdate}
           />
         ) : (
           <main className="min-w-0 flex-1 overflow-x-hidden p-4">{renderMainContent()}</main>

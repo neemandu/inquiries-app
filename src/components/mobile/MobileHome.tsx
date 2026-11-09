@@ -2,10 +2,11 @@
 
 import Image from 'next/image';
 import { MonthlyInquiry } from '@/lib/types';
-import { getInquiryGaps } from '@/lib/inquiries';
+import { getInquiryGaps, inquiryMonthLabel } from '@/lib/inquiries';
 import { heebo } from '@/lib/fonts';
 import MaskIcon from '@/components/mobile/MaskIcon';
-import { mobilePrimaryButton } from '@/components/auth/MobileAuthHeader';
+import ActionRow from '@/components/mobile/ActionRow';
+import UploadButton from '@/components/mobile/UploadButton';
 
 const MAX_INQUIRY_CARDS = 3;
 
@@ -23,20 +24,6 @@ interface MobileHomeProps {
   onUpload: () => void;
 }
 
-function monthLabel(dateStr: string) {
-  const date = new Date(dateStr);
-  return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
-}
-
-function UploadButton({ onClick }: { onClick: () => void }) {
-  return (
-    <button type="button" onClick={onClick} className={`${mobilePrimaryButton} gap-2`}>
-      <MaskIcon src="/icons/mobile/camera.svg" size={20} />
-      סרוק / העלה מסמך חדש
-    </button>
-  );
-}
-
 const sectionCard =
   'flex w-full flex-col border-[0.5px] border-[#eaeef6] bg-white p-4 drop-shadow-[0_4px_10px_rgba(0,0,0,0.05)]';
 
@@ -49,36 +36,6 @@ function Section({ title, onTitleClick, children }: { title: string; onTitleClic
       </button>
       {children}
     </section>
-  );
-}
-
-function ActionCard({
-  icon,
-  text,
-  action,
-  onClick,
-}: {
-  icon: 'alert-triangle' | 'message-square';
-  text: string;
-  action: string;
-  onClick: () => void;
-}) {
-  return (
-    <div className="flex w-full items-center gap-2 bg-white p-4">
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        <span className="flex size-6 shrink-0 items-center justify-center text-[#1e3465]">
-          <MaskIcon src={`/icons/mobile/${icon}.svg`} size={18} />
-        </span>
-        <span className="min-w-0 text-[16px] text-[#0f1a33]">{text}</span>
-      </div>
-      <button
-        type="button"
-        onClick={onClick}
-        className="shrink-0 border border-[#284587] px-[14px] py-2 text-[12px] font-semibold text-[#0f1a33]"
-      >
-        {action}
-      </button>
-    </div>
   );
 }
 
@@ -170,19 +127,19 @@ export default function MobileHome({
         {(total > 0 || generalCount > 0) && (
           <Section title="מערכת בירורים" onTitleClick={onOpenInquiries}>
             {incomplete.slice(0, MAX_INQUIRY_CARDS).map(({ inquiry, missingDocs }) => (
-              <ActionCard
+              <ActionRow
                 key={inquiry.recordId}
                 icon="alert-triangle"
-                text={[inquiry.supplier, monthLabel(inquiry.date)].filter(Boolean).join(' ')}
+                text={[inquiry.supplier, inquiryMonthLabel(inquiry.date)].filter(Boolean).join(' ')}
                 action={missingDocs ? 'צירוף' : 'מענה'}
                 onClick={() => onOpenInquiry(inquiry)}
               />
             ))}
             {total > 0 && (
-              <ActionCard icon="message-square" text={`${total} בירורים פתוחים`} action="צפייה" onClick={onOpenInquiries} />
+              <ActionRow icon="message-square" text={`${total} בירורים פתוחים`} action="צפייה" onClick={onOpenInquiries} />
             )}
             {generalCount > 0 && (
-              <ActionCard
+              <ActionRow
                 icon="message-square"
                 text={`${generalCount} בירורים כלליים`}
                 action="צפייה"
@@ -194,7 +151,7 @@ export default function MobileHome({
 
         {missingDocsCount > 0 && (
           <Section title="מערכת מעסיקים" onTitleClick={onOpenEmployerPortal}>
-            <ActionCard
+            <ActionRow
               icon="alert-triangle"
               text={`${missingDocsCount} מסמכים חסרים לעובדים`}
               action="צירוף"

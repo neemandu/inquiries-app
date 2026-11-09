@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { toBase64 } from '@/lib/utils';
+import { saveMonthlyInquiry } from '@/lib/inquiries';
 import { toast } from 'sonner';
 import { FileText, ChevronRight, ChevronLeft } from 'lucide-react';
 
@@ -171,15 +171,6 @@ export default function InquiryDetail({
     });
   };
 
-  const isResolved = () => {
-    const hasAnswer = !inquiry.isTextMandatory || (!!answer && answer.trim().length > 0);
-    const hasDocs =
-      !inquiry.isDocMandatory ||
-      (inquiry.docs && inquiry.docs.length > 0) ||
-      (newFiles && newFiles.length > 0);
-    return !!hasAnswer && !!hasDocs;
-  };
-
   const handleSave = async () => {
     if (!recordId) {
       toast.error('חסר מזהה מעסיק לשמירת הבירור');
@@ -192,54 +183,13 @@ export default function InquiryDetail({
 
     setIsSaving(true);
     try {
-      const encodedFiles = await Promise.all(
-        newFiles.map(async (file) => ({
-          name: file.name,
-          data: await toBase64(file),
-        }))
-      );
-
-      const payload = {
-        sets: [
-          {
-            ...inquiry,
-            verbalAnswer: answer,
-            answer,
-            forceClose,
-            files: encodedFiles,
-          },
-        ],
-        recordId,
-      };
-
-      const res = await fetch('/api/suppliers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        throw new Error(await res.text());
-      }
-
-      const combinedDocs = [
-        ...(inquiry.docs || []),
-        ...newFiles.map((f) => ({
-          id: f.name,
-          filename: f.name,
-          url: '',
-          type: f.type,
-        })),
-      ];
-
-      const updatedInquiry: MonthlyInquiry = {
-        ...inquiry,
+      const { updatedInquiry, resolved } = await saveMonthlyInquiry({
+        inquiry,
         answer,
+        files: newFiles,
         forceClose,
-        docs: combinedDocs,
-      };
-
-      const resolved = isResolved();
+        recordId,
+      });
       onUpdate?.(updatedInquiry, resolved);
       toast.success('הבירור נשמר בהצלחה');
       setNewFiles([]);
