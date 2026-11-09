@@ -7,9 +7,9 @@ import { useAuth } from '@clerk/nextjs';
 import { ArrowLeft, Mail, Phone, UserRound, type LucideIcon } from 'lucide-react';
 import { assistant, heebo } from '@/lib/fonts';
 import { isValidPhone } from '@/lib/phone';
+import { isValidEmail } from '@/lib/email';
 import MobileAuthHeader, { mobilePrimaryButton } from '@/components/auth/MobileAuthHeader';
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type Fields = { fullName: string; phone: string; email: string };
 
@@ -17,7 +17,7 @@ function validate({ fullName, phone, email }: Fields) {
   const errors: Partial<Fields> = {};
   if (fullName.trim().length < 2) errors.fullName = 'נא להזין שם מלא';
   if (!isValidPhone(phone)) errors.phone = 'נא להזין מספר טלפון נייד תקין';
-  if (email.trim() && !EMAIL_PATTERN.test(email.trim())) errors.email = 'כתובת הדואר האלקטרוני אינה תקינה';
+  if (email.trim() && !isValidEmail(email)) errors.email = 'כתובת הדואר האלקטרוני אינה תקינה';
   return errors;
 }
 

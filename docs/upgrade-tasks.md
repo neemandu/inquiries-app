@@ -17,14 +17,14 @@ Status as of 9 November 2026.
 
 Changing `FORM101_LINK_SECRET` invalidates all links already sent.
 
-### 1.2 Clerk: phone sign-in (mobile sign-in screen)
+### 1.2 Clerk: email sign-in (mobile sign-in screen)
 
-The mobile `/sign-in` uses phone number plus SMS code (`src/components/auth/MobileSignIn.tsx`).
+The mobile `/sign-in` (`src/components/auth/MobileSignIn.tsx`) signs in by email: a 6-digit code sent by email (default), or the account password ("כניסה עם סיסמה"). It replaced the design's phone/SMS step because Clerk couldn't send SMS to Israeli numbers.
 
-- [ ] In the Clerk dashboard, under User & Authentication, enable **Phone number** with **SMS verification code** as a sign-in method, in both the **development** and **production** instances.
-- [ ] Check that Clerk is allowed to send SMS to Israeli numbers (+972), including any country restrictions.
-- [ ] Make sure existing users have a verified phone number on their Clerk account. Users without one can't sign in on mobile. Desktop still uses email.
-- [ ] Test the full flow on a real phone: send code, receive SMS, verify, land on home.
+- [ ] In the **production** Clerk instance, check that email is a sign-in identifier with **Email verification code**, and that **Password** is enabled. Development already has both.
+- [ ] **Turn off phone-number sign-in** in both instances (User & Authentication), since SMS to Israel doesn't work.
+- [ ] Customise the Clerk email template for the verification code (Hebrew, branding) if needed.
+- [ ] Test on a real phone: send code, receive the email, verify, land on home. Also test password sign-in.
 
 ### 1.3 Make.com scenarios
 
@@ -79,7 +79,7 @@ Until 2027 is added, the link creator shows 2027 (from December on) as "טרם �
   - Icons whose Figma export was wrong were replaced with matching Lucide icons.
   - The home screen's progress card is "התקדמות בבירורים" (inquiry completion), not daily progress.
   - The inquiry screen has an added details line (date, amount, details).
-  - On the sign-in screen, the "תוקף הקוד: 00:59" countdown is really the resend cooldown; Clerk codes stay valid longer. Consider rewording it to "ניתן לשלוח קוד חדש בעוד 00:59".
+  - The sign-in screen uses email (code or password) instead of the design's phone number, with an added "כניסה עם סיסמה" link. Its countdown now reads "ניתן לשלוח קוד חדש בעוד 00:59", since it's the resend cooldown, not the code's validity.
 
 ## 5. Known limitations
 

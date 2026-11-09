@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { isValidPhone, toE164 } from '@/lib/phone';
-
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+import { isValidEmail } from '@/lib/email';
 
 // Public route (see middleware): signed-out visitors ask the office to add them to the app
 export async function POST(request: Request) {
@@ -28,7 +27,7 @@ export async function POST(request: Request) {
     if (!isValidPhone(phone)) {
       return NextResponse.json({ success: false, message: 'Invalid phone number' }, { status: 400 });
     }
-    if (email && (email.length > 254 || !EMAIL_PATTERN.test(email))) {
+    if (email && (email.length > 254 || !isValidEmail(email))) {
       return NextResponse.json({ success: false, message: 'Invalid email' }, { status: 400 });
     }
 
