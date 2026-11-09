@@ -30,6 +30,7 @@ import MobileEmployerPortal, { EmployerTab } from '@/components/mobile/MobileEmp
 import MobileEmployeeReport from '@/components/mobile/MobileEmployeeReport';
 import MobileDocuments from '@/components/mobile/MobileDocuments';
 import { toEditableEmployees } from '@/lib/monthlyReport';
+import Form101LinkCreator from '@/components/form101/Form101LinkCreator';
 import { useIsMobile } from '@/lib/useIsMobile';
 import { assistant } from '@/lib/fonts';
 import { Button } from '@/components/ui/button';
@@ -616,7 +617,12 @@ function EmployeesPageInner() {
           onUnsavedNavigation: requestUnsavedConfirmation
         }} />;
       case 'add-employee':
-        return <AddEmployee recordId={recordIdToUse || ''} changeTime={changeTime} link101={apiResponse?.link101 || ''} employees={employees} />;
+        return (
+          <div className="space-y-6">
+            <Form101LinkCreator employerRecordId={isAdmin && selectedEmployerRecordId ? selectedEmployerRecordId : undefined} />
+            <AddEmployee recordId={recordIdToUse || ''} changeTime={changeTime} link101={apiResponse?.link101 || ''} employees={employees} />
+          </div>
+        );
       case 'employee-recognition':
         return <EmployeeRecognition employees={employees} leavingReasons={leavingReasons} is161Must={apiResponse?.is161Must}/>;
       case 'pay-slip':
@@ -766,6 +772,7 @@ function EmployeesPageInner() {
         ) : activeView === 'monthly-report' && !showYearlyForm ? (
           <MobileEmployerPortal
             recordId={mobileRecordId}
+            form101EmployerRecordId={isAdminUser && selectedEmployerRecordId ? selectedEmployerRecordId : undefined}
             employees={mobileEmployees}
             periodLabel={changeTime}
             loading={loading}

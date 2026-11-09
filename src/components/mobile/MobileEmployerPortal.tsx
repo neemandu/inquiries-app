@@ -10,6 +10,7 @@ import ActionRow from '@/components/mobile/ActionRow';
 import Breadcrumbs from '@/components/mobile/Breadcrumbs';
 import TabbedPanel from '@/components/mobile/TabbedPanel';
 import { mobilePrimaryButton } from '@/components/auth/MobileAuthHeader';
+import Form101LinkCreator from '@/components/form101/Form101LinkCreator';
 
 export type EmployerTab = 'clarifications' | 'monthly-report';
 
@@ -23,6 +24,8 @@ const secondaryButton =
 
 interface MobileEmployerPortalProps {
   recordId?: string;
+  // Set only for admins acting for a selected employer; others get their own employer on the server
+  form101EmployerRecordId?: string;
   employees: EditableEmployee[];
   periodLabel: string;
   loading: boolean;
@@ -44,6 +47,7 @@ function isAwaitingReport(employee: EditableEmployee) {
 // (Figma: Client Portal mobile / client-portal-dashboard-employees Clarifications + monthly Report)
 export default function MobileEmployerPortal({
   recordId,
+  form101EmployerRecordId,
   employees,
   periodLabel,
   loading,
@@ -60,6 +64,7 @@ export default function MobileEmployerPortal({
   const [targetIndex, setTargetIndex] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const [showEmployeeActions, setShowEmployeeActions] = useState(false);
+  const [showForm101, setShowForm101] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const loadMissingDocs = useCallback(async () => {
@@ -203,6 +208,12 @@ export default function MobileEmployerPortal({
             <button type="button" onClick={onRemoveEmployee} className={secondaryButton}>הסרת עובד</button>
           </div>
         )}
+        {showEmployeeActions && (
+          <button type="button" onClick={() => setShowForm101((open) => !open)} aria-expanded={showForm101} className={secondaryButton}>
+            טופס 101 לעובד/ת חדש/ה
+          </button>
+        )}
+        {showEmployeeActions && showForm101 && <Form101LinkCreator employerRecordId={form101EmployerRecordId} />}
         <button type="button" onClick={onMonthlyReports} className={mobilePrimaryButton}>
           דוחות חודשיים
         </button>

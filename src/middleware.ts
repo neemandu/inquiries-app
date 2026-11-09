@@ -8,6 +8,10 @@ const isPublicRoute = createRouteMatcher([
   "/sign-up(.*)",
   "/api/webhooks(.*)",
   "/api/join-request",
+  // Employees fill Form 101 through a signed personal link, without an account
+  "/form101(.*)",
+  "/api/form101/session",
+  "/api/form101/submit",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
