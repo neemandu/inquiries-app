@@ -28,6 +28,7 @@ import MobileInquiries, { InquiryTab } from '@/components/mobile/MobileInquiries
 import MobileInquiryDetail from '@/components/mobile/MobileInquiryDetail';
 import MobileEmployerPortal, { EmployerTab } from '@/components/mobile/MobileEmployerPortal';
 import MobileEmployeeReport from '@/components/mobile/MobileEmployeeReport';
+import MobileDocuments from '@/components/mobile/MobileDocuments';
 import { toEditableEmployees } from '@/lib/monthlyReport';
 import { useIsMobile } from '@/lib/useIsMobile';
 import { assistant } from '@/lib/fonts';
@@ -776,6 +777,8 @@ function EmployeesPageInner() {
             onRemoveEmployee={() => handleGuardedViewChange('employee-recognition')}
             onMonthlyReports={() => handleMobileNavigate('pay-slip')}
           />
+        ) : activeView === 'pay-slip' && !showYearlyForm ? (
+          <MobileDocuments key={mobileRecordId} recordId={mobileRecordId} onHome={() => handleMobileNavigate('home')} />
         ) : activeView === 'pending-inquiries' && !showYearlyForm ? (
           <MobileInquiries
             inquiries={monthlyInquiries}

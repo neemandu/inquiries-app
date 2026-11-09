@@ -17,6 +17,7 @@ import {
 
 import { Document, Page, pdfjs } from 'react-pdf';
 import { useState, useEffect, useCallback } from 'react';
+import { EmployerDocumentsMonth, fetchEmployerDocuments } from '@/lib/employerDocuments';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
@@ -41,12 +42,7 @@ interface PaySlipProps {
   employees?: Employee[];
 }
 
-interface PaySlipData {
-  Date: string;
-  Docs: {
-    [key: string]: string;
-  };
-}
+type PaySlipData = EmployerDocumentsMonth;
 
 // A4 dimensions at different DPI
 const A4_WIDTH_96DPI = 794; // A4 width at 96 DPI (common for screens)
@@ -198,13 +194,7 @@ export default function PaySlip({ recordId, employees = [] }: PaySlipProps) {
     setPdfUrl("");
     
     try {
-      const response = await fetch(`https://hook.eu2.make.com/0dt1lukm4kv7zpiyylmefc9l8e1dtypq?recordId=${employerRecordId}`);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const pdfData = await response.json();
+      const pdfData = await fetchEmployerDocuments(employerRecordId);
       console.log('PDF data received:', pdfData);
       
       if (Array.isArray(pdfData) && pdfData.length > 0) {
