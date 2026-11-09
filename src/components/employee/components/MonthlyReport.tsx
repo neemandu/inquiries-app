@@ -8,6 +8,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Settings, Save, Upload, Search } from "lucide-react";
 import { updateMonthlyEmployeeData } from '@/lib/utils';
+import {
+  DECREASE_ERROR,
+  DOC_REQUIRED_COLUMNS,
+  NO_DECREASE_COLUMNS,
+  buildMonthlyUpdate,
+  getEmployeeName as getEmployeeNameFromColumns,
+  hasChanges,
+  isDecrease,
+  toEditableEmployees,
+} from '@/lib/monthlyReport';
 import { toast } from 'sonner';
 
 interface ColumnNameConfig {
@@ -93,21 +103,7 @@ export default function MonthlyReport({
         }
 
         // Convert API response format to EditableEmployee format
-      const filteredEmployees: EditableEmployee[] = apiResponse.employees.map(employee => ({
-          id: employee.id,
-          columns: employee.columns.map(col => ({
-            name: col.name,
-            columnId: col.columnId,
-            oldValue: Array.isArray(col.oldValue) ? col.oldValue.join(', ') : (col.oldValue ?? ''),
-            type: col.type === 'multilineText' ? 'string' : 
-                  col.type === 'autoNumber' ? 'autoNumber' : 
-                col.type === 'number' ? 'number' : 
-                  col.type === 'multipleRecordLinks' ? 'string' : 
-                  col.type === 'multipleLookupValues' ? 'string' : 'string',
-            isMust: col.isMust,
-            newValue: Array.isArray(col.oldValue) ? col.oldValue.join(', ') : (col.oldValue ?? '')
-          } as EditableColumn))
-        }));
+      const filteredEmployees = toEditableEmployees(apiResponse);
         setEditableEmployees(filteredEmployees);
         console.log('filteredEmployees', filteredEmployees);
     } catch (error) {
@@ -132,19 +128,7 @@ export default function MonthlyReport({
   }, [editableEmployees]);
 
   // Helper function to get employee name for display
-  const getEmployeeName = useCallback((employee: EditableEmployee): string => {
-    const firstNameCol = employee.columns.find((col: EditableColumn) => 
-      col.name.includes('שם פרטי') || col.name.includes('First Name') || col.columnId.includes('firstName')
-    );
-    const lastNameCol = employee.columns.find((col: EditableColumn) => 
-      col.name.includes('שם משפחה') || col.name.includes('Last Name') || col.columnId.includes('lastName')
-    );
-    
-    const firstName = firstNameCol?.oldValue || '';
-    const lastName = lastNameCol?.oldValue || '';
-    
-    return `${firstName} ${lastName}`.trim() || `עובד ${employee.id.slice(-4)}`;
-  }, []);
+  const getEmployeeName = useCallback((employee: EditableEmployee): string => getEmployeeNameFromColumns(employee), []);
 
   // Get columns for display, ensuring "הערות רואה חשבון" is leftmost
   const getDisplayColumns = useCallback(() => {
@@ -216,15 +200,7 @@ export default function MonthlyReport({
           columns: emp.columns.map((col: EditableColumn) => {
             if (col.columnId === columnId) {
               // Check for columns that need document upload popup
-              const columnsNeedingDocs = [
-                "מילואים",
-                "החזר הוצאות", 
-                "שווי ארוחות", 
-                "ימי מחלה", 
-                "תעריף חודשי / שעתי"
-              ];
-              
-              if (columnsNeedingDocs.includes(col.name)) {
+              if (DOC_REQUIRED_COLUMNS.includes(col.name)) {
                 // Store the employee ID and column name, then show popup
                 setSelectedEmployeeId(employeeId);
                 setSelectedColumnName(col.name);
@@ -232,15 +208,11 @@ export default function MonthlyReport({
               }
               
               // Validate salary cannot be lower than oldValue
-              if (col.name === "תעריף חודשי / שעתי" ||
-                col.name === "נסיעות חודשי" ||
-                col.name === "שעות נוספות גלובליות") {
-                const numValue = typeof value === 'string' ? parseFloat(value) : value;
-                const oldValue = typeof col.oldValue === 'number' ? col.oldValue : parseFloat(String(col.oldValue));
-                if (numValue < oldValue) {
+              if (NO_DECREASE_COLUMNS.includes(col.name)) {
+                if (isDecrease(col, value)) {
                   setErrors(prev => ({
                     ...prev,
-                    [`${employeeId}_${columnId}`]: 'לא ניתן לעדכן ערך נמוך יותר מחודש קודם'
+                    [`${employeeId}_${columnId}`]: DECREASE_ERROR
                   }));
                 } else {
                   setErrors(prev => {
@@ -493,95 +465,11 @@ export default function MonthlyReport({
     setIsSaving(true);
     try {
       // Filter and convert only employees with changes and only changed columns
-      const updateData = editableEmployees
-        .map(emp => {
-          // Filter only columns that have been changed
-          const changedColumns = emp.columns
-            .filter(col => {
-              console.log('col', col);
-              // Check if newValue exists and is different from oldValue
-              if (col.newValue === undefined || col.newValue === null) {
-                return false;
-              }
-              
-              // Convert file objects to strings for comparison
-              let newValue = col.newValue;
-              let oldValue = col.oldValue;
-              
-              if (typeof newValue === 'object' && newValue !== null && 'fileName' in newValue) {
-                newValue = (newValue as { fileName: string }).fileName;
-              }
-              
-              if (typeof oldValue === 'object' && oldValue !== null && 'fileName' in oldValue) {
-                oldValue = (oldValue as { fileName: string }).fileName;
-              }
-              
-              // Return true only if values are different
-              return newValue !== oldValue;
-            })
-            .map(col => {
-              let newValue = col.newValue;
-              let oldValue = col.oldValue;
-              
-              if (typeof newValue === 'object' && newValue !== null && 'fileName' in newValue) {
-                newValue = (newValue as { fileName: string }).fileName;
-              }
-              if (typeof oldValue === 'object' && oldValue !== null && 'fileName' in oldValue) {
-                oldValue = (oldValue as { fileName: string }).fileName;
-              }
-              
-              // Convert to number if type is number or autoNumber
-              if (
-                (col.type === 'number' || col.type === 'autoNumber' || col.type === 'int') &&
-                newValue !== undefined &&
-                newValue !== null &&
-                newValue !== ''
-              ) {
-                newValue = Number(newValue);
-              }
-              if (
-                (col.type === 'number' || col.type === 'autoNumber' || col.type === 'int') &&
-                oldValue !== undefined &&
-                oldValue !== null &&
-                oldValue !== ''
-              ) {
-                oldValue = Number(oldValue);
-              }
-
-              // Map type to backend-compatible values
-              const backendType: 'string' | 'int' | 'doc' | 'autoNumber' =
-                col.type === 'number' ? 'int'
-                : col.type === 'multilineText' ? 'string'
-                : col.type;
-
-              return {
-                name: col.name,
-                columnId: col.columnId,
-                oldValue: oldValue,
-                newValue: newValue,
-                type: backendType,
-                isMust: col.isMust
-              };
-            });
-
-          return {
-            id: emp.id,
-            columns: changedColumns
-          };
-        })
-        // Filter out employees that have no changed columns
-        .filter(emp => emp.columns.length > 0);
+      const updateData = buildMonthlyUpdate(editableEmployees);
 
       const success = await updateMonthlyEmployeeData(updateData);
-      const columnsToCheck = [
-        "מילואים",
-        "החזר הוצאות",
-        "שווי ארוחות",
-        "ימי מחלה",
-        "תעריף חודשי / שעתי"
-      ];
       const specialColumnChanged = updateData.some(emp =>
-        emp.columns.some(col => columnsToCheck.includes(col.name))
+        emp.columns.some(col => DOC_REQUIRED_COLUMNS.includes(col.name))
       );
 
       if (success) {
@@ -656,27 +544,7 @@ export default function MonthlyReport({
 
   // Check if there are unsaved changes
   const hasUnsavedChanges = useCallback(() => {
-    return editableEmployees.some(emp => 
-      emp.columns.some(col => {
-        if (col.newValue === undefined || col.newValue === null) {
-          return false;
-        }
-        
-        // Convert file objects to strings for comparison
-        let newValue = col.newValue;
-        let oldValue = col.oldValue;
-        
-        if (typeof newValue === 'object' && newValue !== null && 'fileName' in newValue) {
-          newValue = (newValue as { fileName: string }).fileName;
-        }
-        
-        if (typeof oldValue === 'object' && oldValue !== null && 'fileName' in oldValue) {
-          oldValue = (oldValue as { fileName: string }).fileName;
-        }
-        
-        return newValue !== oldValue;
-      })
-    );
+    return editableEmployees.some(hasChanges);
   }, [editableEmployees]);
 
   // Notify parent of changes

@@ -26,6 +26,9 @@ import MobileMenu, { MobileMenuKey } from '@/components/mobile/MobileMenu';
 import MobileHome from '@/components/mobile/MobileHome';
 import MobileInquiries, { InquiryTab } from '@/components/mobile/MobileInquiries';
 import MobileInquiryDetail from '@/components/mobile/MobileInquiryDetail';
+import MobileEmployerPortal, { EmployerTab } from '@/components/mobile/MobileEmployerPortal';
+import MobileEmployeeReport from '@/components/mobile/MobileEmployeeReport';
+import { toEditableEmployees } from '@/lib/monthlyReport';
 import { useIsMobile } from '@/lib/useIsMobile';
 import { assistant } from '@/lib/fonts';
 import { Button } from '@/components/ui/button';
@@ -80,6 +83,9 @@ function EmployeesPageInner() {
   const [showMobileHome, setShowMobileHome] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mobileInquiryTab, setMobileInquiryTab] = useState<InquiryTab>('clarifications');
+  const [mobileEmployerTab, setMobileEmployerTab] = useState<EmployerTab>('monthly-report');
+  const [mobileEmployeeId, setMobileEmployeeId] = useState<string | null>(null);
+  const mobileEmployees = useMemo(() => (apiResponse ? toEditableEmployees(apiResponse) : []), [apiResponse]);
   const searchParams = useSearchParams();
   const deepLinkHandledRef = useRef(false);
   const navigationSource = useMemo(
@@ -530,21 +536,38 @@ function EmployeesPageInner() {
 
   const handleMobileNavigate = useCallback((key: MobileMenuKey) => {
     setIsMobileMenuOpen(false);
-    if (key !== 'home') {
-      handleGuardedViewChange(key);
+    const navigate = () => {
+      setMobileEmployeeId(null);
+      setHasUnsavedMonthlyChanges(false);
+      if (key === 'home') {
+        setShowMobileHome(true);
+        return;
+      }
+      setActiveView(key);
+      setSelectedSupplier(null);
+      setShowYearlyForm(false);
+      setSelectedInquiry(null);
       setShowMobileHome(false);
+    };
+    // Unsaved changes on mobile can only come from an open employee report
+    if (hasUnsavedMonthlyChanges && mobileEmployeeId) {
+      requestUnsavedConfirmation(navigate);
       return;
     }
-    const goHome = () => {
-      setShowMobileHome(true);
+    navigate();
+  }, [hasUnsavedMonthlyChanges, mobileEmployeeId, requestUnsavedConfirmation]);
+
+  const leaveMobileEmployeeReport = useCallback(() => {
+    const leave = () => {
+      setMobileEmployeeId(null);
       setHasUnsavedMonthlyChanges(false);
     };
-    if (activeView === 'monthly-report' && hasUnsavedMonthlyChanges && !showMobileHome) {
-      requestUnsavedConfirmation(goHome);
+    if (hasUnsavedMonthlyChanges) {
+      requestUnsavedConfirmation(leave);
       return;
     }
-    goHome();
-  }, [activeView, hasUnsavedMonthlyChanges, showMobileHome, handleGuardedViewChange, requestUnsavedConfirmation]);
+    leave();
+  }, [hasUnsavedMonthlyChanges, requestUnsavedConfirmation]);
 
   const renderMainContent = () => {
     if (loading) {
@@ -677,6 +700,8 @@ function EmployeesPageInner() {
     const firstName = user.firstName || employeerName;
     const generalCount = inquiryData?.general?.length || 0;
     const missingDocsCount = notificationCounts.vacations || 0;
+    const mobileRecordId = isAdminUser && selectedEmployerRecordId ? selectedEmployerRecordId : apiResponse?.recordId;
+    const mobileEmployee = mobileEmployeeId ? mobileEmployees.find((e) => e.id === mobileEmployeeId) : undefined;
     const mobileMenuKey: MobileMenuKey | null = showMobileHome
       ? 'home'
       : activeView === 'inquiry-detail' || activeView === 'pending-inquiries'
@@ -718,13 +743,38 @@ function EmployeesPageInner() {
             }}
             onOpenEmployerPortal={() => handleMobileNavigate('monthly-report')}
             onOpenMissingDocs={() => {
-              handleGuardedViewChange('vacations');
-              setShowMobileHome(false);
+              setMobileEmployerTab('clarifications');
+              handleMobileNavigate('monthly-report');
             }}
             onUpload={() => {
               handleGuardedViewChange('document-upload');
               setShowMobileHome(false);
             }}
+          />
+        ) : activeView === 'monthly-report' && !showYearlyForm && mobileEmployee ? (
+          <MobileEmployeeReport
+            key={mobileEmployee.id}
+            employee={mobileEmployee}
+            columnNames={apiResponse?.columnNames ?? []}
+            onBack={leaveMobileEmployeeReport}
+            onHome={() => handleMobileNavigate('home')}
+            onPortal={leaveMobileEmployeeReport}
+            onSaved={loadEmployeeData}
+            onHasChangesChange={setHasUnsavedMonthlyChanges}
+          />
+        ) : activeView === 'monthly-report' && !showYearlyForm ? (
+          <MobileEmployerPortal
+            recordId={mobileRecordId}
+            employees={mobileEmployees}
+            periodLabel={changeTime}
+            loading={loading}
+            tab={mobileEmployerTab}
+            onTabChange={setMobileEmployerTab}
+            onOpenEmployee={setMobileEmployeeId}
+            onHome={() => handleMobileNavigate('home')}
+            onAddEmployee={() => handleGuardedViewChange('add-employee')}
+            onRemoveEmployee={() => handleGuardedViewChange('employee-recognition')}
+            onMonthlyReports={() => handleMobileNavigate('pay-slip')}
           />
         ) : activeView === 'pending-inquiries' && !showYearlyForm ? (
           <MobileInquiries
@@ -740,7 +790,7 @@ function EmployeesPageInner() {
           <MobileInquiryDetail
             key={selectedInquiry.recordId}
             inquiry={selectedInquiry}
-            recordId={isAdminUser && selectedEmployerRecordId ? selectedEmployerRecordId : apiResponse?.recordId}
+            recordId={mobileRecordId}
             onBack={() => setActiveView('pending-inquiries')}
             onHome={() => handleMobileNavigate('home')}
             onSaved={handleInquiryUpdate}

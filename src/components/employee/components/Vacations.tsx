@@ -3,6 +3,7 @@
 import React, { useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { uploadMissingDocFiles } from "@/lib/missingDocs";
 
 interface FileData {
   name: string;
@@ -140,21 +141,6 @@ export default function Vacations({ recordId }: { recordId: string }) {
     );
   };
 
-  // Convert file to base64
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        const result = reader.result as string;
-        // Remove the data URL prefix (e.g., "data:application/pdf;base64,")
-        const base64 = result.split(',')[1];
-        resolve(base64);
-      };
-      reader.onerror = error => reject(error);
-    });
-  };
-
   // Submit all files
   const handleSubmitAll = async () => {
     setUploading(true);
@@ -172,38 +158,7 @@ export default function Vacations({ recordId }: { recordId: string }) {
         setUploadProgress(`מעלה קבצים עבור ${row.firstName} ${row.lastName} (${row.files.length} קבצים)`);
         
         try {
-          // Convert all files for this row to base64
-          const filesData = await Promise.all(
-            row.files.map(async (fileData) => {
-              const base64File = await fileToBase64(fileData.file);
-              return {
-                contentType: fileData.file.type,
-                fileName: fileData.name,
-                file: base64File
-              };
-            })
-          );
-          
-          const payload = {
-            fileType: row.fileType,
-            files: filesData,
-            remarks: row.accountantComments || "",
-            employeeId: row.employeeRecordId,
-            employerId: recordId,
-            monthlyReportId: row.monthlyReportId
-          };
-
-          const response = await fetch('https://hook.eu2.make.com/m2ow857a46axrtmhq26yzw84d8ibm8gv', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-          });
-
-          if (!response.ok) {
-            throw new Error(`Upload failed for ${row.firstName} ${row.lastName}: ${response.status}`);
-          }
+          await uploadMissingDocFiles(row, row.files.map((fileData) => fileData.file), recordId);
 
           uploadedRows++;
           console.log(`Successfully uploaded ${row.files.length} files for: ${row.firstName} ${row.lastName}`);

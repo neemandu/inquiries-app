@@ -6,6 +6,7 @@ import { heebo } from '@/lib/fonts';
 import ActionRow from '@/components/mobile/ActionRow';
 import Breadcrumbs from '@/components/mobile/Breadcrumbs';
 import UploadButton from '@/components/mobile/UploadButton';
+import TabbedPanel from '@/components/mobile/TabbedPanel';
 
 export type InquiryTab = 'clarifications' | 'missing-invoices';
 
@@ -52,47 +53,28 @@ export default function MobileInquiries({
             {isClarifications ? `${items.length} חשבוניות צריכות הבהרה` : `${items.length} חשבוניות חסרות`}
           </p>
 
-          <div className="flex flex-1 flex-col drop-shadow-[0_4px_10px_rgba(0,0,0,0.05)]">
-            <div role="tablist" className="flex h-11 gap-1">
-              {TABS.map(({ key, label }) => (
-                <button
-                  key={key}
-                  type="button"
-                  role="tab"
-                  aria-selected={key === tab}
-                  onClick={() => onTabChange(key)}
-                  className={`flex flex-1 items-center justify-center p-2 text-[16px] font-bold text-[#0f1a33] ${
-                    key === tab ? 'bg-[#fef8ec]' : 'border-x border-t border-[#eaeef6] bg-white'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <div role="tabpanel" className="flex flex-1 flex-col gap-3 border-8 border-[#fef8ec] bg-white p-2">
-              {items.length ? (
-                items.map(({ inquiry }, i) => (
-                  <ActionRow
-                    key={inquiry.recordId}
-                    variant="gold"
-                    className={i < items.length - 1 ? 'border-b border-[#eaeef6]' : ''}
-                    icon={isClarifications ? 'message-square' : 'alert-triangle'}
-                    text={
-                      isClarifications
-                        ? `חשבונית של ${inquiry.supplier}`
-                        : [inquiry.supplier, inquiryMonthLabel(inquiry.date)].filter(Boolean).join(' ')
-                    }
-                    action={isClarifications ? 'השב' : 'צירוף'}
-                    onClick={() => onOpenInquiry(inquiry)}
-                  />
-                ))
-              ) : (
-                <p className="py-10 text-center text-[16px] text-[#6b7280]">
-                  {isClarifications ? 'אין חשבוניות שצריכות הבהרה' : 'אין חשבוניות חסרות'}
-                </p>
-              )}
-            </div>
-          </div>
+          <TabbedPanel
+            tabs={TABS}
+            active={tab}
+            onChange={onTabChange}
+            emptyText={isClarifications ? 'אין חשבוניות שצריכות הבהרה' : 'אין חשבוניות חסרות'}
+          >
+            {items.map(({ inquiry }, i) => (
+              <ActionRow
+                key={inquiry.recordId}
+                variant="gold"
+                className={i < items.length - 1 ? 'border-b border-[#eaeef6]' : ''}
+                icon={isClarifications ? 'message-square' : 'alert-triangle'}
+                text={
+                  isClarifications
+                    ? `חשבונית של ${inquiry.supplier}`
+                    : [inquiry.supplier, inquiryMonthLabel(inquiry.date)].filter(Boolean).join(' ')
+                }
+                action={isClarifications ? 'השב' : 'צירוף'}
+                onClick={() => onOpenInquiry(inquiry)}
+              />
+            ))}
+          </TabbedPanel>
         </>
       )}
 

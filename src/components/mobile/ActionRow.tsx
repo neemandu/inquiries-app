@@ -1,7 +1,7 @@
 import MaskIcon from '@/components/mobile/MaskIcon';
 
 interface ActionRowProps {
-  icon: 'alert-triangle' | 'message-square';
+  icon?: 'alert-triangle' | 'message-square';
   text: string;
   action: string;
   onClick: () => void;
@@ -20,9 +20,11 @@ export default function ActionRow({ icon, text, action, onClick, variant = 'outl
   return (
     <div className={`flex w-full items-center gap-2 bg-white p-4 ${className}`}>
       <div className="flex min-w-0 flex-1 items-center gap-3">
-        <span className="flex size-6 shrink-0 items-center justify-center text-[#1e3465]">
-          <MaskIcon src={`/icons/mobile/${icon}.svg`} size={18} />
-        </span>
+        {icon && (
+          <span className="flex size-6 shrink-0 items-center justify-center text-[#1e3465]">
+            <MaskIcon src={`/icons/mobile/${icon}.svg`} size={18} />
+          </span>
+        )}
         <span className={`min-w-0 text-[#0f1a33] ${variant === 'gold' ? 'text-[15px]' : 'text-[16px]'}`}>{text}</span>
       </div>
       <button
