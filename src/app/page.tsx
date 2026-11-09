@@ -20,6 +20,7 @@ import SupplierTable from '@/components/inquiries/components/SupplierTable';
 import DocumentUpload from '@/components/employee/components/DocumentUpload';
 import PendingInquiriesList from '@/components/inquiries/components/PendingInquiriesList';
 import InquiryDetail from '@/components/inquiries/components/InquiryDetail';
+import MobileWelcome from '@/components/auth/MobileWelcome';
 import { Button } from '@/components/ui/button';
 import { Mail } from 'lucide-react';
 
@@ -699,7 +700,8 @@ function EmployeesPageInner() {
           </div>
         </SignedIn>
         <SignedOut>
-          <div className="flex justify-center py-16 px-4" dir="rtl">
+          <MobileWelcome />
+          <div className="hidden md:flex justify-center py-16 px-4" dir="rtl">
             <div className="w-full max-w-md rounded-2xl bg-card border border-gray-200/70 card-elevated p-10 text-center">
               <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl brand-gradient text-white shadow-md">
                 <Mail className="h-7 w-7" />
