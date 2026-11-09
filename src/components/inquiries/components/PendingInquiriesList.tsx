@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { MonthlyInquiry } from '@/lib/types';
+import { getInquiryGaps } from '@/lib/inquiries';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,12 +37,7 @@ export default function PendingInquiriesList({
   const [forceCloseMap, setForceCloseMap] = useState<Record<string, string>>({});
 
   const enriched = useMemo(() => {
-    return inquiries.map((inquiry) => {
-      const missingAnswer =
-        inquiry.isTextMandatory && (!inquiry.answer || inquiry.answer.trim().length === 0);
-      const missingDocs = inquiry.isDocMandatory && (!inquiry.docs || inquiry.docs.length === 0);
-      return { inquiry, missingAnswer, missingDocs, isOpen: true };
-    });
+    return inquiries.map((inquiry) => ({ inquiry, ...getInquiryGaps(inquiry), isOpen: true }));
   }, [inquiries]);
 
   useEffect(() => {

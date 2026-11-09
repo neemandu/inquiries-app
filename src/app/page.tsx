@@ -21,6 +21,11 @@ import DocumentUpload from '@/components/employee/components/DocumentUpload';
 import PendingInquiriesList from '@/components/inquiries/components/PendingInquiriesList';
 import InquiryDetail from '@/components/inquiries/components/InquiryDetail';
 import MobileWelcome from '@/components/auth/MobileWelcome';
+import MobileAppHeader from '@/components/mobile/MobileAppHeader';
+import MobileMenu, { MobileMenuKey } from '@/components/mobile/MobileMenu';
+import MobileHome from '@/components/mobile/MobileHome';
+import { useIsMobile } from '@/lib/useIsMobile';
+import { assistant } from '@/lib/fonts';
 import { Button } from '@/components/ui/button';
 import { Mail } from 'lucide-react';
 
@@ -69,6 +74,9 @@ function EmployeesPageInner() {
   const [showUnsavedNavModal, setShowUnsavedNavModal] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const isMobile = useIsMobile();
+  const [showMobileHome, setShowMobileHome] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const searchParams = useSearchParams();
   const deepLinkHandledRef = useRef(false);
   const navigationSource = useMemo(
@@ -515,6 +523,26 @@ function EmployeesPageInner() {
     performChange();
   }, [activeView, hasUnsavedMonthlyChanges, requestUnsavedConfirmation]);
 
+  const closeMobileMenu = useCallback(() => setIsMobileMenuOpen(false), []);
+
+  const handleMobileNavigate = useCallback((key: MobileMenuKey) => {
+    setIsMobileMenuOpen(false);
+    if (key !== 'home') {
+      handleGuardedViewChange(key);
+      setShowMobileHome(false);
+      return;
+    }
+    const goHome = () => {
+      setShowMobileHome(true);
+      setHasUnsavedMonthlyChanges(false);
+    };
+    if (activeView === 'monthly-report' && hasUnsavedMonthlyChanges && !showMobileHome) {
+      requestUnsavedConfirmation(goHome);
+      return;
+    }
+    goHome();
+  }, [activeView, hasUnsavedMonthlyChanges, showMobileHome, handleGuardedViewChange, requestUnsavedConfirmation]);
+
   const renderMainContent = () => {
     if (loading) {
       return <div dir="rtl" className="flex items-center justify-center h-64"><div className="text-lg text-gray-600">טוען נתונים...</div></div>;
@@ -604,6 +632,105 @@ function EmployeesPageInner() {
     }
   };
 
+  const userEmail = user?.emailAddresses?.[0]?.emailAddress;
+  const isAdminUser = !!userEmail && (userEmail.endsWith('@cpateam.co.il') || userEmail === 'neemandu@gmail.com');
+
+  // Admin dropdown for @cpateam.co.il users and neemandu@gmail.com
+  const adminControls = isLoaded && isAdminUser && (
+    <div className="flex flex-col items-end gap-2">
+      <AdminDropdown
+        onEmployerSelect={(employerEmail, employerRecordId, employerName) => {
+          setSelectedEmployerEmail(employerEmail);
+          setSelectedEmployerRecordId(employerRecordId);
+          setSelectedEmployerName(employerName);
+          setCanForceClose(false);
+        }}
+        selectedEmployerName={selectedEmployerName}
+      />
+      {periods.length > 0 && (
+        <PeriodDropdown
+          periods={periods}
+          selectedPeriodId={selectedPeriodId}
+          onPeriodSelect={handlePeriodSelect}
+        />
+      )}
+    </div>
+  );
+
+  const unsavedNavModal = showUnsavedNavModal && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full text-right" dir="rtl">
+        <div className="text-xl font-bold text-gray-900 mb-2">רק רגע! לא שמרתם...</div>
+        <div className="text-gray-700 mb-6">יש שינויים שלא נשמרו. האם להישאר ולשמור או לצאת בכל מקרה?</div>
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={handleCancelNavigation}>חזור חזרה</Button>
+          <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={handleProceedAfterConfirm}>צא בכל מקרה</Button>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (isMobile && isLoaded && user) {
+    const firstName = user.firstName || employeerName;
+    const generalCount = inquiryData?.general?.length || 0;
+    const missingDocsCount = notificationCounts.vacations || 0;
+    const mobileMenuKey: MobileMenuKey | null = showMobileHome
+      ? 'home'
+      : activeView === 'inquiry-detail' || activeView === 'pending-inquiries'
+        ? 'pending-inquiries'
+        : activeView === 'monthly-report' || activeView === 'pay-slip'
+          ? activeView
+          : null;
+
+    return (
+      <div className={`${assistant.className} flex min-h-dvh flex-col bg-[#fcfcfc]`} dir="rtl">
+        <MobileAppHeader
+          firstName={firstName}
+          hasNotifications={monthlyInquiries.length + generalCount + missingDocsCount > 0}
+          onMenuClick={() => setIsMobileMenuOpen(true)}
+          onBellClick={() => handleMobileNavigate('home')}
+        />
+        <MobileMenu
+          open={isMobileMenuOpen}
+          activeKey={mobileMenuKey}
+          onClose={closeMobileMenu}
+          onSelect={handleMobileNavigate}
+        />
+        {adminControls && <div className="px-4 pt-4" dir="ltr">{adminControls}</div>}
+        {showMobileHome ? (
+          <MobileHome
+            firstName={firstName}
+            loading={loading}
+            monthlyInquiries={monthlyInquiries}
+            generalCount={generalCount}
+            missingDocsCount={missingDocsCount}
+            onOpenInquiry={(inquiry) => {
+              handleInquirySelect(inquiry);
+              setShowMobileHome(false);
+            }}
+            onOpenInquiries={() => handleMobileNavigate('pending-inquiries')}
+            onOpenGeneralInquiries={() => {
+              handleGuardedShowYearlyForm();
+              setShowMobileHome(false);
+            }}
+            onOpenEmployerPortal={() => handleMobileNavigate('monthly-report')}
+            onOpenMissingDocs={() => {
+              handleGuardedViewChange('vacations');
+              setShowMobileHome(false);
+            }}
+            onUpload={() => {
+              handleGuardedViewChange('document-upload');
+              setShowMobileHome(false);
+            }}
+          />
+        ) : (
+          <main className="min-w-0 flex-1 overflow-x-hidden p-4">{renderMainContent()}</main>
+        )}
+        {unsavedNavModal}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen app-shell">
       <header className="w-full brand-gradient brand-header-shadow sticky top-0 z-30">
@@ -644,31 +771,8 @@ function EmployeesPageInner() {
 
       <main className="mx-auto p-6 w-full max-w-full overflow-x-hidden">
         <SignedIn>
-          {/* Admin dropdown for @cpateam.co.il users and neemandu@gmail.com */}
-          {isLoaded && user?.emailAddresses?.[0]?.emailAddress && (
-            (user.emailAddresses[0].emailAddress.endsWith('@cpateam.co.il') || 
-             user.emailAddresses[0].emailAddress === 'neemandu@gmail.com')
-          ) && (
-            <div className="flex flex-col items-end gap-2">
-              <AdminDropdown
-                onEmployerSelect={(employerEmail, employerRecordId, employerName) => {
-                  setSelectedEmployerEmail(employerEmail);
-                  setSelectedEmployerRecordId(employerRecordId);
-                  setSelectedEmployerName(employerName);
-                  setCanForceClose(false);
-                }}
-                selectedEmployerName={selectedEmployerName}
-              />
-              {periods.length > 0 && (
-                <PeriodDropdown
-                  periods={periods}
-                  selectedPeriodId={selectedPeriodId}
-                  onPeriodSelect={handlePeriodSelect}
-                />
-              )}
-            </div>
-        )}
-        
+          {adminControls}
+
         <div className="flex h-full min-w-0 max-w-full">
             <div className="flex-1 min-w-0 max-w-full overflow-hidden">
               {/* Regular period display for non-admin users */}
@@ -718,18 +822,7 @@ function EmployeesPageInner() {
           </div>
         </SignedOut>
       </main>
-      {showUnsavedNavModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full text-right" dir="rtl">
-            <div className="text-xl font-bold text-gray-900 mb-2">רק רגע! לא שמרתם...</div>
-            <div className="text-gray-700 mb-6">יש שינויים שלא נשמרו. האם להישאר ולשמור או לצאת בכל מקרה?</div>
-            <div className="flex justify-end gap-3">
-              <Button variant="secondary" onClick={handleCancelNavigation}>חזור חזרה</Button>
-              <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={handleProceedAfterConfirm}>צא בכל מקרה</Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {unsavedNavModal}
     </div>
   );
 }
