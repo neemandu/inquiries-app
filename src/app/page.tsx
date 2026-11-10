@@ -241,9 +241,12 @@ function EmployeesPageInner() {
         setLoading(true);
         try {
           const res = await fetch(`/api/inquiries/data?recordId=${recordIdToUse}`);
-          if (res.ok) {
+          if (res.status === 204) {
+            // The record has no inquiry data yet; nothing to show, not an error
+            setInquiryData(null);
+          } else if (res.ok) {
             const data: InquiryData = await res.json();
-            console.log('Inquiry data', data);
+            if (process.env.NODE_ENV === 'development') console.log('Inquiry data', data);
             setInquiryData(data);
             setInquiryRecordId(recordIdToUse);
           // suppliers handled inside pending view; no state needed here

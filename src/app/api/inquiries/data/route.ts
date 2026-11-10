@@ -40,12 +40,19 @@ export async function GET(request: Request) {
       `https://kt08aagomj.execute-api.eu-west-2.amazonaws.com/default/getInquires?recordId=${recordId} `
     );
 
+    // No inquiries for this record: not an error, the client shows an empty list
+    if (response.status === 404) {
+      return new NextResponse(null, { status: 204 });
+    }
     if (!response.ok) {
       throw new Error(`Webhook failed with status: ${response.status}`);
     }
 
     // Even if the response says it's JSON, treat it as text first and parse
     const rawText = await response.text();
+    if (!rawText.trim()) {
+      return new NextResponse(null, { status: 204 });
+    }
     let data;
     try {
       data = JSON.parse(rawText);

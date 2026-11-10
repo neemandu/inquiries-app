@@ -10,6 +10,8 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Dev only: lets `cloudflared tunnel --url http://localhost:3001` (random *.trycloudflare.com host) use hot reload
+  allowedDevOrigins: ['*.trycloudflare.com'],
   // The Form 101 routes read the official form and its font from disk at runtime
   outputFileTracingIncludes: {
     '/api/form101/**': ['./src/assets/form101/**'],
