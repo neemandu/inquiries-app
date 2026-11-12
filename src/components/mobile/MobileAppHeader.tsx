@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { UserButton } from '@clerk/nextjs';
+import ClientUserButton from '@/components/auth/ClientUserButton';
 import { Bell } from 'lucide-react';
 import MaskIcon from '@/components/mobile/MaskIcon';
 
@@ -39,7 +39,7 @@ export default function MobileAppHeader({ firstName, hasNotifications, onMenuCli
           {hasNotifications && <span className="absolute right-0.5 top-0.5 size-[7px] rounded-full bg-[#2d6a4f]" />}
         </button>
         <div className="flex items-center gap-2">
-          <UserButton
+          <ClientUserButton
             appearance={{
               elements: {
                 avatarBox: 'size-7 rounded-none border border-[#d1d5db]',

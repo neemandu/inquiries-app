@@ -1,6 +1,7 @@
 'use client';
 
-import { SignedIn, SignedOut, UserButton, useUser } from '@clerk/nextjs';
+import { SignedIn, SignedOut, useUser } from '@clerk/nextjs';
+import ClientUserButton from '@/components/auth/ClientUserButton';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -842,7 +843,7 @@ function EmployeesPageInner() {
               </span>
             )}
             <SignedIn>
-              <UserButton appearance={{
+              <ClientUserButton appearance={{
                 elements: {
                   userButtonPopoverActionButton__manageAccount: {
                     display: 'none'
