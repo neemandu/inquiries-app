@@ -13,6 +13,9 @@ export interface MissingDoc {
   accountantComments: string;
 }
 
+// Identifies a missing document across fetches (rows have no id of their own)
+export const missingDocKey = (doc: MissingDoc) => `${doc.employeeRecordId}-${doc.monthlyReportId}-${doc.fileType}`;
+
 export async function fetchMissingDocs(employerRecordId: string): Promise<MissingDoc[]> {
   const response = await fetch(`/api/missing-docs?employerRecordId=${employerRecordId}`);
   if (!response.ok) {

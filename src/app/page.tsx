@@ -27,7 +27,9 @@ import MobileAppHeader from '@/components/mobile/MobileAppHeader';
 import MobileMenu, { MobileMenuKey } from '@/components/mobile/MobileMenu';
 import MobileHome from '@/components/mobile/MobileHome';
 import MobileInquiries, { InquiryTab } from '@/components/mobile/MobileInquiries';
-import MobileInquiryDetail from '@/components/mobile/MobileInquiryDetail';
+import MobileMissingInvoiceUpload from '@/components/mobile/MobileMissingInvoiceUpload';
+import MobileInquiryClarification from '@/components/mobile/MobileInquiryClarification';
+import { getInquiryGaps } from '@/lib/inquiries';
 import MobileEmployerPortal, { EmployerTab } from '@/components/mobile/MobileEmployerPortal';
 import MobileEmployeeReport from '@/components/mobile/MobileEmployeeReport';
 import MobileDocuments from '@/components/mobile/MobileDocuments';
@@ -39,6 +41,7 @@ import { toEditableEmployees } from '@/lib/monthlyReport';
 import Form101LinkCreator from '@/components/form101/Form101LinkCreator';
 import { useIsMobile } from '@/lib/useIsMobile';
 import { useHydrated } from '@/lib/useHydrated';
+import { MissingDoc, fetchMissingDocs } from '@/lib/missingDocs';
 import { assistant } from '@/lib/fonts';
 import { Button } from '@/components/ui/button';
 import { Mail } from 'lucide-react';
@@ -88,7 +91,13 @@ function EmployeesPageInner() {
     'vacations'?: number;
     'pending-inquiries'?: number;
   }>({});
+  // Missing employee documents, previewed on the mobile home screen; null until loaded
+  const [missingDocsList, setMissingDocsList] = useState<MissingDoc[] | null>(null);
+  // A missing document picked on the mobile home screen, opened in the employer system
+  const [mobileInitialDoc, setMobileInitialDoc] = useState<MissingDoc | null>(null);
   const [selectedInquiry, setSelectedInquiry] = useState<MonthlyInquiry | null>(null);
+  // Mobile: an inquiry that needs an answer opens "בירור מהות מסמך"; one that only lacks its invoice opens "העלאת מסמך חסר"
+  const [mobileClarifying, setMobileClarifying] = useState(false);
   const [hasUnsavedMonthlyChanges, setHasUnsavedMonthlyChanges] = useState(false);
   const [showUnsavedNavModal, setShowUnsavedNavModal] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
@@ -373,6 +382,17 @@ function EmployeesPageInner() {
     setActiveView('inquiry-detail');
   }, []);
 
+  // Updates the inquiry lists after a save, without moving to another screen
+  const applyInquiryUpdate = useCallback((updatedInquiry: MonthlyInquiry, resolved?: boolean) => {
+    setInquiryData((prev) => {
+      if (!prev) return prev;
+      const monthly = resolved
+        ? prev.monthly.filter((item) => item.recordId !== updatedInquiry.recordId)
+        : prev.monthly.map((item) => (item.recordId === updatedInquiry.recordId ? updatedInquiry : item));
+      return { ...prev, monthly };
+    });
+  }, []);
+
   const handleInquiryUpdate = useCallback(
     (updatedInquiry: MonthlyInquiry, resolved?: boolean) => {
       setInquiryData((prev) => {
@@ -464,16 +484,19 @@ function EmployeesPageInner() {
 
   // Calculate vacations count (missing docs count)
   const calculateVacationsCount = useCallback(async () => {
-    if (!apiResponse?.recordId) return 0;
-    
+    if (!apiResponse?.recordId) {
+      setMissingDocsList(null);
+      return 0;
+    }
+
     try {
-      const response = await fetch(`/api/missing-docs?employerRecordId=${apiResponse.recordId}`);
-      if (!response.ok) return 0;
-      
-      const data = await response.json();
-      return data?.length || 0;
+      const docs = await fetchMissingDocs(apiResponse.recordId);
+      setMissingDocsList(docs);
+      return docs.length;
     } catch (error) {
-      console.error('Error calculating vacations count:', error);
+      // Shown as "no missing documents" rather than an error message (by request)
+      console.warn('Error calculating vacations count:', error);
+      setMissingDocsList([]);
       return 0;
     }
   }, [apiResponse]);
@@ -553,6 +576,7 @@ function EmployeesPageInner() {
     performChange();
   }, [activeView, hasUnsavedMonthlyChanges, requestUnsavedConfirmation]);
 
+  const clearMobileInitialDoc = useCallback(() => setMobileInitialDoc(null), []);
   const closeMobileMenu = useCallback(() => setIsMobileMenuOpen(false), []);
 
   const handleMobileNavigate = useCallback((key: MobileMenuKey) => {
@@ -728,6 +752,10 @@ function EmployeesPageInner() {
     const generalCount = inquiryData?.general?.length || 0;
     const missingDocsCount = notificationCounts.vacations || 0;
     const mobileRecordId = isAdminUser && selectedEmployerRecordId ? selectedEmployerRecordId : apiResponse?.recordId;
+    // The next inquiry still missing its invoice, in list order, for "שמור ועבור למסמך הבא"
+    const nextMissingInvoice = monthlyInquiries.find(
+      (inquiry) => inquiry.recordId !== selectedInquiry?.recordId && getInquiryGaps(inquiry).missingDocs
+    );
     const mobileEmployee = mobileEmployeeId ? mobileEmployees.find((e) => e.id === mobileEmployeeId) : undefined;
     const editedEmployee =
       mobileEmployeeScreen?.kind === 'edit' ? mobileEmployees.find((e) => e.id === mobileEmployeeScreen.employeeId) : undefined;
@@ -763,8 +791,9 @@ function EmployeesPageInner() {
             loading={loading}
             monthlyInquiries={monthlyInquiries}
             generalCount={generalCount}
-            missingDocsCount={missingDocsCount}
+            missingDocs={missingDocsList}
             onOpenInquiry={(inquiry) => {
+              setMobileClarifying(getInquiryGaps(inquiry).missingAnswer);
               handleInquirySelect(inquiry);
               setShowMobileHome(false);
             }}
@@ -773,8 +802,12 @@ function EmployeesPageInner() {
               handleGuardedShowYearlyForm();
               setShowMobileHome(false);
             }}
-            onOpenEmployerPortal={() => handleMobileNavigate('monthly-report')}
             onOpenMissingDocs={() => {
+              setMobileEmployerTab('missing-docs');
+              handleMobileNavigate('monthly-report');
+            }}
+            onOpenMissingDoc={(doc) => {
+              setMobileInitialDoc(doc);
               setMobileEmployerTab('missing-docs');
               handleMobileNavigate('monthly-report');
             }}
@@ -845,6 +878,8 @@ function EmployeesPageInner() {
             onManageEmployees={() => setMobileEmployeeScreen({ kind: 'list' })}
             onMonthlyReports={() => handleMobileNavigate('pay-slip')}
             onUpload={() => setMobileEmployeeScreen({ kind: 'upload' })}
+            initialDoc={mobileInitialDoc}
+            onInitialDocOpened={clearMobileInitialDoc}
           />
         ) : activeView === 'pay-slip' && !showYearlyForm ? (
           <MobileDocuments key={mobileRecordId} recordId={mobileRecordId} onHome={() => handleMobileNavigate('home')} />
@@ -854,18 +889,39 @@ function EmployeesPageInner() {
             loading={loading}
             tab={mobileInquiryTab}
             onTabChange={setMobileInquiryTab}
-            onOpenInquiry={handleInquirySelect}
+            onOpenInquiry={(inquiry) => {
+              setMobileClarifying(mobileInquiryTab === 'clarifications');
+              handleInquirySelect(inquiry);
+            }}
             onHome={() => handleMobileNavigate('home')}
             onUpload={() => handleGuardedViewChange('document-upload')}
           />
-        ) : activeView === 'inquiry-detail' && selectedInquiry && !showYearlyForm ? (
-          <MobileInquiryDetail
+        ) : activeView === 'inquiry-detail' && selectedInquiry && !showYearlyForm && mobileClarifying ? (
+          <MobileInquiryClarification
             key={selectedInquiry.recordId}
             inquiry={selectedInquiry}
             recordId={mobileRecordId}
-            onBack={() => setActiveView('pending-inquiries')}
+            onBack={() => {
+              setSelectedInquiry(null);
+              setActiveView('pending-inquiries');
+            }}
             onHome={() => handleMobileNavigate('home')}
-            onSaved={handleInquiryUpdate}
+            onSaved={applyInquiryUpdate}
+          />
+        ) : activeView === 'inquiry-detail' && selectedInquiry && !showYearlyForm ? (
+          <MobileMissingInvoiceUpload
+            key={selectedInquiry.recordId}
+            inquiry={selectedInquiry}
+            recordId={mobileRecordId}
+            hasNext={!!nextMissingInvoice}
+            onHome={() => handleMobileNavigate('home')}
+            onBack={() => {
+              setSelectedInquiry(null);
+              setActiveView('pending-inquiries');
+            }}
+            onSaved={applyInquiryUpdate}
+            onNext={() => nextMissingInvoice && setSelectedInquiry(nextMissingInvoice)}
+            onNewUpload={() => handleGuardedViewChange('document-upload')}
           />
         ) : (
           <main className="min-w-0 flex-1 overflow-x-hidden p-4">{renderMainContent()}</main>

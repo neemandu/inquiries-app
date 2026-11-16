@@ -74,11 +74,16 @@ export function RowFileButton({
   file,
   onChange,
   centered = false,
+  stretch = false,
+  label = 'העלאת קובץ',
 }: {
   file: File | null;
   onChange: (file: File | null) => void;
   // Centered under the form rows instead of in a row's 128px control slot (Figma: missing doc / new upload)
   centered?: boolean;
+  // Fills its share of a button row (Figma: specific invoice "העלאת מסמך חלופי")
+  stretch?: boolean;
+  label?: string;
 }) {
   const input = useRef<HTMLInputElement>(null);
   return (
@@ -86,12 +91,12 @@ export function RowFileButton({
       <button
         type="button"
         onClick={() => input.current?.click()}
-        className={`flex shrink-0 items-center gap-1.5 border border-[#eaeef6] bg-[#c1cce5] p-2 text-[16px] text-[#0f1a33] ${
-          centered ? 'max-w-full self-center' : 'w-32'
+        className={`flex shrink-0 items-center border border-[#eaeef6] bg-[#c1cce5] py-2 text-[16px] text-[#0f1a33] ${stretch ? 'gap-1 px-1' : 'gap-1.5 px-2'} ${
+          stretch ? 'min-w-0 flex-1 justify-center' : centered ? 'max-w-full self-center' : 'w-32'
         }`}
       >
-        <span className="min-w-0 flex-1 truncate text-right">
-          {file ? (centered ? `נבחר קובץ  ${file.name}` : file.name) : 'העלאת קובץ'}
+        <span className={`min-w-0 ${stretch ? 'break-words text-center' : 'flex-1 truncate text-right'}`}>
+          {file ? (centered || stretch ? `נבחר קובץ  ${file.name}` : file.name) : label}
         </span>
         <Image src="/icons/mobile/upload-simple.svg" alt="" width={24} height={24} className="shrink-0" />
       </button>
@@ -125,3 +130,6 @@ export function SectionCard({ children }: { children: React.ReactNode }) {
 
 export const saveButton =
   'flex h-[45px] w-full items-center justify-center border border-[#849acb] px-[14px] py-2 text-[16px] font-bold text-[#0f1a33] disabled:opacity-60';
+
+// "שמירה" greyed out until there's something to save (Figma: specific invoice empty)
+export const saveButtonIdle = 'disabled:text-[#c1cce5] disabled:opacity-100';

@@ -38,7 +38,15 @@ export default function MobileInquiries({
 }: MobileInquiriesProps) {
   const rows = inquiries.map((inquiry) => ({ inquiry, ...getInquiryGaps(inquiry) }));
   const isClarifications = tab === 'clarifications';
-  const items = rows.filter((row) => (isClarifications ? row.missingAnswer : row.missingDocs));
+  const clarifications = rows.filter((row) => row.missingAnswer);
+  const missingInvoices = rows.filter((row) => row.missingDocs);
+  const items = isClarifications ? clarifications : missingInvoices;
+  // Each tab shows its own count, e.g. "הבהרות (3)"
+  const counts: Record<InquiryTab, number> = {
+    clarifications: clarifications.length,
+    'missing-invoices': missingInvoices.length,
+  };
+  const tabs = TABS.map(({ key, label }) => ({ key, label: `${label} (${counts[key]})` }));
 
   return (
     <div className="flex flex-1 flex-col gap-3 px-5 pb-6 pt-5 leading-[normal]">
@@ -49,12 +57,8 @@ export default function MobileInquiries({
         <p className="py-16 text-center text-lg text-gray-600">טוען נתונים...</p>
       ) : (
         <>
-          <p className="text-[16px] text-[#0f1a33]">
-            {isClarifications ? `${items.length} חשבוניות צריכות הבהרה` : `${items.length} חשבוניות חסרות`}
-          </p>
-
           <TabbedPanel
-            tabs={TABS}
+            tabs={tabs}
             active={tab}
             onChange={onTabChange}
             emptyText={isClarifications ? 'אין חשבוניות שצריכות הבהרה' : 'אין חשבוניות חסרות'}
@@ -70,7 +74,7 @@ export default function MobileInquiries({
                     ? `חשבונית של ${inquiry.supplier}`
                     : [inquiry.supplier, inquiryMonthLabel(inquiry.date)].filter(Boolean).join(' ')
                 }
-                action={isClarifications ? 'השב' : 'צירוף'}
+                action="השב"
                 onClick={() => onOpenInquiry(inquiry)}
               />
             ))}

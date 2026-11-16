@@ -73,6 +73,7 @@ Until 2027 is added, the link creator shows 2027 (from December on) as "טרם �
 ## 3. Backend improvements (outside this repo)
 
 - [ ] **`getMissingDocsByEmployer` Lambda:** return an empty list, not a 500, when the employer has no current period.
+- [ ] **`getMissingDocsByEmployer` Lambda: add a date** (when the document was requested) to each row. The mobile home screen previews the two "latest" missing documents, but without a date it can only take the first two in the order the Lambda returns them.
 - [ ] **Documents webhook `0dt1lukm…`** (documents for download): add a Webhook response on the "no documents" path. It currently returns Make's default "Accepted". Mobile treats that as "no documents"; desktop now does too.
 - [ ] **Security: ownership checks.** The `/api/*` routes don't check that the `email` or `recordId` in a request belongs to the signed-in user, so a signed-in user could request another employer's data. The new Form 101 link route does check this on the server (`src/lib/server/employer.ts`); the older routes should do the same.
 - [ ] **Security: admin check on the server.** Admin status (`@cpateam.co.il`, `neemandu@gmail.com`) is only checked in the browser for most features. Use `src/lib/admin.ts` in server routes.
@@ -92,11 +93,28 @@ Until 2027 is added, the link creator shows 2027 (from December on) as "טרם �
 - [ ] **Small differences from Figma, decided during the build:**
   - The real logo replaces the "לוגו" placeholder; on signed-out screens the header has no user name, bell or menu.
   - Icons whose Figma export was wrong were replaced with matching Lucide icons.
-  - The home screen's progress card is "התקדמות בבירורים" (inquiry completion), not daily progress.
+  - Home screen (changed on request, 16 November 2026):
+    - The progress card ("התקדמות בבירורים") and the "N בירורים פתוחים" line are removed.
+    - Each system has a clickable title line with its total, "מערכת בירורים (N)" and "מערכת מעסיקים (N)", which opens the full list.
+    - Under each title, only the two latest open items. Inquiries are sorted newest first; missing documents use the backend's order (see 3).
+    - "מערכת מעסיקים" is always shown, with "אין מסמכים חסרים" when there's nothing open. Its title opens the "מסמכים חסרים" tab; an item opens that document's upload screen.
+    - The "N בירורים כלליים" line is kept, since it opens a different screen.
+  - "בירורים פתוחים" and "מערכת מעסיקים" screens: the counter line above the tabs is removed; each tab shows its count instead, e.g. "הבהרות (3)" or "מסמכים חסרים (12)". The employer "בירורים" tab always shows (0) until it has a data source. A tab at (0) shows the check mark from the clarifications empty state, on both screens (e.g. "אין חשבוניות חסרות", "אין מסמכים חסרים", "אין עובדים ממתינים לדיווח"); the monthly report still lists the employees under it. Tabs are sized to their labels, and wrap onto two lines only on narrow phones.
   - The inquiry screen has an added details line (date, amount, details).
   - The sign-in screen uses email (code or password) instead of the design's phone number, with an added "כניסה עם סיסמה" link. Its countdown now reads "ניתן לשלוח קוד חדש בעוד 00:59", since it's the resend cooldown, not the code's validity.
   - Missing-document screen: shows the employee's name and the office's comment, which aren't in the design. The design's "תאריך המסמך" row is left out because the missing-docs data has no document date.
   - The "מסמכים חסרים" tab header reads "N מסמכים חסרים". The frame says "בירורים פתוחים", which looked copied from the clarifications tab.
+  - List rows (home screen, "בירורים פתוחים", "מערכת מעסיקים"): the whole row is tappable, not just its button. The "צירוף" and "מענה" buttons now read "השב"; "צפייה" and "עדכן" are unchanged.
+  - "בירור מהות מסמך" (Figma: specific invoice empty / upload / sent), opened from the "הבהרות" tab, and from home-screen inquiries that need an answer:
+    - "מה מהות המסמך?" shows the office's own question when the inquiry has one. A "פרטים" row is added when the inquiry has details.
+    - The design's image placeholder shows the invoice when the office attached an image, a link for other files, and the design's icon otherwise.
+    - "שמירה" and "שלח תשובה" both send the answer and the chosen file the same way and then show "תשובה נשלחה"; the backend has a single save. "שמירה" is active only after something changed. Confirm with the designer what "שמירה" should do differently.
+    - "העלה מסמך נוסף" on the sent screen returns to the same inquiry's form.
+  - "העלאת מסמך חסר" for inquiries (Figma: client-portal-dashboard-missing doc, its file-chosen state, and the sent frame client-portal - specific invoice), opened from the "חשבוניות חסרות" tab, and from home-screen inquiries that only lack their invoice. This follows the Figma note that a missing invoice should open this screen instead of the old one, which was removed (`MobileInquiryDetail`).
+    - "המסמך החסר" shows the supplier. A "הערת המשרד" row is added when the inquiry has a question.
+    - "הוסף הערה" is sent as the inquiry's answer; an earlier answer is kept when no remark is added. Confirm this with the office, since the backend has no separate remarks field for inquiries.
+    - "שמירה" and "שמור ועבור למסמך הבא" (always shown below it) are both the dark-blue primary button, unlike the design's outlined "שמירה", and are dimmed until a file is chosen. The second saves and opens the next inquiry missing its invoice, in list order, or returns to the list after the last one. The employer "מסמך חסר" screen works the same way. "העלה מסמך חדש" on the sent screen opens the document upload screen.
+  - "מערכת מעסיקים" bottom drawer: starts collapsed, showing only its handle; tapping the handle expands or collapses it.
   - Add/edit employee: the bottom button keeps the Figma label "חזור לרשימת הדיווחים" but returns to the employee list. The breadcrumb also includes "עריכת רשימת עובדים".
 
 ## 5. Known limitations
@@ -111,6 +129,8 @@ Until 2027 is added, the link creator shows 2027 (from December on) as "טרם �
 
 ### Other
 - `/api/join-request` is public: it has a hidden bot-trap field but no rate limiting.
+- **A failed missing-docs request looks the same as having none** (by request, 16 November 2026): the home screen and the "מסמכים חסרים" tab show 0 and the check mark, with no error message or retry. If the Lambda fails for a real employer, nobody sees that documents are missing. The fix in 3 (an empty list instead of a 500) narrows this to real failures.
+- The home screen's "מערכת מעסיקים" count covers only missing documents. Employer clarifications have no data source yet (see 1.3), and employees waiting for the monthly report aren't counted.
 - Documents for download: files from hosts that block downloading from the page are offered as links instead. The real hosting couldn't be checked, because the test account has no documents.
 
 ## 6. Not yet verified
@@ -128,5 +148,7 @@ Until 2027 is added, the link creator shows 2027 (from December on) as "טרם �
   - Missing-document upload (`MobileMissingDocUpload`), including "שמור ועבור למסמך הבא" and the "תשובה נשלחה" screen
   - New document upload (`MobileDocumentUpload`), for an employee and for "כללי"
 - [ ] Employee list, edit screen and missing-document screen with **real data**. The test account has no employees in its period, and its missing-docs request fails (see 1.4), so they were only seen empty or with stand-in data.
+- [ ] Mobile home screen with **real data**: the "מערכת מעסיקים" section was only tested with stand-in missing documents, because the test employer's request fails (see 1.4). On that account it currently shows no missing documents (see 5).
+- [ ] "בירור מהות מסמך" and the inquiry "העלאת מסמך חסר" against the **real** `/api/suppliers` save, with an answer, a remark and a document. It was tested only with stand-in inquiries and a stubbed save, because the test account has no open inquiries.
 - [ ] Form 101 against the **real** documents webhook. Testing used a local stand-in to avoid writing test data.
 - [ ] Mobile screens on real devices (iOS Safari, Android Chrome). Testing was done in a 393×852 frame in desktop Chrome.

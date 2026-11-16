@@ -34,16 +34,12 @@ export default function MobileMissingDocUpload({
 }: MobileMissingDocUploadProps) {
   const [remarks, setRemarks] = useState('');
   const [file, setFile] = useState<File | null>(null);
-  const [fileError, setFileError] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const employeeName = `${doc.firstName} ${doc.lastName}`.trim();
 
   const save = async (goToNext: boolean) => {
-    if (!file) {
-      setFileError('יש לבחור קובץ להעלאה');
-      return;
-    }
+    if (!file) return;
     if (!employerId) {
       toast.error('לא נמצא מעסיק לשמירת המסמך');
       return;
@@ -52,9 +48,11 @@ export default function MobileMissingDocUpload({
     try {
       await uploadMissingDocFiles(doc, [file], employerId, remarks);
       onUploaded(doc);
-      if (goToNext && hasNext) {
+      if (goToNext) {
+        // Straight to the next missing document; back to the list when this was the last one
         toast.success('המסמך הועלה בהצלחה');
-        onNext();
+        if (hasNext) onNext();
+        else onBack();
       } else {
         setSent(true);
       }
@@ -112,22 +110,22 @@ export default function MobileMissingDocUpload({
             <RowFileButton
               centered
               file={file}
-              onChange={(picked) => {
-                setFile(picked);
-                setFileError('');
-              }}
+              onChange={setFile}
             />
-            {fileError && <p className="text-center text-[13px] text-red-600">{fileError}</p>}
           </SectionCard>
 
-          <button type="button" onClick={() => save(false)} disabled={sending} className={saveButton}>
+          {/* Both save buttons are the same blue, dimmed until a file is chosen */}
+          <button
+            type="button"
+            onClick={() => save(false)}
+            disabled={sending || !file}
+            className={mobilePrimaryButton}
+          >
             {sending ? 'שומר...' : 'שמירה'}
           </button>
-          {hasNext && (
-            <button type="button" onClick={() => save(true)} disabled={sending} className={mobilePrimaryButton}>
-              שמור ועבור למסמך הבא
-            </button>
-          )}
+          <button type="button" onClick={() => save(true)} disabled={sending || !file} className={mobilePrimaryButton}>
+            שמור ועבור למסמך הבא
+          </button>
         </>
       )}
     </div>

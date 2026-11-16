@@ -15,10 +15,15 @@ const BUTTON_STYLES = {
   gold: 'border-[0.5px] border-[#1e3465] bg-[#fef8ec] text-[15px] text-[#1e3465]',
 };
 
-// Row with an icon, a label and an action button (Figma: "action card")
+// Row with an icon, a label and an action button (Figma: "action card").
+// The whole row is the button, so tapping anywhere on it runs the action.
 export default function ActionRow({ icon, text, action, onClick, variant = 'outline', className = '' }: ActionRowProps) {
   return (
-    <div className={`flex w-full items-center gap-2 bg-white p-4 ${className}`}>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex w-full items-center gap-2 bg-white p-4 text-right active:bg-[#f8f9fc] ${className}`}
+    >
       <div className="flex min-w-0 flex-1 items-center gap-3">
         {icon && (
           <span className="flex size-6 shrink-0 items-center justify-center text-[#1e3465]">
@@ -27,13 +32,7 @@ export default function ActionRow({ icon, text, action, onClick, variant = 'outl
         )}
         <span className={`min-w-0 text-[#0f1a33] ${variant === 'gold' ? 'text-[15px]' : 'text-[16px]'}`}>{text}</span>
       </div>
-      <button
-        type="button"
-        onClick={onClick}
-        className={`shrink-0 px-[14px] py-2 font-semibold ${BUTTON_STYLES[variant]}`}
-      >
-        {action}
-      </button>
-    </div>
+      <span className={`shrink-0 px-[14px] py-2 font-semibold ${BUTTON_STYLES[variant]}`}>{action}</span>
+    </button>
   );
 }
