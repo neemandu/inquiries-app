@@ -1,22 +1,25 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
+import { useCallback, useEffect, useState } from 'react';
+import Image from 'next/image';
 import { EditableEmployee } from '@/lib/types';
 import { heebo } from '@/lib/fonts';
 import { getEmployeeName } from '@/lib/monthlyReport';
-import { MissingDoc, fetchMissingDocs, uploadMissingDocFiles } from '@/lib/missingDocs';
+import { MissingDoc, fetchMissingDocs } from '@/lib/missingDocs';
 import ActionRow from '@/components/mobile/ActionRow';
 import Breadcrumbs from '@/components/mobile/Breadcrumbs';
 import TabbedPanel from '@/components/mobile/TabbedPanel';
-import { mobilePrimaryButton } from '@/components/auth/MobileAuthHeader';
-import Form101LinkCreator from '@/components/form101/Form101LinkCreator';
+import UploadButton from '@/components/mobile/UploadButton';
+import MobileMissingDocUpload from '@/components/mobile/MobileMissingDocUpload';
+import { mobileOutlineButton } from '@/components/auth/MobileAuthHeader';
 
-export type EmployerTab = 'clarifications' | 'monthly-report';
+export type EmployerTab = 'missing-docs' | 'monthly-report' | 'clarifications';
 
+// Listed right to left, as in the Figma frames
 const TABS: { key: EmployerTab; label: string }[] = [
-  { key: 'clarifications', label: 'בירורים' },
+  { key: 'missing-docs', label: 'מסמכים חסרים' },
   { key: 'monthly-report', label: 'דיווח חודשי' },
+  { key: 'clarifications', label: 'בירורים' },
 ];
 
 const secondaryButton =
@@ -24,8 +27,6 @@ const secondaryButton =
 
 interface MobileEmployerPortalProps {
   recordId?: string;
-  // Set only for admins acting for a selected employer; others get their own employer on the server
-  form101EmployerRecordId?: string;
   employees: EditableEmployee[];
   periodLabel: string;
   loading: boolean;
@@ -33,9 +34,9 @@ interface MobileEmployerPortalProps {
   onTabChange: (tab: EmployerTab) => void;
   onOpenEmployee: (employeeId: string) => void;
   onHome: () => void;
-  onAddEmployee: () => void;
-  onRemoveEmployee: () => void;
+  onManageEmployees: () => void;
   onMonthlyReports: () => void;
+  onUpload: () => void;
 }
 
 // An employee is waiting for the monthly report while a required field is still empty
@@ -43,11 +44,10 @@ function isAwaitingReport(employee: EditableEmployee) {
   return employee.columns.some((col) => col.isMust && String(col.oldValue ?? '').trim() === '');
 }
 
-// Employer system: missing employee documents and the monthly report per employee
-// (Figma: Client Portal mobile / client-portal-dashboard-employees Clarifications + monthly Report)
+// Employer system: missing employee documents, the monthly report per employee and clarifications
+// (Figma: client-portal-dashboard-employees missing documents / monthly Report / Clarifications)
 export default function MobileEmployerPortal({
   recordId,
-  form101EmployerRecordId,
   employees,
   periodLabel,
   loading,
@@ -55,17 +55,14 @@ export default function MobileEmployerPortal({
   onTabChange,
   onOpenEmployee,
   onHome,
-  onAddEmployee,
-  onRemoveEmployee,
+  onManageEmployees,
   onMonthlyReports,
+  onUpload,
 }: MobileEmployerPortalProps) {
   const [missingDocs, setMissingDocs] = useState<MissingDoc[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
-  const [targetIndex, setTargetIndex] = useState<number | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [showEmployeeActions, setShowEmployeeActions] = useState(false);
-  const [showForm101, setShowForm101] = useState(false);
-  const fileInput = useRef<HTMLInputElement>(null);
+  // The missing document whose upload screen is open
+  const [openDoc, setOpenDoc] = useState<MissingDoc | null>(null);
 
   const loadMissingDocs = useCallback(async () => {
     if (!recordId) return;
@@ -84,48 +81,79 @@ export default function MobileEmployerPortal({
     loadMissingDocs();
   }, [loadMissingDocs]);
 
-  // Closing the file picker without choosing a file clears the target row
-  useEffect(() => {
-    const input = fileInput.current;
-    const clear = () => setTargetIndex(null);
-    input?.addEventListener('cancel', clear);
-    return () => input?.removeEventListener('cancel', clear);
-  }, [loading, tab]);
+  const docs = missingDocs ?? [];
 
-  const handleFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    e.target.value = '';
-    const doc = targetIndex !== null ? missingDocs?.[targetIndex] : undefined;
-    if (!doc || !files.length || !recordId) {
-      setTargetIndex(null);
-      return;
-    }
-    setUploading(true);
-    try {
-      await uploadMissingDocFiles(doc, files, recordId);
-      toast.success('המסמך הועלה בהצלחה');
-      setMissingDocs((prev) => prev?.filter((d) => d !== doc) ?? null);
-    } catch (error) {
-      console.error('Failed to upload missing document', error);
-      toast.error('העלאת המסמך נכשלה, נסו שוב');
-    } finally {
-      setUploading(false);
-      setTargetIndex(null);
-    }
-  };
+  if (openDoc) {
+    const closeDoc = () => {
+      setOpenDoc(null);
+      onTabChange('missing-docs');
+    };
+    return (
+      <MobileMissingDocUpload
+        key={`${openDoc.employeeRecordId}-${openDoc.monthlyReportId}-${openDoc.fileType}`}
+        doc={openDoc}
+        employerId={recordId}
+        hasNext={docs.some((doc) => doc !== openDoc)}
+        onHome={onHome}
+        onBack={closeDoc}
+        onUploaded={(uploaded) => setMissingDocs((prev) => prev?.filter((doc) => doc !== uploaded) ?? null)}
+        onNext={() => setOpenDoc(docs.find((doc) => doc !== openDoc) ?? null)}
+        onNewUpload={onUpload}
+      />
+    );
+  }
 
   const sortedEmployees = [...employees].sort((a, b) => Number(isAwaitingReport(b)) - Number(isAwaitingReport(a)));
   const awaitingCount = employees.filter(isAwaitingReport).length;
-  const isClarifications = tab === 'clarifications';
-  const docs = missingDocs ?? [];
+  const isMissingDocs = tab === 'missing-docs';
+
+  // No data source for employer clarifications yet, so the tab always shows the empty state
+  const summary = isMissingDocs
+    ? docs.length
+      ? `${docs.length} מסמכים חסרים`
+      : 'אין מסמכים חסרים'
+    : tab === 'clarifications'
+      ? 'אין בירורים פתוחים'
+      : `${awaitingCount} עובדים ממתינים לדיווח`;
+
+  const rows = isMissingDocs
+    ? docs.map((doc, i) => (
+        <ActionRow
+          key={`${doc.employeeRecordId}-${doc.fileType}-${i}`}
+          variant="gold"
+          className={i < docs.length - 1 ? 'border-b border-[#eaeef6]' : ''}
+          icon="alert-triangle"
+          text={`${doc.fileType} חסר עבור ${`${doc.firstName} ${doc.lastName}`.trim()}`}
+          action="עדכן"
+          onClick={() => setOpenDoc(doc)}
+        />
+      ))
+    : tab === 'monthly-report'
+      ? sortedEmployees.map((employee, i) => (
+          <ActionRow
+            key={employee.id}
+            variant="gold"
+            className={i < sortedEmployees.length - 1 ? 'border-b border-[#eaeef6]' : ''}
+            text={getEmployeeName(employee)}
+            action="עדכן"
+            onClick={() => onOpenEmployee(employee.id)}
+          />
+        ))
+      : [
+          // Figma: Clarifications- empty state
+          <div key="empty" className="flex flex-col items-center gap-3 py-8">
+            <Image src="/icons/mobile/check-fat.svg" alt="" width={80} height={80} />
+            <p className="text-[20px] text-[#0f1a33]">אין נושאים פתוחים</p>
+          </div>,
+        ];
 
   return (
-    <div className="flex flex-1 flex-col gap-4 px-5 pb-[100px] pt-5 leading-[normal]">
-      <Breadcrumbs crumbs={[{ label: 'דף הבית', onClick: onHome }, { label: 'מערכת מעסיקים' }]} />
-      <h1 className={`${heebo.className} text-[24px] font-bold text-[#c57518]`}>מערכת מעסיקים</h1>
+    <div className="flex flex-1 flex-col leading-[normal]">
+      <div className="flex flex-col gap-6 px-4 pb-6 pt-4">
+        <Breadcrumbs crumbs={[{ label: 'דף הבית', onClick: onHome }, { label: 'מערכת מעסיקים' }]} />
+        <h1 className={`${heebo.className} text-[24px] font-bold text-[#c57518]`}>מערכת מעסיקים</h1>
 
-      {isClarifications && loadFailed && !loading ? (
-        <>
+        {isMissingDocs && loadFailed && !loading ? (
           <TabbedPanel tabs={TABS} active={tab} onChange={onTabChange} emptyText="">
             {[
               <div key="error" className="flex flex-col items-center gap-3 py-8 text-center">
@@ -136,88 +164,39 @@ export default function MobileEmployerPortal({
               </div>,
             ]}
           </TabbedPanel>
-        </>
-      ) : loading || (isClarifications && missingDocs === null) ? (
-        <p className="py-16 text-center text-lg text-gray-600">טוען נתונים...</p>
-      ) : (
-        <>
-          <div className="flex flex-col gap-1">
-            <p className="text-[16px] text-[#0f172a]">
-              {isClarifications ? `${docs.length} בירורים פתוחים` : `${awaitingCount} עובדים ממתינים לדיווח`}
-            </p>
-            {!isClarifications && periodLabel && (
-              <p className="text-[14px] text-[#6b7280]">תקופת דיווח: {periodLabel}</p>
-            )}
-          </div>
+        ) : loading || (isMissingDocs && missingDocs === null) ? (
+          <p className="py-16 text-center text-lg text-gray-600">טוען נתונים...</p>
+        ) : (
+          <>
+            <div className="flex flex-col gap-1">
+              <p className="text-[16px] text-[#0f172a]">{summary}</p>
+              {tab === 'monthly-report' && periodLabel && (
+                <p className="text-[14px] text-[#6b7280]">תקופת דיווח: {periodLabel}</p>
+              )}
+            </div>
 
-          <TabbedPanel
-            tabs={TABS}
-            active={tab}
-            onChange={onTabChange}
-            emptyText={isClarifications ? 'אין מסמכים חסרים' : 'אין עובדים בתקופת הדיווח'}
-          >
-            {isClarifications
-              ? docs.map((doc, i) => (
-                  <ActionRow
-                    key={`${doc.employeeRecordId}-${doc.fileType}-${i}`}
-                    variant="gold"
-                    className={i < docs.length - 1 ? 'border-b border-[#eaeef6]' : ''}
-                    icon="alert-triangle"
-                    text={`${doc.fileType} חסר עבור ${`${doc.firstName} ${doc.lastName}`.trim()}`}
-                    action={uploading && targetIndex === i ? 'מעלה...' : 'עדכן'}
-                    onClick={() => {
-                      if (uploading) return;
-                      setTargetIndex(i);
-                      fileInput.current?.click();
-                    }}
-                  />
-                ))
-              : sortedEmployees.map((employee, i) => (
-                  <ActionRow
-                    key={employee.id}
-                    variant="gold"
-                    className={i < sortedEmployees.length - 1 ? 'border-b border-[#eaeef6]' : ''}
-                    text={getEmployeeName(employee)}
-                    action="עדכן"
-                    onClick={() => onOpenEmployee(employee.id)}
-                  />
-                ))}
-          </TabbedPanel>
-          <input
-            ref={fileInput}
-            type="file"
-            accept="image/*,application/pdf"
-            multiple
-            onChange={handleFiles}
-            className="hidden"
-          />
-        </>
-      )}
+            <TabbedPanel
+              tabs={TABS}
+              active={tab}
+              onChange={onTabChange}
+              emptyText={isMissingDocs ? 'אין מסמכים חסרים' : 'אין עובדים בתקופת הדיווח'}
+            >
+              {rows}
+            </TabbedPanel>
+          </>
+        )}
+      </div>
 
-      <div className="flex flex-col gap-4 pt-4">
-        <button
-          type="button"
-          onClick={() => setShowEmployeeActions((open) => !open)}
-          aria-expanded={showEmployeeActions}
-          className={mobilePrimaryButton}
-        >
+      {/* Bottom drawer with the employer actions (Figma: DRAWER) */}
+      <div className="mt-auto flex flex-col items-center gap-4 rounded-t-[32px] border border-[#c1cce5] px-9 pb-[calc(16px+env(safe-area-inset-bottom))] pt-2">
+        <Image src="/icons/mobile/drawer-handle.svg" alt="" width={36} height={21} className="shrink-0" />
+        <button type="button" onClick={onManageEmployees} className={mobileOutlineButton}>
           עריכת רשימת עובדים
         </button>
-        {showEmployeeActions && (
-          <div className="flex gap-3">
-            <button type="button" onClick={onAddEmployee} className={secondaryButton}>הוספת עובד</button>
-            <button type="button" onClick={onRemoveEmployee} className={secondaryButton}>הסרת עובד</button>
-          </div>
-        )}
-        {showEmployeeActions && (
-          <button type="button" onClick={() => setShowForm101((open) => !open)} aria-expanded={showForm101} className={secondaryButton}>
-            טופס 101 לעובד/ת חדש/ה
-          </button>
-        )}
-        {showEmployeeActions && showForm101 && <Form101LinkCreator employerRecordId={form101EmployerRecordId} />}
-        <button type="button" onClick={onMonthlyReports} className={mobilePrimaryButton}>
+        <button type="button" onClick={onMonthlyReports} className={mobileOutlineButton}>
           דוחות חודשיים
         </button>
+        <UploadButton variant="outline" onClick={onUpload} />
       </div>
     </div>
   );

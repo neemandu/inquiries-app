@@ -1,6 +1,7 @@
 'use client';
 
-import { SignedIn, SignedOut, useUser } from '@clerk/nextjs';
+import { useUser } from '@clerk/nextjs';
+import { ClientSignedIn, ClientSignedOut } from '@/components/auth/ClientSignedIn';
 import ClientUserButton from '@/components/auth/ClientUserButton';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -30,15 +31,25 @@ import MobileInquiryDetail from '@/components/mobile/MobileInquiryDetail';
 import MobileEmployerPortal, { EmployerTab } from '@/components/mobile/MobileEmployerPortal';
 import MobileEmployeeReport from '@/components/mobile/MobileEmployeeReport';
 import MobileDocuments from '@/components/mobile/MobileDocuments';
+import MobileEmployeeList from '@/components/mobile/MobileEmployeeList';
+import MobileEmployeeForm from '@/components/mobile/MobileEmployeeForm';
+import MobileDocumentUpload from '@/components/mobile/MobileDocumentUpload';
+import MobileEmployeeArchive from '@/components/mobile/MobileEmployeeArchive';
 import { toEditableEmployees } from '@/lib/monthlyReport';
 import Form101LinkCreator from '@/components/form101/Form101LinkCreator';
 import { useIsMobile } from '@/lib/useIsMobile';
+import { useHydrated } from '@/lib/useHydrated';
 import { assistant } from '@/lib/fonts';
 import { Button } from '@/components/ui/button';
 import { Mail } from 'lucide-react';
 
 function EmployeesPageInner() {
-  const { user, isLoaded } = useUser();
+  const { user: clerkUser, isLoaded: clerkLoaded } = useUser();
+  // The server always renders Clerk as not loaded; clerk-js can load before hydration,
+  // so treat it as not loaded until hydration is done to keep the first render identical
+  const hydrated = useHydrated();
+  const isLoaded = hydrated && clerkLoaded;
+  const user = isLoaded ? clerkUser : undefined;
   const [activeView, setActiveView] = useState<ViewType | null>('pending-inquiries');
   const [columnSettings, setColumnSettings] = useState<ColumnSettingsType>({
     travel: true,
@@ -88,6 +99,10 @@ function EmployeesPageInner() {
   const [mobileInquiryTab, setMobileInquiryTab] = useState<InquiryTab>('clarifications');
   const [mobileEmployerTab, setMobileEmployerTab] = useState<EmployerTab>('monthly-report');
   const [mobileEmployeeId, setMobileEmployeeId] = useState<string | null>(null);
+  // Employee management screens opened from the employer system on mobile
+  const [mobileEmployeeScreen, setMobileEmployeeScreen] = useState<
+    { kind: 'list' } | { kind: 'add' } | { kind: 'edit'; employeeId: string } | { kind: 'upload' } | { kind: 'archive' } | null
+  >(null);
   const mobileEmployees = useMemo(() => (apiResponse ? toEditableEmployees(apiResponse) : []), [apiResponse]);
   const searchParams = useSearchParams();
   const deepLinkHandledRef = useRef(false);
@@ -544,6 +559,7 @@ function EmployeesPageInner() {
     setIsMobileMenuOpen(false);
     const navigate = () => {
       setMobileEmployeeId(null);
+      setMobileEmployeeScreen(null);
       setHasUnsavedMonthlyChanges(false);
       if (key === 'home') {
         setShowMobileHome(true);
@@ -713,6 +729,11 @@ function EmployeesPageInner() {
     const missingDocsCount = notificationCounts.vacations || 0;
     const mobileRecordId = isAdminUser && selectedEmployerRecordId ? selectedEmployerRecordId : apiResponse?.recordId;
     const mobileEmployee = mobileEmployeeId ? mobileEmployees.find((e) => e.id === mobileEmployeeId) : undefined;
+    const editedEmployee =
+      mobileEmployeeScreen?.kind === 'edit' ? mobileEmployees.find((e) => e.id === mobileEmployeeScreen.employeeId) : undefined;
+    // An employee that's no longer in the list (e.g. just archived) falls back to the list
+    const showEmployeeList =
+      mobileEmployeeScreen?.kind === 'list' || (mobileEmployeeScreen?.kind === 'edit' && !editedEmployee);
     const mobileMenuKey: MobileMenuKey | null = showMobileHome
       ? 'home'
       : activeView === 'inquiry-detail' || activeView === 'pending-inquiries'
@@ -754,13 +775,51 @@ function EmployeesPageInner() {
             }}
             onOpenEmployerPortal={() => handleMobileNavigate('monthly-report')}
             onOpenMissingDocs={() => {
-              setMobileEmployerTab('clarifications');
+              setMobileEmployerTab('missing-docs');
               handleMobileNavigate('monthly-report');
             }}
             onUpload={() => {
               handleGuardedViewChange('document-upload');
               setShowMobileHome(false);
             }}
+          />
+        ) : activeView === 'monthly-report' && !showYearlyForm && showEmployeeList ? (
+          <MobileEmployeeList
+            employees={mobileEmployees}
+            leavingReasons={leavingReasons}
+            is161Must={!!apiResponse?.is161Must}
+            onHome={() => handleMobileNavigate('home')}
+            onPortal={() => setMobileEmployeeScreen(null)}
+            onAdd={() => setMobileEmployeeScreen({ kind: 'add' })}
+            onEdit={(employeeId) => setMobileEmployeeScreen({ kind: 'edit', employeeId })}
+            onArchived={loadEmployeeData}
+            onOpenArchive={() => setMobileEmployeeScreen({ kind: 'archive' })}
+          />
+        ) : activeView === 'monthly-report' && !showYearlyForm && mobileEmployeeScreen?.kind === 'archive' ? (
+          <MobileEmployeeArchive
+            employees={[]}
+            onHome={() => handleMobileNavigate('home')}
+            onPortal={() => setMobileEmployeeScreen(null)}
+            onList={() => setMobileEmployeeScreen({ kind: 'list' })}
+          />
+        ) : activeView === 'monthly-report' && !showYearlyForm && mobileEmployeeScreen?.kind === 'upload' ? (
+          <MobileDocumentUpload
+            employees={mobileEmployees}
+            employerId={mobileRecordId}
+            onHome={() => handleMobileNavigate('home')}
+            onPortal={() => setMobileEmployeeScreen(null)}
+          />
+        ) : activeView === 'monthly-report' && !showYearlyForm && mobileEmployeeScreen ? (
+          <MobileEmployeeForm
+            key={editedEmployee?.id ?? 'add'}
+            employee={editedEmployee}
+            employees={mobileEmployees}
+            recordId={mobileRecordId}
+            form101EmployerRecordId={isAdminUser && selectedEmployerRecordId ? selectedEmployerRecordId : undefined}
+            onHome={() => handleMobileNavigate('home')}
+            onPortal={() => setMobileEmployeeScreen(null)}
+            onList={() => setMobileEmployeeScreen({ kind: 'list' })}
+            onSaved={loadEmployeeData}
           />
         ) : activeView === 'monthly-report' && !showYearlyForm && mobileEmployee ? (
           <MobileEmployeeReport
@@ -776,7 +835,6 @@ function EmployeesPageInner() {
         ) : activeView === 'monthly-report' && !showYearlyForm ? (
           <MobileEmployerPortal
             recordId={mobileRecordId}
-            form101EmployerRecordId={isAdminUser && selectedEmployerRecordId ? selectedEmployerRecordId : undefined}
             employees={mobileEmployees}
             periodLabel={changeTime}
             loading={loading}
@@ -784,9 +842,9 @@ function EmployeesPageInner() {
             onTabChange={setMobileEmployerTab}
             onOpenEmployee={setMobileEmployeeId}
             onHome={() => handleMobileNavigate('home')}
-            onAddEmployee={() => handleGuardedViewChange('add-employee')}
-            onRemoveEmployee={() => handleGuardedViewChange('employee-recognition')}
+            onManageEmployees={() => setMobileEmployeeScreen({ kind: 'list' })}
             onMonthlyReports={() => handleMobileNavigate('pay-slip')}
+            onUpload={() => setMobileEmployeeScreen({ kind: 'upload' })}
           />
         ) : activeView === 'pay-slip' && !showYearlyForm ? (
           <MobileDocuments key={mobileRecordId} recordId={mobileRecordId} onHome={() => handleMobileNavigate('home')} />
@@ -842,7 +900,7 @@ function EmployeesPageInner() {
                 {employeerName}
               </span>
             )}
-            <SignedIn>
+            <ClientSignedIn>
               <ClientUserButton appearance={{
                 elements: {
                   userButtonPopoverActionButton__manageAccount: {
@@ -850,13 +908,13 @@ function EmployeesPageInner() {
                   }
                 }
               }} />
-            </SignedIn>
+            </ClientSignedIn>
           </div>
         </div>
       </header>
 
       <main className="mx-auto p-6 w-full max-w-full overflow-x-hidden">
-        <SignedIn>
+        <ClientSignedIn>
           {adminControls}
 
         <div className="flex h-full min-w-0 max-w-full">
@@ -888,8 +946,8 @@ function EmployeesPageInner() {
               />
             </div>
           </div>
-        </SignedIn>
-        <SignedOut>
+        </ClientSignedIn>
+        <ClientSignedOut>
           <MobileWelcome />
           <div className="hidden md:flex justify-center py-16 px-4" dir="rtl">
             <div className="w-full max-w-md rounded-2xl bg-card border border-gray-200/70 card-elevated p-10 text-center">
@@ -906,7 +964,7 @@ function EmployeesPageInner() {
               </Link>
             </div>
           </div>
-        </SignedOut>
+        </ClientSignedOut>
       </main>
       {unsavedNavModal}
     </div>

@@ -4,8 +4,16 @@ import { Form101Employer } from '@/lib/form101/schema';
 
 // Personal Form 101 links: the payload is signed with FORM101_LINK_SECRET, so the employee can't
 // change the employer details or extend the link, and the server needs no storage to verify it.
+// Employee the link was created for; pre-fills the wizard (the employee can still correct it)
+export interface Form101LinkEmployee {
+  firstName: string;
+  lastName: string;
+  idNumber: string;
+}
+
 export interface Form101LinkPayload {
   employer: Form101Employer;
+  employee?: Form101LinkEmployee;
   taxYear: number;
   exp: number; // seconds since epoch
   jti: string;
@@ -23,9 +31,10 @@ function secret() {
 
 const sign = (data: string) => crypto.createHmac('sha256', secret()).update(data).digest('base64url');
 
-export function createForm101Token(employer: Form101Employer, taxYear: number) {
+export function createForm101Token(employer: Form101Employer, taxYear: number, employee?: Form101LinkEmployee) {
   const payload: Form101LinkPayload = {
     employer,
+    ...(employee && { employee }),
     taxYear,
     exp: Math.floor(Date.now() / 1000) + LINK_TTL_DAYS * 24 * 60 * 60,
     jti: crypto.randomUUID(),

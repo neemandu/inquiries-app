@@ -11,3 +11,7 @@ export default function MobileAuthHeader() {
 
 export const mobilePrimaryButton =
   'flex w-full items-center justify-center border border-white bg-[linear-gradient(90deg,#1d447c,#081437)] px-4 py-[15px] text-[16px] font-semibold leading-[21px] text-white transition-opacity hover:opacity-95 disabled:opacity-60';
+
+// Outlined dark-navy button (Figma: btn-send-code/Variant4), used in the employer system drawer
+export const mobileOutlineButton =
+  'flex w-full items-center justify-center gap-2 border border-[#0f1a33] p-4 text-[16px] font-semibold text-[#0f1a33] transition-colors hover:bg-[#0f1a33]/5 disabled:opacity-60';

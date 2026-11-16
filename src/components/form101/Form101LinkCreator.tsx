@@ -5,6 +5,7 @@ import { Copy, Link2, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Choice, Field, TextInput } from '@/components/form101/fields';
 import { SUPPORTED_TAX_YEARS, expectedTaxYear, isSupportedTaxYear } from '@/lib/form101/years';
+import type { Form101Prefill } from '@/components/form101/Form101Wizard';
 
 interface EmployerDetails {
   address: string;
@@ -14,9 +15,10 @@ interface EmployerDetails {
 
 const storageKey = (recordId?: string) => `form101-employer-${recordId || 'self'}`;
 
-// Lets an employer create a personal Form 101 link to send to a new employee.
-// The employer details printed in section א are remembered on this device.
-export default function Form101LinkCreator({ employerRecordId }: { employerRecordId?: string }) {
+// Lets an employer create a personal Form 101 link to send to an employee.
+// The employer details printed in section א are remembered on this device;
+// the employee's name and ID, when given, pre-fill the employee's form.
+export default function Form101LinkCreator({ employerRecordId, employee }: { employerRecordId?: string; employee?: Form101Prefill }) {
   const [details, setDetails] = useState<EmployerDetails>({ address: '', phone: '', deductionsFile: '' });
   const expectedYear = expectedTaxYear();
   // Supported years plus the year a new hire most likely needs, even if its form isn't loaded yet
@@ -26,6 +28,12 @@ export default function Form101LinkCreator({ employerRecordId }: { employerRecor
   const [creating, setCreating] = useState(false);
   const [link, setLink] = useState<{ url: string; expiresAt: string } | null>(null);
   const [error, setError] = useState('');
+  const employeeName = employee ? `${employee.firstName} ${employee.lastName}`.trim() : '';
+
+  // A link already created belongs to the employee details it was created with
+  useEffect(() => {
+    setLink(null);
+  }, [employee?.firstName, employee?.lastName, employee?.idNumber]);
 
   useEffect(() => {
     const saved = localStorage.getItem(storageKey(employerRecordId));
@@ -40,7 +48,7 @@ export default function Form101LinkCreator({ employerRecordId }: { employerRecor
       const response = await fetch('/api/form101/link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...details, employerRecordId, taxYear }),
+        body: JSON.stringify({ ...details, employerRecordId, taxYear, employee }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok || !result.success) {
@@ -68,7 +76,7 @@ export default function Form101LinkCreator({ employerRecordId }: { employerRecor
     <section className="flex w-full flex-col gap-4 border border-[#eaeef6] bg-white p-4 text-right leading-[normal]" dir="rtl">
       <div className="flex flex-col gap-1">
         <h2 className="flex items-center gap-2 text-[16px] font-bold text-[#1e3465]">
-          <Link2 className="size-4" aria-hidden /> טופס 101 לעובד/ת חדש/ה
+          <Link2 className="size-4" aria-hidden /> {employeeName ? `טופס 101 עבור ${employeeName}` : 'טופס 101 לעובד/ת חדש/ה'}
         </h2>
         <p className="text-[14px] text-[#6b7280]">
           צרו קישור אישי ושלחו אותו לעובד/ת. הטופס הממולא והחתום יישמר אוטומטית במסמכי המעסיק. הקישור בתוקף 14 יום.

@@ -1,6 +1,6 @@
 'use client'
 
-import { SignedIn } from '@clerk/nextjs'
+import { ClientSignedIn } from '@/components/auth/ClientSignedIn'
 import Image from 'next/image'
 import Link from 'next/link'
 import React, { useState, useRef, useCallback, useEffect } from 'react'
@@ -539,14 +539,14 @@ export default function UpdateInquiriesPage() {
             <Image src="/logo.jpg" alt="logo" width={50} height={50} />
           </Link>
           <div className="flex items-center gap-4">
-            <SignedIn>
+            <ClientSignedIn>
               <Link 
                 href="/inquiries"
                 className="px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
               >
                 פניות
               </Link>
-            </SignedIn>
+            </ClientSignedIn>
           </div>
         </div>
       </header>

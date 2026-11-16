@@ -3,12 +3,13 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { assistant } from '@/lib/fonts';
-import Form101Wizard from '@/components/form101/Form101Wizard';
+import Form101Wizard, { Form101Prefill } from '@/components/form101/Form101Wizard';
 
 interface Session {
   employerName: string;
   taxYear: number;
   linkId: string;
+  employee: Form101Prefill | null;
 }
 
 // Public page opened from an employee's personal Form 101 link (/form101?t=...)
@@ -32,7 +33,7 @@ function Form101Page() {
   }, [token]);
 
   if (session) {
-    return <Form101Wizard token={token} linkId={session.linkId} employerName={session.employerName} taxYear={session.taxYear} />;
+    return <Form101Wizard token={token} linkId={session.linkId} employerName={session.employerName} taxYear={session.taxYear} prefill={session.employee ?? undefined} />;
   }
   return (
     <div className={`${assistant.className} flex min-h-dvh items-center justify-center bg-[#fcfcfc] p-6 text-center`} dir="rtl">

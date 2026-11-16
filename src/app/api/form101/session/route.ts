@@ -17,5 +17,6 @@ export async function GET(request: Request) {
     taxYear: payload.taxYear,
     expiresAt: new Date(payload.exp * 1000).toISOString(),
     linkId: payload.jti,
+    employee: payload.employee ?? null,
   });
 }

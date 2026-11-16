@@ -3,7 +3,7 @@
 What's still open after building the mobile client portal (Figma: "Client Portal mobile") and Form 101.
 The code for all of it is committed. The open items are configuration, backend work outside this repo, and follow-ups.
 
-Status as of 9 November 2026.
+Status as of 16 November 2026.
 
 ## 1. Before going to production (required)
 
@@ -37,6 +37,20 @@ The mobile `/sign-in` (`src/components/auth/MobileSignIn.tsx`) signs in by email
 
   Decide where 101 forms should be stored and who gets notified.
 
+#### Employee-management screens (mobile)
+
+The screens are built, but these actions have no scenario yet. Until a scenario exists, its button shows a "not available yet" message and sends nothing. Once a scenario is ready, send its URL and payload so the stub can be replaced. The payloads below are suggestions.
+
+- [ ] **Update employee** (new): saves the "עריכת פרטי עובד" screen (`MobileEmployeeForm.tsx`, edit mode). It needs the employee's record ID plus the same fields the add-employee scenario (`qv5d2vgs…`) receives: names, ID, department, start date, Form 101 status, pension status, and the employment-contract and pension files.
+- [ ] **Archived employees list** (new): returns the employer's archived employees for the "ארכיון עובדים" screen (`MobileEmployeeArchive.tsx`). Suggested: `GET ?recordId=<employer>` → `[{ id, firstName, lastName }]`. The screen is always empty until this exists.
+- [ ] **Restore from archive** (new): the "הוצאה מהארכיון" button. Suggested: `POST { employerId, recordIds: [...] }`. Decide whether a restored employee goes back into the current reporting period.
+- [ ] **Delete employees** (new): the "מחיקת עובדים" button. Suggested: `POST { employerId, recordIds: [...] }`. Deleting is permanent, so a confirmation step will be added before it sends. Decide whether it deletes the Airtable records or only hides them, and what happens to their documents.
+- [ ] **Employer clarifications** (new): data for the "בירורים" tab in "מערכת מעסיקים", such as "הבהרה בנוגע להסכם העסקה". It also needs a reply scenario (answer text plus a replacement document) for the "בירור מהות מסמך" screens. Until both exist, the tab always shows "אין נושאים פתוחים" and the reply screens aren't built.
+- [ ] **Archive employee** (`6yvgowfq…`, existing): the mobile list archives several employees at once by sending one request per employee, all with the same leaving date, reason, remarks and 161 file. Confirm the scenario handles several requests arriving together.
+- [ ] **Documents scenario** (`m2ow857a…`, existing): confirm it also accepts:
+  - `fileType: "הסכם העסקה"`: a new type in the mobile "העלאת מסמך חדש" screen that the desktop form doesn't offer.
+  - Missing-document uploads where `remarks` is the employer's own note ("הוסף הערה"). Before, it was always the office's comment on the missing document; the office's comment is still sent when the employer leaves the note empty.
+
 ### 1.4 Test data
 
 - [ ] Test employer `recGkvJRQl1nkXU1I` has an empty "תקופה נוכחית". `getMissingDocsByEmployer` fails with *"Lookup field 'תקופה נוכחית' is empty"*. Link it to an open reporting period in Airtable (it's a lookup field, so the change goes on the linked period).
@@ -69,17 +83,21 @@ Until 2027 is added, the link creator shows 2027 (from December on) as "טרם �
 
 - [ ] **Four hidden dashboard frames** in Figma (`303:2703`, `303:2794`, `303:2909`, `303:3050`): hidden, with placeholder content only. Confirm with the designer whether any is meant to be a real screen (for example, an office-staff dashboard).
 - [ ] **Screens that still use the desktop layout on mobile** (no Figma design yet):
-  - Add employee (`AddEmployee`) and remove employee (`EmployeeRecognition`)
-  - Document upload (`DocumentUpload`, opened by "סרוק / העלה מסמך חדש")
+  - Document upload (`DocumentUpload`) from the "סרוק / העלה מסמך חדש" buttons on the home screen and the inquiries screen. The button in the "מערכת מעסיקים" drawer opens the mobile "העלאת מסמך חדש" screen instead. In Figma, the inquiries button leads to a supplier-invoice upload flow that isn't built yet.
   - General inquiries (`YearlyForm`, opened by the home card "בירורים כלליים")
   - Admin employer and period dropdowns
-- [ ] **Menu items shown as "בקרוב":** הגדרות (settings) and ארכיון (archive) have no screens.
+- [ ] **Menu items shown as "בקרוב":** הגדרות (settings) and ארכיון (archive). The employee archive screen opens from the "ארכיון עובדים" button on the employee list, not from the menu. Decide whether the menu item should open it too or is meant for a different archive.
+- [ ] **Figma frames with no outgoing link:** the employee list, archive and edit-employee frames. Two entry points were added in code: "הוספת עובד חדש" and "ארכיון עובדים" on the employee list. Ask the designer to add them to the design.
+- [ ] **"קישור למילוי הטופס" entries** in the "שיוך לעובד" dropdown of the new-upload frame (`409:3101`): not built. Their purpose is unclear (possibly a Form 101 link per employee).
 - [ ] **Small differences from Figma, decided during the build:**
   - The real logo replaces the "לוגו" placeholder; on signed-out screens the header has no user name, bell or menu.
   - Icons whose Figma export was wrong were replaced with matching Lucide icons.
   - The home screen's progress card is "התקדמות בבירורים" (inquiry completion), not daily progress.
   - The inquiry screen has an added details line (date, amount, details).
   - The sign-in screen uses email (code or password) instead of the design's phone number, with an added "כניסה עם סיסמה" link. Its countdown now reads "ניתן לשלוח קוד חדש בעוד 00:59", since it's the resend cooldown, not the code's validity.
+  - Missing-document screen: shows the employee's name and the office's comment, which aren't in the design. The design's "תאריך המסמך" row is left out because the missing-docs data has no document date.
+  - The "מסמכים חסרים" tab header reads "N מסמכים חסרים". The frame says "בירורים פתוחים", which looked copied from the clarifications tab.
+  - Add/edit employee: the bottom button keeps the Figma label "חזור לרשימת הדיווחים" but returns to the employee list. The breadcrumb also includes "עריכת רשימת עובדים".
 
 ## 5. Known limitations
 
@@ -97,11 +115,18 @@ Until 2027 is added, the link creator shows 2027 (from December on) as "טרם �
 
 ## 6. Not yet verified
 
-- [ ] `next build` (production build). Only the type check and lint were run while the dev server was running.
+- [x] `next build` (production build) succeeded on 14 November 2026. Run it again before release, since the screens below were added afterwards.
 - [ ] Click-through on **desktop** after the shared-code refactors:
   - Monthly report save (`MonthlyReport` → `src/lib/monthlyReport.ts`)
   - Missing documents upload (`Vacations` → `src/lib/missingDocs.ts`)
   - Documents for download (`PaySlip` → `src/lib/employerDocuments.ts`)
   - Inquiry save (`InquiryDetail` → `saveMonthlyInquiry`)
+  - Remove employee (`EmployeeRecognition`), which now uses `archiveEmployee` from `src/lib/employees.ts`
+- [ ] Mobile employee and document screens against the **real** Make webhooks. None of these were submitted during testing, to avoid writing test data:
+  - Add employee (`MobileEmployeeForm`), including the Form 101 link shown after saving
+  - Archive the checked employees (`MobileEmployeeList`), with one or several employees
+  - Missing-document upload (`MobileMissingDocUpload`), including "שמור ועבור למסמך הבא" and the "תשובה נשלחה" screen
+  - New document upload (`MobileDocumentUpload`), for an employee and for "כללי"
+- [ ] Employee list, edit screen and missing-document screen with **real data**. The test account has no employees in its period, and its missing-docs request fails (see 1.4), so they were only seen empty or with stand-in data.
 - [ ] Form 101 against the **real** documents webhook. Testing used a local stand-in to avoid writing test data.
 - [ ] Mobile screens on real devices (iOS Safari, Android Chrome). Testing was done in a 393×852 frame in desktop Chrome.

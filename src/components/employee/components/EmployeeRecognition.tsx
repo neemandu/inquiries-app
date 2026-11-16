@@ -31,6 +31,7 @@ import { CalendarIcon, Upload } from "lucide-react";
 import { toast } from "sonner";
 import React from "react";
 import { Employee, LeavingReason } from "@/lib/types";
+import { archiveEmployee } from "@/lib/employees";
 
 const employeeRecognitionSchema = z.object({
   recordId: z.string().min(2, {
@@ -104,13 +105,7 @@ export default function EmployeeRecognition(
     try {
       const loadingToast = toast.loading('מעבד את הבקשה...');
       const payload = is161Must ? { ...data, "161File": filePayload } : data;
-      const response = await fetch('https://hook.eu2.make.com/6yvgowfqvfq0maax195lb7s0x2ayb53m', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
+      const response = await archiveEmployee(payload);
       toast.dismiss(loadingToast);
       if (response.ok) {
         toast.success('העובד הוסר בהצלחה', {

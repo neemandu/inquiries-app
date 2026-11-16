@@ -4,13 +4,20 @@ import { resolveEmployerForCurrentUser } from '@/lib/server/employer';
 import { createForm101Token } from '@/lib/form101/token';
 import { SUPPORTED_TAX_YEARS, isSupportedTaxYear } from '@/lib/form101/years';
 
-// Signed-in employers create a personal Form 101 link for a new employee.
-// The employer details for section א are fixed into the signed link.
+// Signed-in employers create a personal Form 101 link for a new or existing employee.
+// The employer details for section א are fixed into the signed link; the employee's name and ID pre-fill the form.
 const bodySchema = z.object({
   employerRecordId: z.string().trim().optional(),
   address: z.string().trim().min(3, 'נא להזין את כתובת המעסיק').max(80),
   phone: z.string().trim().min(7, 'נא להזין את טלפון המעסיק').max(20),
   deductionsFile: z.string().trim().regex(/^9\d{8}$/, 'מספר תיק ניכויים הוא 9 ספרות שמתחילות ב-9'),
+  employee: z
+    .object({
+      firstName: z.string().trim().max(40),
+      lastName: z.string().trim().max(40),
+      idNumber: z.string().trim().regex(/^\d{0,9}$/, 'מספר זהות לא תקין'),
+    })
+    .optional(),
   taxYear: z.number({ required_error: 'נא לבחור שנת מס' }).int().refine(isSupportedTaxYear, `טופס 101 זמין לשנות המס: ${SUPPORTED_TAX_YEARS.join(', ')}`),
 });
 
@@ -32,7 +39,8 @@ export async function POST(request: Request) {
         phone: parsed.data.phone,
         deductionsFile: parsed.data.deductionsFile,
       },
-      parsed.data.taxYear
+      parsed.data.taxYear,
+      parsed.data.employee
     );
     const url = new URL(`/form101?t=${token}`, request.url).toString();
     return NextResponse.json({ success: true, url, expiresAt: new Date(payload.exp * 1000).toISOString() });

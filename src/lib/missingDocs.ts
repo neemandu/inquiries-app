@@ -30,9 +30,8 @@ export async function fetchMissingDocs(employerRecordId: string): Promise<Missin
   }));
 }
 
-// Uploads files for one missing document row
-export async function uploadMissingDocFiles(doc: MissingDoc, files: File[], employerId: string) {
-  const filesData = await Promise.all(
+const toFilesData = (files: File[]) =>
+  Promise.all(
     files.map(async (file) => ({
       contentType: file.type,
       fileName: file.name,
@@ -41,13 +40,17 @@ export async function uploadMissingDocFiles(doc: MissingDoc, files: File[], empl
     }))
   );
 
+// Uploads files for one missing document row; remarks default to the office's comment on the row
+export async function uploadMissingDocFiles(doc: MissingDoc, files: File[], employerId: string, remarks?: string) {
+  const filesData = await toFilesData(files);
+
   const response = await fetch(UPLOAD_WEBHOOK_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       fileType: doc.fileType,
       files: filesData,
-      remarks: doc.accountantComments || '',
+      remarks: remarks?.trim() || doc.accountantComments || '',
       employeeId: doc.employeeRecordId,
       employerId,
       monthlyReportId: doc.monthlyReportId,
@@ -56,5 +59,49 @@ export async function uploadMissingDocFiles(doc: MissingDoc, files: File[], empl
 
   if (!response.ok) {
     throw new Error(`Upload failed for ${doc.firstName} ${doc.lastName}: ${response.status}`);
+  }
+}
+
+// Document types the employer can upload (same values the desktop upload form sends)
+export const DOCUMENT_TYPES = [
+  { value: 'פנסיה', label: 'פנסיה' },
+  { value: 'מילואים', label: 'מילואים' },
+  { value: 'הסכם העסקה', label: 'הסכם העסקה' },
+  { value: 'דוח מלווה', label: 'דוח מלווה' },
+  { value: 'שווי ארוחות', label: 'שווי ארוחות' },
+  { value: 'רישיון נהיגה', label: 'רישיון רכב' },
+  { value: '161', label: '161' },
+  { value: 'other', label: 'אחר' },
+];
+
+// Uploads a new document for one employee, or for the employer in general when employeeId is empty
+// (same payload as the desktop upload form)
+export async function uploadEmployerDocument({
+  employerId,
+  employeeId,
+  fileType,
+  files,
+  remarks = '',
+}: {
+  employerId: string;
+  employeeId: string;
+  fileType: string;
+  files: File[];
+  remarks?: string;
+}) {
+  const response = await fetch(UPLOAD_WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      recordId: employeeId || -1,
+      employerId,
+      uploadType: 'document',
+      remarks,
+      fileType,
+      files: await toFilesData(files),
+    }),
+  });
+  if (!response.ok) {
+    throw new Error(`Document upload failed: ${response.status}`);
   }
 }

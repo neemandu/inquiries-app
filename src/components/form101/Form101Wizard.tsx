@@ -24,11 +24,29 @@ const ACCEPTED_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/hei
 // Keeps the request under Vercel's 4.5 MB body limit after base64 encoding
 const MAX_ATTACHMENTS_BYTES = 2.5 * 1024 * 1024;
 
+// Employee details the employer entered when creating the link
+export interface Form101Prefill {
+  firstName: string;
+  lastName: string;
+  idNumber: string;
+}
+
 interface Form101WizardProps {
   token: string;
   linkId: string;
   employerName: string;
   taxYear: number;
+  prefill?: Form101Prefill;
+}
+
+function initialDraft(taxYear: number, prefill?: Form101Prefill): Form101Draft {
+  const draft = emptyDraft(taxYear);
+  if (prefill) {
+    draft.employee.firstName = prefill.firstName;
+    draft.employee.lastName = prefill.lastName;
+    draft.employee.idNumber = prefill.idNumber;
+  }
+  return draft;
 }
 
 const draftKey = (linkId: string) => `form101-draft-${linkId}`;
@@ -44,9 +62,9 @@ function downloadPdf(base64: string, fileName: string) {
 }
 
 // Employee-facing Form 101 wizard opened from a personal link (Figma: Client Portal mobile / mobile-wizard-*)
-export default function Form101Wizard({ token, linkId, employerName, taxYear }: Form101WizardProps) {
+export default function Form101Wizard({ token, linkId, employerName, taxYear, prefill }: Form101WizardProps) {
   const [step, setStep] = useState(0);
-  const [draft, setDraft] = useState<Form101Draft>(() => emptyDraft(taxYear));
+  const [draft, setDraft] = useState<Form101Draft>(() => initialDraft(taxYear, prefill));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [attachments, setAttachments] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
