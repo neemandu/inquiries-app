@@ -219,7 +219,7 @@ export default function MobileEmployeeList({
       </button>
 
       <button type="button" onClick={onPortal} className={mobilePrimaryButton}>
-        חזור לעמוד הבירורים
+        חזור למערכת מעסיקים
       </button>
     </div>
   );
