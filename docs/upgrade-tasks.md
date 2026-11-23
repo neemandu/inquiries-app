@@ -3,7 +3,9 @@
 What's still open after building the mobile client portal (Figma: "Client Portal mobile") and Form 101.
 The code for all of it is committed. The open items are configuration, backend work outside this repo, and follow-ups.
 
-Status as of 16 November 2026.
+Status as of 23 November 2026.
+
+A map of the mobile screens, how they link, and the file behind each is in `docs/mobile-screen-flow.md` (drawn copy: `docs/mobile-screen-flow.svg`).
 
 ## 1. Before going to production (required)
 
@@ -77,7 +79,8 @@ Until 2027 is added, the link creator shows 2027 (from December on) as "טרם �
 - [ ] **Documents webhook `0dt1lukm…`** (documents for download): add a Webhook response on the "no documents" path. It currently returns Make's default "Accepted". Mobile treats that as "no documents"; desktop now does too.
 - [ ] **Security: ownership checks.** The `/api/*` routes don't check that the `email` or `recordId` in a request belongs to the signed-in user, so a signed-in user could request another employer's data. The new Form 101 link route does check this on the server (`src/lib/server/employer.ts`); the older routes should do the same.
 - [ ] **Security: admin check on the server.** Admin status (`@cpateam.co.il`, `neemandu@gmail.com`) is only checked in the browser for most features. Use `src/lib/admin.ts` in server routes.
-- [ ] **Security: exposed webhook URLs.** Nine Make webhook URLs are called directly from the browser, so anyone using the app can see them. Consider routing them through `/api/*` like the newer code does.
+- [ ] **Security: exposed webhook URLs.** Seven Make webhook URLs are called directly from the browser, so anyone using the app can see them. Consider routing them through `/api/*` like the newer code does.
+- [x] **Security: old prototype with a real client's details removed** (23 November 2026). The unused `/inquiries` page (`src/app/inquiries/page.tsx`) and the root `index.html` held one client's business name, the last four digits of their credit cards and office notes about them; any signed-in user could open `/inquiries`. Both files are deleted, and the page's two browser calls to the inquiry webhooks went with it (the count above dropped from nine to seven). The details are still in git history (commits `54e3e72` and `e6120cb`); if the repo is ever shared outside the team, rewrite that history or start a clean repo.
 - [ ] **Form 101 storage:** the PDFs hold sensitive personal data (ID numbers, children, income). Decide where the Make scenario stores them, who can access them, and how long they're kept.
 
 ## 4. Design follow-ups
@@ -115,6 +118,7 @@ Until 2027 is added, the link creator shows 2027 (from December on) as "טרם �
     - "הוסף הערה" is sent as the inquiry's answer; an earlier answer is kept when no remark is added. Confirm this with the office, since the backend has no separate remarks field for inquiries.
     - "שמירה" and "שמור ועבור למסמך הבא" (always shown below it) are both the dark-blue primary button, unlike the design's outlined "שמירה", and are dimmed until a file is chosen. The second saves and opens the next inquiry missing its invoice, in list order, or returns to the list after the last one. The employer "מסמך חסר" screen works the same way. "העלה מסמך חדש" on the sent screen opens the document upload screen.
   - "מערכת מעסיקים" bottom drawer: starts collapsed, showing only its handle; tapping the handle expands or collapses it.
+  - Employee list ("עריכת רשימת עובדים"): the bottom button reads "חזור למערכת מעסיקים", matching where it goes. It used to read "חזור לעמוד הבירורים".
   - Add/edit employee: the bottom button keeps the Figma label "חזור לרשימת הדיווחים" but returns to the employee list. The breadcrumb also includes "עריכת רשימת עובדים".
 
 ## 5. Known limitations
