@@ -3,7 +3,7 @@
 What's still open after building the mobile client portal (Figma: "Client Portal mobile") and Form 101.
 The code for all of it is committed. The open items are configuration, backend work outside this repo, and follow-ups.
 
-Status as of 23 November 2026.
+Status as of 24 November 2026.
 
 A map of the mobile screens, how they link, and the file behind each is in `docs/mobile-screen-flow.md` (drawn copy: `docs/mobile-screen-flow.svg`).
 
@@ -44,10 +44,16 @@ The mobile `/sign-in` (`src/components/auth/MobileSignIn.tsx`) signs in by email
 The screens are built, but these actions have no scenario yet. Until a scenario exists, its button shows a "not available yet" message and sends nothing. Once a scenario is ready, send its URL and payload so the stub can be replaced. The payloads below are suggestions.
 
 - [ ] **Update employee** (new): saves the "עריכת פרטי עובד" screen (`MobileEmployeeForm.tsx`, edit mode). It needs the employee's record ID plus the same fields the add-employee scenario (`qv5d2vgs…`) receives: names, ID, department, start date, Form 101 status, pension status, and the employment-contract and pension files.
-- [ ] **Archived employees list** (new): returns the employer's archived employees for the "ארכיון עובדים" screen (`MobileEmployeeArchive.tsx`). Suggested: `GET ?recordId=<employer>` → `[{ id, firstName, lastName }]`. The screen is always empty until this exists.
-- [ ] **Restore from archive** (new): the "הוצאה מהארכיון" button. Suggested: `POST { employerId, recordIds: [...] }`. Decide whether a restored employee goes back into the current reporting period.
-- [ ] **Delete employees** (new): the "מחיקת עובדים" button. Suggested: `POST { employerId, recordIds: [...] }`. Deleting is permanent, so a confirmation step will be added before it sends. Decide whether it deletes the Airtable records or only hides them, and what happens to their documents.
-- [ ] **Employer clarifications** (new): data for the "בירורים" tab in "מערכת מעסיקים", such as "הבהרה בנוגע להסכם העסקה". It also needs a reply scenario (answer text plus a replacement document) for the "בירור מהות מסמך" screens. Until both exist, the tab always shows "אין נושאים פתוחים" and the reply screens aren't built.
+- [ ] **Archive screen: list, restore and delete** (24 November 2026: built as new Lambdas, not deployed). Three functions in `lambda/` replace the Make scenarios suggested here; see `lambda/README.md`. All work on "עובדי לקוחות", where archived means `סטטוס עובד = "לא עובד"`, and reject the whole request if any employee isn't that employer's:
+  - `getArchivedEmployees`: `GET ?employerRecordId=rec…` → `[{ id, firstName, lastName, idNumber, leavingDate, leavingReason }]`. Tested read-only: 29 archived employees returned on one employer. A separate function rather than a filter in `getMonthlyEmployeesDataByEmployeeId`, so the app's main data call isn't touched and the list loads only when the screen opens.
+  - `restoreEmployees`: `POST { employerId, recordIds, updatedBy? }`. Sets the status back to "עובד" and keeps the leaving date and reason. It doesn't add the employee to the current period's monthly report; confirm that's acceptable, or the employee only appears from the next period.
+  - `deleteEmployees`: `POST { employerId, recordIds }`. Permanently deletes only archived employees with no monthly reports or pay slips; others come back as skipped. Not run against real data. A confirmation step still has to be added on the screen before it sends.
+  - To finish: create the three with `sam deploy` (README), then add server routes that call them with an ownership check and replace the "not available yet" stubs in `MobileEmployeeArchive.tsx`.
+- [ ] **Employer clarifications** (new): data for the "בירורים" tab in "מערכת מעסיקים", such as "הבהרה בנוגע להסכם העסקה". It also needs a reply scenario (answer text plus a replacement document) for the "בירור מהות מסמך" screens. Until both exist, the tab always shows "אין נושאים פתוחים" and the reply screens aren't built. Airtable has no table for these issues yet, so the office first has to decide where they're recorded; only then can a Lambda read them.
+  - Decide where these issues are recorded. None of the 16 Airtable tables fits: "בירורים הוצאות שוטפות" and "בירורים כלליים" hold the office's questions about expenses, "משימות" holds tasks and "חוסרים" missing items. Options:
+    - A new table (e.g. "בירורי מעסיק") linked to the employer and optionally an employee, with subject, the office's question, the employer's answer, an attachment and a status. Cleanest.
+    - A new "סוג" value in an existing table such as "בירורים כלליים". Reuses what exists, but mixes two kinds of issue.
+  - Then: a read Lambda (like `getInquires`) for the tab, and a Make scenario for the reply, since it carries a document.
 - [ ] **Archive employee** (`6yvgowfq…`, existing): the mobile list archives several employees at once by sending one request per employee, all with the same leaving date, reason, remarks and 161 file. Confirm the scenario handles several requests arriving together.
 - [ ] **Documents scenario** (`m2ow857a…`, existing): confirm it also accepts:
   - `fileType: "הסכם העסקה"`: a new type in the mobile "העלאת מסמך חדש" screen that the desktop form doesn't offer.
@@ -77,6 +83,22 @@ Until 2027 is added, the link creator shows 2027 (from December on) as "טרם �
 - [ ] **`getMissingDocsByEmployer` Lambda:** return an empty list, not a 500, when the employer has no current period.
 - [ ] **`getMissingDocsByEmployer` Lambda: add a date** (when the document was requested) to each row. The mobile home screen previews the two "latest" missing documents, but without a date it can only take the first two in the order the Lambda returns them.
 - [ ] **Documents webhook `0dt1lukm…`** (documents for download): add a Webhook response on the "no documents" path. It currently returns Make's default "Accepted". Mobile treats that as "no documents"; desktop now does too.
+- [ ] **AWS access for deploying.** The AWS CLI user on the development machine (`ilan`, the default profile) can't list or update Lambda functions in any region (refused by the `DenyUnusedRegions` policy), and the saved `new-key` profile's key is rejected, so `lambda/deploy.sh` will fail with either. The IAM user `ilan-cpateam` has admin rights (25 November 2026) but no sign-in on this machine yet. To set it up:
+  1. AWS console → IAM → Users → `ilan-cpateam` → Security credentials → Create access key → "Command Line Interface (CLI)". The secret is shown only once.
+  2. In your own terminal (so the secret never goes through a chat or a file in the project): `aws configure --profile ilan-cpateam`, region `eu-west-2`.
+  3. Read-only check: `aws sts get-caller-identity --profile ilan-cpateam` and `aws lambda list-functions --profile ilan-cpateam --region eu-west-2`. This also shows whether `DenyUnusedRegions` blocks this user too (if it applies account-wide, London may be refused even with admin rights).
+  4. Deploy: `AWS_PROFILE=ilan-cpateam lambda/deploy.sh`.
+  - Keep the AWS key in `~/.aws/credentials` only, never in `lambda/.env` or the repo.
+  - An admin key that never expires is risky if it leaks: prefer IAM Identity Center (`aws configure sso`) for temporary credentials, or deactivate the key between deploys.
+- [ ] **Check for Lambdas missing from `lambda/`.** The folder has the nine exported from AWS; there may be two more. Every Lambda the app has ever called (seven, from the full git history) is there; `getClientColumns` and `binaryToBase64` are probably called by Make, so any missing ones are likely Make-only too. Compare with AWS console → Lambda → Functions (Europe, London), export any missing ones into `lambda/<name>/`, and move their Airtable token to `process.env.AIRTABLE_API_KEY` like the rest.
+- [ ] **Deploy the Airtable-key change to the Lambdas** (code ready 24 November 2026). The Airtable token was written into the code of seven Lambdas. The local copies in `lambda/` now read `AIRTABLE_API_KEY` from the environment; the value is in `lambda/.env` (not committed). Run `lambda/deploy.sh`: it sets the variable on each function in eu-west-2 and then uploads the code, updating the console-created functions in place. Until then, AWS still runs the old code with the token in it.
+- [ ] **Replace the Airtable token** once every Lambda works with the environment variable. The old one was in the function code and in a local commit (removed before it was pushed). Update `lambda/.env` and run `deploy.sh` again.
+- [ ] **Security: password in the logs** (fixed in the local code 24 November 2026, not deployed). Two Lambdas wrote the employer record, including its plain-text "סיסמה" field, to CloudWatch on every call: `getInquires` logged the record's fields, and `getMissingDocsByEmployer` logged every Airtable response in full. Both now log only a field count or the response status and size; a local run against the test employer showed no password in the output. Still to do:
+  - Deploy both with `lambda/deploy.sh`. Until then, AWS keeps logging the password.
+  - Delete or expire the CloudWatch logs already written: `/aws/lambda/getInquires` and `/aws/lambda/getMissingDocsByEmployer`.
+  - Decide whether passwords should be kept in the "לקוחות" table at all.
+  - `updateMonthlyItems` also logs every Airtable response in full. That's employee report data, not passwords, but consider trimming it the same way.
+- [x] **Lambda code in git** (24 November 2026): `.gitignore` now excludes only `lambda/.env`, so the function code, templates, `deploy.sh` and README can be committed. None of those files contains the token. Keep any new secret in `lambda/.env`, never in the code.
 - [ ] **Security: ownership checks.** The `/api/*` routes don't check that the `email` or `recordId` in a request belongs to the signed-in user, so a signed-in user could request another employer's data. The new Form 101 link route does check this on the server (`src/lib/server/employer.ts`); the older routes should do the same.
 - [ ] **Security: admin check on the server.** Admin status (`@cpateam.co.il`, `neemandu@gmail.com`) is only checked in the browser for most features. Use `src/lib/admin.ts` in server routes.
 - [ ] **Security: exposed webhook URLs.** Seven Make webhook URLs are called directly from the browser, so anyone using the app can see them. Consider routing them through `/api/*` like the newer code does.
