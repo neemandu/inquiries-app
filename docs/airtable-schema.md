@@ -5,26 +5,26 @@ It is the only base the token can see. Field structure only, no record data.
 
 | Table | ID | Fields | Views |
 |---|---|---|---|
-| [לקוחות](#tblfkcmt4ywj11uu3) | `tblfKCMT4yWj11uu3` | 60 | 7 |
-| [בירורים כלליים](#tbl804qg1iplvcvag) | `tbl804qG1iPLVCvAG` | 35 | 38 |
-| [רשימת לקוחות](#tblmbqmqiudcq0tdx) | `tblMbQMqiUdcq0TDx` | 5 | 1 |
-| [בירורים הוצאות שוטפות](#tblyvwyot8zhwykgt) | `tblYvwyOt8ZhwyKgt` | 48 | 83 |
-| [עובדי משרד](#tblho4ptn9mvibrir) | `tblHo4ptN9mViBrIR` | 8 | 2 |
-| [עובדי לקוחות](#tbl7xxiohwg5pmnup) | `tbl7xXIohwg5pMNUp` | 36 | 26 |
-| [משימות](#tblsuehc2zhjvqyvg) | `tblSuEHc2ZHJVqyvg` | 18 | 23 |
-| [עמודות](#tblufbj9slolh9zmb) | `tblufbJ9SlOlH9zMB` | 7 | 1 |
-| [טבלת תלושי שכר](#tbly6ybqkxdnp7lcj) | `tblY6yBqKXdnP7lCj` | 7 | 1 |
-| [שמות עמודות](#tblii5fdvdwygl2we) | `tblIi5fdVDwYGL2wE` | 4 | 1 |
-| [סיבות עזיבה](#tblsy3zyzzijwcq1n) | `tblsy3zYzZIjwcQ1N` | 1 | 1 |
-| [תקופות דיווח](#tblndnkqwakygqgoe) | `tblnDNKqwakYGQGOe` | 24 | 5 |
-| [דיווחים חודשיים](#tbllbnxorsicm2vhd) | `tbllBNXOrsicm2vHD` | 161 | 47 |
-| [משוב לקוחות](#tbl1vlprpdatansgu) | `tbl1VLpRpdaTanSgU` | 12 | 1 |
-| [חוסרים](#tblwichqs93gvoglf) | `tblwicHQs93GvOgLf` | 162 | 48 |
-| [לוגים](#tblibb52auh08wo5z) | `tbliBb52AuH08wO5z` | 8 | 1 |
+| [לקוחות](#לקוחות) | `tblfKCMT4yWj11uu3` | 60 | 7 |
+| [בירורים כלליים](#בירורים-כלליים) | `tbl804qG1iPLVCvAG` | 35 | 38 |
+| [רשימת לקוחות](#רשימת-לקוחות) | `tblMbQMqiUdcq0TDx` | 5 | 1 |
+| [בירורים הוצאות שוטפות](#בירורים-הוצאות-שוטפות) | `tblYvwyOt8ZhwyKgt` | 48 | 83 |
+| [עובדי משרד](#עובדי-משרד) | `tblHo4ptN9mViBrIR` | 8 | 2 |
+| [עובדי לקוחות](#עובדי-לקוחות) | `tbl7xXIohwg5pMNUp` | 36 | 26 |
+| [משימות](#משימות) | `tblSuEHc2ZHJVqyvg` | 18 | 23 |
+| [עמודות](#עמודות) | `tblufbJ9SlOlH9zMB` | 7 | 1 |
+| [טבלת תלושי שכר](#טבלת-תלושי-שכר) | `tblY6yBqKXdnP7lCj` | 7 | 1 |
+| [שמות עמודות](#שמות-עמודות) | `tblIi5fdVDwYGL2wE` | 4 | 1 |
+| [סיבות עזיבה](#סיבות-עזיבה) | `tblsy3zYzZIjwcQ1N` | 1 | 1 |
+| [תקופות דיווח](#תקופות-דיווח) | `tblnDNKqwakYGQGOe` | 24 | 5 |
+| [דיווחים חודשיים](#דיווחים-חודשיים) | `tbllBNXOrsicm2vHD` | 161 | 47 |
+| [משוב לקוחות](#משוב-לקוחות) | `tbl1VLpRpdaTanSgU` | 12 | 1 |
+| [חוסרים](#חוסרים) | `tblwicHQs93GvOgLf` | 162 | 48 |
+| [לוגים](#לוגים) | `tbliBb52AuH08wO5z` | 8 | 1 |
 
 ## לקוחות
 
-<a id="tblfkcmt4ywj11uu3"></a>`tblfKCMT4yWj11uu3`, primary field: **כינוי העסק**
+`tblfKCMT4yWj11uu3`, primary field: **כינוי העסק**
 
 | Field | Type | Details |
 |---|---|---|
@@ -91,7 +91,7 @@ It is the only base the token can see. Field structure only, no record data.
 
 ## בירורים כלליים
 
-<a id="tbl804qg1iplvcvag"></a>`tbl804qG1iPLVCvAG`, primary field: **מזהה**
+`tbl804qG1iPLVCvAG`, primary field: **מזהה**
 
 | Field | Type | Details |
 |---|---|---|
@@ -133,7 +133,7 @@ It is the only base the token can see. Field structure only, no record data.
 
 ## רשימת לקוחות
 
-<a id="tblmbqmqiudcq0tdx"></a>`tblMbQMqiUdcq0TDx`, primary field: **Id**
+`tblMbQMqiUdcq0TDx`, primary field: **Id**
 
 | Field | Type | Details |
 |---|---|---|
@@ -145,7 +145,7 @@ It is the only base the token can see. Field structure only, no record data.
 
 ## בירורים הוצאות שוטפות
 
-<a id="tblyvwyot8zhwykgt"></a>`tblYvwyOt8ZhwyKgt`, primary field: **מזהה**
+`tblYvwyOt8ZhwyKgt`, primary field: **מזהה**
 
 | Field | Type | Details |
 |---|---|---|
@@ -200,7 +200,7 @@ It is the only base the token can see. Field structure only, no record data.
 
 ## עובדי משרד
 
-<a id="tblho4ptn9mvibrir"></a>`tblHo4ptN9mViBrIR`, primary field: **שם**
+`tblHo4ptN9mViBrIR`, primary field: **שם**
 
 | Field | Type | Details |
 |---|---|---|
@@ -215,7 +215,7 @@ It is the only base the token can see. Field structure only, no record data.
 
 ## עובדי לקוחות
 
-<a id="tbl7xxiohwg5pmnup"></a>`tbl7xXIohwg5pMNUp`, primary field: **מספר עובד**
+`tbl7xXIohwg5pMNUp`, primary field: **מספר עובד**
 
 | Field | Type | Details |
 |---|---|---|
@@ -258,7 +258,7 @@ It is the only base the token can see. Field structure only, no record data.
 
 ## משימות
 
-<a id="tblsuehc2zhjvqyvg"></a>`tblSuEHc2ZHJVqyvg`, primary field: **תאריך יצירה**
+`tblSuEHc2ZHJVqyvg`, primary field: **תאריך יצירה**
 
 | Field | Type | Details |
 |---|---|---|
@@ -283,7 +283,7 @@ It is the only base the token can see. Field structure only, no record data.
 
 ## עמודות
 
-<a id="tblufbj9slolh9zmb"></a>`tblufbJ9SlOlH9zMB`, primary field: **RecordId**
+`tblufbJ9SlOlH9zMB`, primary field: **RecordId**
 
 | Field | Type | Details |
 |---|---|---|
@@ -297,7 +297,7 @@ It is the only base the token can see. Field structure only, no record data.
 
 ## טבלת תלושי שכר
 
-<a id="tbly6ybqkxdnp7lcj"></a>`tblY6yBqKXdnP7lCj`, primary field: **תאריך**
+`tblY6yBqKXdnP7lCj`, primary field: **תאריך**
 
 | Field | Type | Details |
 |---|---|---|
@@ -311,7 +311,7 @@ It is the only base the token can see. Field structure only, no record data.
 
 ## שמות עמודות
 
-<a id="tblii5fdvdwygl2we"></a>`tblIi5fdVDwYGL2wE`, primary field: **שם העמודה**
+`tblIi5fdVDwYGL2wE`, primary field: **שם העמודה**
 
 | Field | Type | Details |
 |---|---|---|
@@ -322,7 +322,7 @@ It is the only base the token can see. Field structure only, no record data.
 
 ## סיבות עזיבה
 
-<a id="tblsy3zyzzijwcq1n"></a>`tblsy3zYzZIjwcQ1N`, primary field: **Reason**
+`tblsy3zYzZIjwcQ1N`, primary field: **Reason**
 
 | Field | Type | Details |
 |---|---|---|
@@ -330,7 +330,7 @@ It is the only base the token can see. Field structure only, no record data.
 
 ## תקופות דיווח
 
-<a id="tblndnkqwakygqgoe"></a>`tblnDNKqwakYGQGOe`, primary field: **מזהה**
+`tblnDNKqwakYGQGOe`, primary field: **מזהה**
 
 | Field | Type | Details |
 |---|---|---|
@@ -361,7 +361,7 @@ It is the only base the token can see. Field structure only, no record data.
 
 ## דיווחים חודשיים
 
-<a id="tbllbnxorsicm2vhd"></a>`tbllBNXOrsicm2vHD`, primary field: **מזהה**
+`tbllBNXOrsicm2vHD`, primary field: **מזהה**
 
 | Field | Type | Details |
 |---|---|---|
@@ -529,7 +529,7 @@ It is the only base the token can see. Field structure only, no record data.
 
 ## משוב לקוחות
 
-<a id="tbl1vlprpdatansgu"></a>`tbl1VLpRpdaTanSgU`, primary field: **נושא המשוב**
+`tbl1VLpRpdaTanSgU`, primary field: **נושא המשוב**
 
 | Field | Type | Details |
 |---|---|---|
@@ -548,7 +548,7 @@ It is the only base the token can see. Field structure only, no record data.
 
 ## חוסרים
 
-<a id="tblwichqs93gvoglf"></a>`tblwicHQs93GvOgLf`, primary field: **מזהה**
+`tblwicHQs93GvOgLf`, primary field: **מזהה**
 
 | Field | Type | Details |
 |---|---|---|
@@ -717,7 +717,7 @@ It is the only base the token can see. Field structure only, no record data.
 
 ## לוגים
 
-<a id="tblibb52auh08wo5z"></a>`tbliBb52AuH08wO5z`, primary field: **מזהה**
+`tbliBb52AuH08wO5z`, primary field: **מזהה**
 
 | Field | Type | Details |
 |---|---|---|
